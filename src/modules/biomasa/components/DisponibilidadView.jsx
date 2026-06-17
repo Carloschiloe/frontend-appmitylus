@@ -12,8 +12,9 @@ const OrigenIcon = ({ origen, label }) => {
   const Icon = ORIGEN_ICON[origen] || HelpCircle;
   return <span title={label} className="disp-origen-icon"><Icon size={14} /></span>;
 };
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
-import { crearDisponibilidad, crearTratoDesdeDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
+import { crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { fmtTons } from '../utils/programaCalculos';
@@ -29,7 +30,6 @@ import {
 } from '../disponibilidad.constants';
 import DisponibilidadModal from './DisponibilidadModal';
 import DisponibilidadAnalisisGrafico from './DisponibilidadAnalisisGrafico';
-import DisponibilidadCrearTratoModal from './DisponibilidadCrearTratoModal';
 import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
@@ -49,13 +49,12 @@ const filterDisponibilidades = (sourceItems, filters) => {
 export default function DisponibilidadView({ items, loading, mes, setMes, reload }) {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [proveedores, setProveedores] = useState([]);
   const [centros, setCentros] = useState([]);
   const [modalItem, setModalItem] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [tratoItem, setTratoItem] = useState(null);
-  const [savingTrato, setSavingTrato] = useState(false);
   const [activeTab, setActiveTab] = useState('listado');
   const [annualItems, setAnnualItems] = useState([]);
   const [annualLoading, setAnnualLoading] = useState(false);
@@ -164,7 +163,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
 
   const openCreateTrato = (item) => {
     if ((item.estado || 'disponible') !== 'disponible' || item.tratoId) return;
-    setTratoItem(item);
+    sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({
+      proveedorKey: item.proveedorKey || '',
+      proveedorNombre: item.proveedorNombre || item.proveedorNombreNorm || item.empresaNombre || '',
+      contactoNombre: item.contactoNombre || '',
+      contactoTelefono: item.contactoTelefono || '',
+      contactoEmail: item.contactoEmail || '',
+      comuna: item.comuna || '',
+      centros: item.centroCodigo ? 1 : 0,
+    }));
+    navigate('/gestion/tratos?new=1');
   };
 
   const closeModal = () => {
@@ -191,26 +199,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       addToast({ title: 'No se pudo guardar', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCreateTrato = async (payload) => {
-    if (!tratoItem?._id) return;
-    setSavingTrato(true);
-    try {
-      const trato = await crearTratoDesdeDisponibilidad(tratoItem._id, payload);
-      setTratoItem(null);
-      setAnnualReloadKey((current) => current + 1);
-      await reload();
-      addToast({
-        title: 'Trato creado',
-        message: `${trato.proveedorNombre || tratoItem.proveedorNombre || tratoItem.contactoNombre}: ${fmtTons(payload.tonsAcordadas)} asociados.`,
-        type: 'success',
-      });
-    } catch (error) {
-      addToast({ title: 'No se pudo crear el trato', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
-    } finally {
-      setSavingTrato(false);
     }
   };
 
@@ -380,14 +368,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         saving={saving}
         onClose={closeModal}
         onSave={handleSave}
-      />
-      <DisponibilidadCrearTratoModal
-        open={Boolean(tratoItem)}
-        item={tratoItem}
-        responsableNombre={responsableNombre}
-        saving={savingTrato}
-        onClose={() => setTratoItem(null)}
-        onSave={handleCreateTrato}
       />
     </div>
   );
