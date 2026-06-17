@@ -651,7 +651,50 @@
 }
 
 .disponibilidad-annual-table {
-  min-width: 1080px;
+  min-width: 1180px;
+}
+
+/* Celdas de estado coloreadas */
+.disp-annual-cell--zero { color: #cbd5e1; }
+.disp-annual-cell--info    { color: #3b82f6; font-weight: 600; }
+.disp-annual-cell--warning { color: #d97706; font-weight: 600; }
+.disp-annual-cell--success { color: #059669; font-weight: 600; }
+.disp-annual-cell--danger  { color: #dc2626; font-weight: 600; }
+.disp-annual-cell--muted   { color: #64748b; font-weight: 600; }
+
+/* Fila mes actual */
+.disp-annual-row--current { background: #eff6ff; }
+.disp-annual-row--current td { font-weight: 500; }
+
+/* Columna % año */
+.disp-annual-pct-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
+.disp-annual-pct-bar-track {
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.disp-annual-pct-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), #60a5fa);
+  min-width: 2px;
+}
+.disp-annual-pct-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 30px;
+  text-align: right;
 }
 
 .disponibilidad-annual-table th:not(:first-child),

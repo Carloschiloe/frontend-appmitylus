@@ -11,7 +11,6 @@ import {
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
-import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
@@ -33,6 +32,8 @@ export default function DisponibilidadProyeccionAnual({
     annualTotal: kpiAnnualTotal,
   } = buildDisponibilidadAnnualProjection(stateBaseItems || items, year);
   const maxMonthTotal = Math.max(...rows.map((row) => row.total), 1);
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const selectedDetail = useMemo(
     () => buildDisponibilidadMonthDetail(items, selectedMonth),
     [items, selectedMonth]
@@ -80,12 +81,13 @@ export default function DisponibilidadProyeccionAnual({
                 <th>Mes</th>
                 {DISPONIBILIDAD_ESTADOS.map((state) => <th key={state.value}>{state.label}</th>)}
                 <th>Total mes</th>
+                <th>% año</th>
                 <th>Detalle</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.monthKey}>
+                <tr key={row.monthKey} className={row.monthKey === currentMonthKey ? 'disp-annual-row--current' : undefined}>
                   <td className="disponibilidad-annual-month">
                     <strong>{mesLabel(row.monthKey)}</strong>
                     <span className="disponibilidad-annual-track">
@@ -93,9 +95,17 @@ export default function DisponibilidadProyeccionAnual({
                     </span>
                   </td>
                   {DISPONIBILIDAD_ESTADOS.map((state) => (
-                    <td key={state.value}>{fmtTons(row.stateTons[state.value])}</td>
+                    <td key={state.value} className={row.stateTons[state.value] > 0 ? `disp-annual-cell--${state.tone}` : 'disp-annual-cell--zero'}>
+                      {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
+                    </td>
                   ))}
                   <td className="disponibilidad-tons">{fmtTons(row.total)}</td>
+                  <td className="disp-annual-pct-cell">
+                    <span className="disp-annual-pct-bar-track">
+                      <span className="disp-annual-pct-bar-fill" style={{ width: `${annualTotal > 0 ? (row.total / annualTotal) * 100 : 0}%` }} />
+                    </span>
+                    <span className="disp-annual-pct-label">{annualTotal > 0 ? Math.round((row.total / annualTotal) * 100) : 0}%</span>
+                  </td>
                   <td>
                     <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
                       <Eye size={14} /> Ver proveedores
@@ -107,8 +117,7 @@ export default function DisponibilidadProyeccionAnual({
           </table>
         </div>
       </div>
-      <ResumenTotalesDisponibilidad label="Total anual" total={annualTotal} totalsByState={totalsByState} />
-      {loading && <div className="disponibilidad-annual-loading">Cargando proyección anual...</div>}
+      {loading &&<div className="disponibilidad-annual-loading">Cargando proyección anual...</div>}
       {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay disponibilidades para los filtros seleccionados durante {year}.</div>}
 
       {selectedMonth && (
@@ -177,7 +186,6 @@ export default function DisponibilidadProyeccionAnual({
               ) : (
                 <div className="disponibilidad-month-empty">No hay disponibilidad registrada para este mes.</div>
               )}
-              <ResumenTotalesDisponibilidad label="Total mes" total={selectedDetail.total} totalsByState={selectedDetail.totalsByState} />
             </div>
           </div>
         </div>
