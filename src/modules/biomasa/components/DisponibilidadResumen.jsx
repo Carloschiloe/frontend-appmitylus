@@ -9,7 +9,6 @@ import {
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
-import ResumenTotalesDisponibilidad from './ResumenTotalesDisponibilidad';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 
@@ -148,11 +147,6 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
           );
         })}
       </div>
-      <ResumenTotalesDisponibilidad
-        label="Total mes"
-        total={total}
-        totalsByState={Object.fromEntries(groups.map((group) => [group.value, group.tons]))}
-      />
     </section>
   );
 }
