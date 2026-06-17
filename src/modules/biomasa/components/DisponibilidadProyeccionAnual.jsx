@@ -26,29 +26,34 @@ export default function DisponibilidadProyeccionAnual({
   onCreateTrato,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
-  const { rows, totalsByState, annualTotal } = buildDisponibilidadAnnualProjection(items, year);
+  const [productFilter, setProductFilter] = useState('');
+
+  const availableProducts = useMemo(
+    () => DISPONIBILIDAD_PRODUCTOS.filter((p) => items.some((i) => (i.producto || 'sin_definir') === p.value)),
+    [items]
+  );
+
+  const filteredItems = useMemo(
+    () => (productFilter ? items.filter((i) => (i.producto || 'sin_definir') === productFilter) : items),
+    [items, productFilter]
+  );
+
+  const { rows, annualTotal } = buildDisponibilidadAnnualProjection(filteredItems, year);
   const {
     totalsByState: kpiTotalsByState,
     annualTotal: kpiAnnualTotal,
   } = buildDisponibilidadAnnualProjection(stateBaseItems || items, year);
-  const maxMonthTotal = Math.max(...rows.map((row) => row.total), 1);
+
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
   const selectedDetail = useMemo(
-    () => buildDisponibilidadMonthDetail(items, selectedMonth),
-    [items, selectedMonth]
+    () => buildDisponibilidadMonthDetail(filteredItems, selectedMonth),
+    [filteredItems, selectedMonth]
   );
 
   return (
     <section className="disponibilidad-annual">
-      <div className="disponibilidad-summary-header">
-        <div>
-          <span className="mx-eyebrow">Proyección anual</span>
-          <h3>{year}</h3>
-          <p>Visualiza la biomasa informada por proveedores durante el año, separada por mes y estado comercial.</p>
-        </div>
-      </div>
-
       <div className="disponibilidad-kpi-grid disponibilidad-kpi-grid--annual">
         <button
           type="button"
@@ -73,6 +78,25 @@ export default function DisponibilidadProyeccionAnual({
         ))}
       </div>
 
+      {availableProducts.length > 0 && (
+        <div className="disp-annual-product-chips">
+          <span className="disp-annual-chips-label">Producto</span>
+          <button
+            type="button"
+            className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`}
+            onClick={() => setProductFilter('')}
+          >Todos</button>
+          {availableProducts.map((p) => (
+            <button
+              key={p.value}
+              type="button"
+              className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`}
+              onClick={() => setProductFilter(p.value)}
+            >{p.label}</button>
+          ))}
+        </div>
+      )}
+
       <div className="mx-table-card disponibilidad-table-card">
         <div className="disponibilidad-table-scroll">
           <table className="mx-table disponibilidad-annual-table">
@@ -90,9 +114,6 @@ export default function DisponibilidadProyeccionAnual({
                 <tr key={row.monthKey} className={row.monthKey === currentMonthKey ? 'disp-annual-row--current' : undefined}>
                   <td className="disponibilidad-annual-month">
                     <strong>{mesLabel(row.monthKey)}</strong>
-                    <span className="disponibilidad-annual-track">
-                      <span style={{ width: `${(row.total / maxMonthTotal) * 100}%` }} />
-                    </span>
                   </td>
                   {DISPONIBILIDAD_ESTADOS.map((state) => (
                     <td key={state.value} className={row.stateTons[state.value] > 0 ? `disp-annual-cell--${state.tone}` : 'disp-annual-cell--zero'}>
@@ -117,7 +138,7 @@ export default function DisponibilidadProyeccionAnual({
           </table>
         </div>
       </div>
-      {loading &&<div className="disponibilidad-annual-loading">Cargando proyección anual...</div>}
+      {loading && <div className="disponibilidad-annual-loading">Cargando proyección anual...</div>}
       {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay disponibilidades para los filtros seleccionados durante {year}.</div>}
 
       {selectedMonth && (
