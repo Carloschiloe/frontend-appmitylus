@@ -63,8 +63,13 @@ export default function DisponibilidadAnalisisGrafico({
   return (
     <section className="disponibilidad-analysis">
 
-      <div className="disponibilidad-analysis-summary">
-        <button type="button" className={`disponibilidad-analysis-summary-total disp-analysis-kpi-btn${!stateFilter ? ' is-active' : ''}`} onClick={() => onStateFilterChange('')}>
+      <div className="disponibilidad-kpi-grid disponibilidad-kpi-grid--annual">
+        <button
+          type="button"
+          className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--total${!stateFilter ? ' is-active' : ''}`}
+          aria-pressed={!stateFilter}
+          onClick={() => onStateFilterChange('')}
+        >
           <span>Total {year}</span>
           <strong>{fmtTons(primary.annualTotal)}</strong>
           {comparisonYear && (
@@ -73,43 +78,32 @@ export default function DisponibilidadAnalisisGrafico({
             </small>
           )}
         </button>
-        <div className="disponibilidad-analysis-summary-states">
-          {DISPONIBILIDAD_ESTADOS.map((state) => (
-            <button
-              key={state.value}
-              type="button"
-              className={`disponibilidad-analysis-summary-state disponibilidad-analysis-summary-state--${state.tone} disp-analysis-kpi-btn${stateFilter === state.value ? ' is-active' : ''}`}
-              onClick={() => onStateFilterChange(stateFilter === state.value ? '' : state.value)}
-            >
-              <span>{state.label}</span>
-              <strong>{fmtTons(primary.totalsByState[state.value])}</strong>
-            </button>
-          ))}
-        </div>
+        {DISPONIBILIDAD_ESTADOS.map((state) => (
+          <button
+            key={state.value}
+            type="button"
+            className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--${state.tone}${stateFilter === state.value ? ' is-active' : ''}`}
+            aria-pressed={stateFilter === state.value}
+            onClick={() => onStateFilterChange(stateFilter === state.value ? '' : state.value)}
+          >
+            <span>{state.label}</span>
+            <strong>{fmtTons(primary.totalsByState[state.value])}</strong>
+          </button>
+        ))}
       </div>
 
 
       <div className="disponibilidad-analysis-card">
-        <div className="disponibilidad-analysis-card-header">
-          {(!stateFilter || comparisonYear) && (
-            <div className="disponibilidad-analysis-legend">
-              {!stateFilter && DISPONIBILIDAD_ESTADOS.map((state) => (
-                <span key={state.value}><i className={`disponibilidad-analysis-swatch disponibilidad-analysis-swatch--${state.tone}`} />{state.label}</span>
-              ))}
-              {comparisonYear && <span><i className="disponibilidad-analysis-swatch disponibilidad-analysis-swatch--comparison" />Total {comparisonYear}</span>}
-            </div>
-          )}
-          {availableProducts.length > 0 && (
-            <div className="disp-analysis-product-pills">
-              <button type="button" className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`} onClick={() => onProductFilterChange('')}>Todos</button>
-              {availableProducts.map((p) => (
-                <button key={p.value} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>{p.label}</button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="disponibilidad-analysis-chart-scroll">
+        {(!stateFilter || comparisonYear) && (
+          <div className="disponibilidad-analysis-legend">
+            {!stateFilter && DISPONIBILIDAD_ESTADOS.map((state) => (
+              <span key={state.value}><i className={`disponibilidad-analysis-swatch disponibilidad-analysis-swatch--${state.tone}`} />{state.label}</span>
+            ))}
+            {comparisonYear && <span><i className="disponibilidad-analysis-swatch disponibilidad-analysis-swatch--comparison" />Total {comparisonYear}</span>}
+          </div>
+        )}
+        <div className="disp-analysis-chart-row">
+          <div className="disponibilidad-analysis-chart-scroll">
           <div className="disponibilidad-analysis-chart" aria-label={`Disponibilidad por mes para ${year}`}>
             {primary.rows.map((row, index) => {
               const comparedRow = comparison.rows[index];
@@ -141,6 +135,16 @@ export default function DisponibilidadAnalisisGrafico({
               );
             })}
           </div>
+          </div>
+          {availableProducts.length > 0 && (
+            <div className="disp-analysis-product-pills-side">
+              <span className="disp-annual-chips-label">Producto</span>
+              <button type="button" className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`} onClick={() => onProductFilterChange('')}>Todos</button>
+              {availableProducts.map((p) => (
+                <button key={p.value} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>{p.label}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         {(loading || comparisonLoading) && <div className="disponibilidad-annual-loading">Actualizando análisis...</div>}
