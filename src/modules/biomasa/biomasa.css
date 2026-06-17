@@ -5555,7 +5555,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 .disp-res-row {
   display: grid;
-  grid-template-columns: 160px 88px 44px 1fr 28px;
+  grid-template-columns: 160px 88px 44px 1fr 90px 28px;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -5595,6 +5595,20 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-align: right;
 }
 .disp-res-group.is-empty .disp-res-col-pct { color: #cbd5e1; }
+
+.disp-res-col-productos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-width: 0;
+}
+.disp-res-col-productos span { white-space: nowrap; }
+.disp-res-col-productos strong { font-weight: 600; color: var(--color-text); }
+.disp-res-prod-sep { padding: 0 3px; opacity: 0.4; }
+.disp-res-group.is-empty .disp-res-col-productos { opacity: 0; }
 
 .disp-res-bar-track {
   display: block;

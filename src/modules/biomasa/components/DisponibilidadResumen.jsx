@@ -105,6 +105,18 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                 <span className="disp-res-col-pct">
                   {total > 0 ? Math.round((group.tons / total) * 100) : 0}%
                 </span>
+                <span className="disp-res-col-productos">
+                  {DISPONIBILIDAD_PRODUCTOS
+                    .map((p) => ({ label: p.label, tons: group.items.filter((i) => (i.producto || 'sin_definir') === p.value).reduce((s, i) => s + itemTons(i), 0) }))
+                    .filter((p) => p.tons > 0)
+                    .map((p, idx) => (
+                      <span key={p.label}>
+                        {idx > 0 && <span className="disp-res-prod-sep">·</span>}
+                        {p.label} <strong>{fmtTons(p.tons)}</strong>
+                      </span>
+                    ))
+                  }
+                </span>
                 <span className="disp-res-col-bar">
                   <span className="disp-res-bar-track">
                     <span
