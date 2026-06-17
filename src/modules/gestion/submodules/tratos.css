@@ -53,6 +53,13 @@
 .tratos-kpi-grid .disponibilidad-kpi strong {
   font-size: 18px;
 }
+.tratos-kpi-tons {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
 
 /* ── Toolbar mes nav ── */
 .tratos-month-nav {

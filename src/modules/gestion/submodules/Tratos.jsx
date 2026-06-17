@@ -524,9 +524,15 @@ export default function Tratos() {
   }, [baseFilteredItems, estadoFilter]);
 
   const kpiCounts = useMemo(() => {
-    const counts = { total: baseFilteredItems.length };
+    const getTons = (i) => Number(i.tonsAcordadas || deriveVolumenDesdeCondiciones(i.condiciones) || 0);
+    const counts = {
+      total: baseFilteredItems.length,
+      totalTons: baseFilteredItems.reduce((s, i) => s + getTons(i), 0),
+    };
     for (const e of ESTADOS_TRATO) {
-      counts[e.val] = baseFilteredItems.filter((i) => getUiEstadoFromApi(i.estado) === e.val).length;
+      const stateItems = baseFilteredItems.filter((i) => getUiEstadoFromApi(i.estado) === e.val);
+      counts[e.val] = stateItems.length;
+      counts[`${e.val}Tons`] = stateItems.reduce((s, i) => s + getTons(i), 0);
     }
     return counts;
   }, [baseFilteredItems]);
@@ -587,11 +593,13 @@ export default function Tratos() {
         <button type="button" className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--total${!estadoFilter ? ' is-active' : ''}`} aria-pressed={!estadoFilter} onClick={() => setEstadoFilter('')}>
           <span>Total tratos</span>
           <strong>{kpiCounts.total}</strong>
+          {kpiCounts.totalTons > 0 && <small className="tratos-kpi-tons">{formatInteger(kpiCounts.totalTons)} t</small>}
         </button>
         {ESTADOS_TRATO.map((e) => (
           <button key={e.val} type="button" className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--${ESTADO_TONE[e.val]}${estadoFilter === e.val ? ' is-active' : ''}`} aria-pressed={estadoFilter === e.val} onClick={() => setEstadoFilter(estadoFilter === e.val ? '' : e.val)}>
             <span>{e.label}</span>
             <strong>{kpiCounts[e.val] ?? 0}</strong>
+            {kpiCounts[`${e.val}Tons`] > 0 && <small className="tratos-kpi-tons">{formatInteger(kpiCounts[`${e.val}Tons`])} t</small>}
           </button>
         ))}
       </div>
