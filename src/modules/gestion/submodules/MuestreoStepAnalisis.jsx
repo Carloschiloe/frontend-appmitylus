@@ -140,10 +140,11 @@ export default function MuestreoStepAnalisis({
 
         <div className="mu-analysis-items">
           <div className="mu-analysis-items-head">
+            <span />
             <span>Item</span>
             <span className="align-right">Peso</span>
             <span className="align-right">%</span>
-            <span /><span />
+            <span />
           </div>
 
           <div className="mu-analysis-items-body">
@@ -157,6 +158,9 @@ export default function MuestreoStepAnalisis({
               return (
                 <div key={id} className="mu-analysis-item">
                   <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
+                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn mu-hide-btn" onClick={() => hideItem(id)} title="Ocultar">
+                      <X size={10} />
+                    </button>
                     <span className="mu-analysis-item-name" style={{ color: typeColor }}>{cat.nombre}</span>
                     <input
                       type="number"
@@ -171,9 +175,6 @@ export default function MuestreoStepAnalisis({
                     </div>
                     <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={(e) => handleOpenItemPopover(id, e)} title="Observaciones y fotos">
                       <MessageSquare size={12} color={hasContent ? 'var(--color-primary)' : '#b0bec5'} />
-                    </button>
-                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn mu-hide-btn" onClick={() => hideItem(id)} title="Ocultar">
-                      <X size={10} />
                     </button>
                   </div>
                 </div>

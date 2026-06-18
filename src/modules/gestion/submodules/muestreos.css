@@ -858,12 +858,12 @@
   border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 4px;
-  max-width: 540px;
+  max-width: 380px;
 }
 
 .mu-analysis-items-head {
   display: grid;
-  grid-template-columns: 1fr 72px 44px 24px 22px;
+  grid-template-columns: 22px minmax(0, 150px) 72px 44px 24px;
   gap: 4px;
   padding: 4px 8px;
   border-bottom: 1px solid #f1f5f9;
@@ -943,7 +943,7 @@
 
 .mu-analysis-item-row {
   display: grid;
-  grid-template-columns: 1fr 72px 44px 24px 22px;
+  grid-template-columns: 22px minmax(0, 150px) 72px 44px 24px;
   gap: 4px;
   align-items: center;
   padding: 4px 8px;
