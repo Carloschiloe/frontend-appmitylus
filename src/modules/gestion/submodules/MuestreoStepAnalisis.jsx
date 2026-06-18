@@ -87,6 +87,8 @@ export default function MuestreoStepAnalisis({
 
             <div className="mu-params-side-divider" />
 
+            <span className="mu-params-side-section-label">Evidencia General</span>
+
             {/* Notas inline en el panel */}
             <div className="mu-params-side-extra">
               <button type="button" className={`mu-params-extra-btn${notesOpen ? ' active' : ''}`} onClick={() => setNotesOpen((o) => !o)}>
@@ -110,7 +112,7 @@ export default function MuestreoStepAnalisis({
             <div className="mu-params-side-extra">
               <button type="button" className={`mu-params-extra-btn${photosOpen ? ' active' : ''}`} onClick={() => setPhotosOpen((o) => !o)}>
                 <Camera size={12} />
-                <span>Fotos grales</span>
+                <span>Fotos</span>
                 {generalPhotos.length > 0 && <span className="mu-action-badge">{generalPhotos.length}</span>}
               </button>
               {photosOpen && (

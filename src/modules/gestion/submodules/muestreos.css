@@ -60,6 +60,8 @@
   overflow-y: auto;
   box-sizing: border-box;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .mu-modal-footer {
@@ -209,16 +211,20 @@
 .mu-body-inner {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .mu-body-inner--analysis {
   flex-direction: row;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .mu-body-inner--analysis > .mu-step-container {
   flex: 1;
   min-width: 0;
+  min-height: 0;
 }
 
 .mu-side-car {
@@ -230,6 +236,8 @@
   background: #f8fafc;
   border-left: 1px solid var(--color-border);
   animation: slideInRight 0.3s ease-out;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .mu-side-car-header {
@@ -497,6 +505,8 @@
   background: #f8fafc;
   position: relative;
   transition: flex-basis 0.2s ease;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .mu-params-side.collapsed {
@@ -569,6 +579,15 @@
   height: 1px;
   background: #e2e8f0;
   margin: 4px 0;
+}
+
+.mu-params-side-section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 2px;
 }
 
 .mu-params-side-extra {
