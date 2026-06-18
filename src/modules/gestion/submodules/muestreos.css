@@ -858,6 +858,7 @@
   border: 1px solid #f1f5f9;
   border-radius: 8px;
   padding: 4px;
+  max-width: 540px;
 }
 
 .mu-analysis-items-head {

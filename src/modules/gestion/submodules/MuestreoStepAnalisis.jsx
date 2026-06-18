@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, ChevronLeft, ChevronRight, FileText, Layers, Settings2, Target, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, FileText, Layers, MessageSquare, Target, X } from 'lucide-react';
 import { fmtNum } from './muestreos.helpers';
 
 const TYPE_COLOR = {
@@ -169,8 +169,8 @@ export default function MuestreoStepAnalisis({
                     <div className={`mu-analysis-percent${value > 0 ? ' active' : ''}`}>
                       {value > 0 ? `${fmtNum(pct, 1)}%` : '—'}
                     </div>
-                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={(e) => handleOpenItemPopover(id, e)} title="Obs. y fotos">
-                      <Settings2 size={11} color={hasContent ? 'var(--color-primary)' : undefined} />
+                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={(e) => handleOpenItemPopover(id, e)} title="Observaciones y fotos">
+                      <MessageSquare size={12} color={hasContent ? 'var(--color-primary)' : '#b0bec5'} />
                     </button>
                     <button type="button" className="mx-btn-icon mu-analysis-icon-btn mu-hide-btn" onClick={() => hideItem(id)} title="Ocultar">
                       <X size={10} />
