@@ -83,6 +83,8 @@ button {
 .mx-content-body {
   gap: 16px;
   margin: 2px 8px 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Hero base moderno — card redondeado con sombra, sin barra azul separada */
