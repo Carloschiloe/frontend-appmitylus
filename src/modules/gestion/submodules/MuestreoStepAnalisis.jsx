@@ -114,7 +114,7 @@ export default function MuestreoStepAnalisis({
             <span>Item</span>
             <span className="align-right">Peso</span>
             <span className="align-right">%</span>
-            <span /><span />
+            <span /><span /><span />
           </div>
 
           <div className="mu-analysis-items-body">
@@ -126,31 +126,37 @@ export default function MuestreoStepAnalisis({
               const legacyFotos = catDetails[id]?.fotos || [];
               const s3Photos = catDetails[id]?.photos || [];
 
+              const hasPhotos = legacyFotos.length > 0 || s3Photos.length > 0;
+
               return (
                 <div key={id} className="mu-analysis-item">
                   <div className={`mu-analysis-item-row ${isExpanded ? 'expanded' : ''}`}>
                     <span className="mu-analysis-item-name">{cat.nombre}</span>
-                    <input type="number" className="mx-input mu-analysis-weight-input" value={form.cats[id] || ''} onChange={(event) => setForm({ ...form, cats: { ...form.cats, [id]: event.target.value } })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+                    <input type="number" className="mx-input mu-analysis-weight-input" value={form.cats[id] || ''} onChange={(e) => setForm({ ...form, cats: { ...form.cats, [id]: e.target.value } })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
                     <div className="mu-analysis-percent">{fmtNum(pct, 1)}%</div>
-                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={() => { const next = new Set(expandedItems); if (next.has(id)) next.delete(id); else next.add(id); setExpandedItems(next); }}><Settings2 size={12} /></button>
+                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={() => { const next = new Set(expandedItems); if (next.has(id)) next.delete(id); else next.add(id); setExpandedItems(next); }} title="Observaciones">
+                      <Settings2 size={12} />
+                    </button>
+                    <label className="mx-btn-icon mu-analysis-icon-btn mu-analysis-camera-btn" title="Agregar foto">
+                      <Camera size={12} color={hasPhotos ? 'var(--color-primary)' : '#94a3b8'} />
+                      <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleFileUpload(id, e.target.files)} />
+                    </label>
                     {activeTab !== 'procesable' ? <button type="button" className="mx-btn-icon mu-analysis-icon-btn danger" onClick={() => toggleCatSelection(id)}><X size={12} /></button> : <div />}
                   </div>
 
                   {isExpanded && (
                     <div className="mu-analysis-item-details">
-                      <textarea className="mx-input mu-analysis-detail-textarea" placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(event) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: event.target.value } })} />
-                      <div className="mu-evidence-row">
-                        <label className="mu-evidence-upload compact">
-                          <Camera size={18} color="#64748b" />
-                          <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(event) => handleFileUpload(id, event.target.files)} />
-                        </label>
-                        {legacyFotos.map((foto, index) => (
-                          <EvidenceThumb key={`legacy-${index}`} src={foto} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, true)} />
-                        ))}
-                        {s3Photos.map((photo, index) => (
-                          <EvidenceThumb key={`s3-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, false)} />
-                        ))}
-                      </div>
+                      <textarea className="mx-input mu-analysis-detail-textarea" rows={2} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} />
+                      {hasPhotos && (
+                        <div className="mu-evidence-row">
+                          {legacyFotos.map((foto, index) => (
+                            <EvidenceThumb key={`legacy-${index}`} src={foto} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, true)} />
+                          ))}
+                          {s3Photos.map((photo, index) => (
+                            <EvidenceThumb key={`s3-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, false)} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

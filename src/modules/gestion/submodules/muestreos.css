@@ -17,12 +17,12 @@
 .mu-main-modal {
   max-width: 980px;
   width: 100%;
+  max-height: calc(100vh - 24px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   position: relative;
   margin: 0;
-  flex-shrink: 0;
   border-radius: 24px;
   overflow: hidden;
   background: white;
@@ -34,6 +34,7 @@
   box-sizing: border-box;
   padding: 12px 20px;
   min-height: auto;
+  flex-shrink: 0;
 }
 
 .mu-modal-title-row {
@@ -58,6 +59,7 @@
   padding: 0;
   overflow-y: auto;
   box-sizing: border-box;
+  min-height: 0;
 }
 
 .mu-modal-footer {
@@ -65,6 +67,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .mu-modal-footer-actions {
@@ -581,7 +584,7 @@
 }
 
 .mu-analysis-notes-input {
-  min-height: 100px;
+  min-height: 56px;
   resize: none;
   font-size: 0.75rem;
   padding: 6px;
@@ -733,7 +736,7 @@
 
 .mu-analysis-items-head {
   display: grid;
-  grid-template-columns: 1fr 80px 50px 30px 30px;
+  grid-template-columns: 1fr 80px 50px 30px 28px 30px;
   gap: 4px;
   padding: 4px 8px;
   border-bottom: 1px solid #f1f5f9;
@@ -752,6 +755,8 @@
 
 .mu-analysis-items-body {
   margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .mu-analysis-item {
@@ -760,11 +765,18 @@
 
 .mu-analysis-item-row {
   display: grid;
-  grid-template-columns: 1fr 90px 60px 30px 30px;
+  grid-template-columns: 1fr 90px 60px 30px 28px 30px;
   gap: 6px;
   align-items: center;
   padding: 8px 10px;
   border-radius: 6px;
+}
+
+.mu-analysis-camera-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mu-analysis-item-row.expanded {
