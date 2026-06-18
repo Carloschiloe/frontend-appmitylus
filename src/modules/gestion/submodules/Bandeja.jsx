@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+﻿import React, { useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ChevronRight,
@@ -28,7 +28,7 @@ const PIPELINE_ORDER = [
   { key: 'negociando', label: 'Negociando' },
   { key: 'acordado', label: 'Acordados' },
   { key: 'compra_efectuada', label: 'Compras' },
-  { key: 'caido', label: 'Caídos' },
+  { key: 'caido', label: 'CaÃ­dos' },
 ];
 
 const FOLLOWUP_META = {
@@ -41,13 +41,13 @@ const PAUSE_REASON_LABELS = {
   esperando_disponibilidad: 'Esperando disponibilidad',
   esperando_respuesta: 'Esperando respuesta',
   esperando_resultado_muestra: 'Esperando resultado de muestra',
-  esperando_decision_interna: 'Esperando decisión interna',
+  esperando_decision_interna: 'Esperando decisiÃ³n interna',
 };
 
 const EVENT_META = {
-  interaccion: { label: 'Interacción', tone: 'info' },
+  interaccion: { label: 'InteracciÃ³n', tone: 'info' },
   llamada: { label: 'Llamada', tone: 'info' },
-  reunion: { label: 'Reunión', tone: 'warning' },
+  reunion: { label: 'ReuniÃ³n', tone: 'warning' },
   visita: { label: 'Visita', tone: 'primary' },
   muestreo: { label: 'Muestreo', tone: 'success' },
   seguimiento: { label: 'Seguimiento', tone: 'primary' },
@@ -122,8 +122,8 @@ function dueText(value) {
 
   if (diffDays < 0) return `Vencido hace ${Math.abs(diffDays)} d`;
   if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'Mañana';
-  return `En ${diffDays} días`;
+  if (diffDays === 1) return 'MaÃ±ana';
+  return `En ${diffDays} dÃ­as`;
 }
 
 function getPauseReasonLabel(value) {
@@ -141,7 +141,7 @@ export default function Bandeja() {
   const { data: visitasData, isLoading: loadingVis } = useVisitas();
   const { data: muestreosRes, isLoading: loadingMue } = useMuestreos({ limit: 50, page: 1 });
 
-  // Estabilización de datos para los memos
+  // EstabilizaciÃ³n de datos para los memos
   const oportunidades = useMemo(() => toList(oportunidadesData), [oportunidadesData]);
   const interacciones = useMemo(() => toList(interaccionesData), [interaccionesData]);
   const visitas = useMemo(() => toList(visitasData), [visitasData]);
@@ -204,7 +204,7 @@ export default function Bandeja() {
           id: `opp-${item._id}`,
           source,
           provider: item.proveedorNombre || 'Proveedor sin nombre',
-          title: item.proximaAccion || (source === 'pausado' ? 'Revisar caso pausado' : 'Definir próximo paso'),
+          title: item.proximaAccion || (source === 'pausado' ? 'Revisar caso pausado' : 'Definir prÃ³ximo paso'),
           subtitle: source === 'pausado'
             ? getPauseReasonLabel(item.motivoPausa)
             : (item.notasTrato || 'Seguimiento pendiente'),
@@ -265,7 +265,7 @@ export default function Bandeja() {
         id: `a-int-${item._id}`,
         kind: item.tipo || 'interaccion',
         provider: item.proveedorNombre || item.contactoNombre || 'Proveedor sin nombre',
-        title: item.resumen || 'Interacción registrada',
+        title: item.resumen || 'InteracciÃ³n registrada',
         date: item.updatedAt || item.createdAt || item.fecha,
         caption: item.proximoPaso || item.resultado || item.responsablePG || 'Sin detalle',
       })),
@@ -325,7 +325,7 @@ export default function Bandeja() {
       .map((item) => ({
         ...item,
         sampleDate: toDate(item.fecha),
-        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificación',
+        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificaciÃ³n',
       }))
       .filter((item) => item.sampleDate)
       .sort((left, right) => right.sampleDate - left.sampleDate)
@@ -340,283 +340,189 @@ export default function Bandeja() {
     return (
       <div className="mx-state-placeholder">
         <div className="mx-spinner"></div>
-        <p>Construyendo panel de gestión...</p>
+        <p>Construyendo panel de gestiÃ³n...</p>
       </div>
     );
   }
 
   return (
     <div className="gs-summary-dashboard">
-        <div className="gs-kpi-row">
-        <div className="mx-kpi-grid gs-kpi-strip">
-          {[
-            { label: 'Vencidos', value: taskBoard.overdue.length, Icon: AlertCircle, tone: 'danger' },
-            { label: 'Para hoy', value: taskBoard.today.length, Icon: Clock, tone: 'info' },
-            { label: 'En seguimiento', value: seguimiento.active.length, Icon: Activity, tone: 'success' },
-            { label: 'Pausados', value: seguimiento.paused.length, Icon: PauseCircle, tone: 'warning' },
-          ].map(({ label, value, Icon, tone }) => (
-            <div key={label} className={`mx-kpi-card gs-kpi-v2 is-${tone}`}>
-              <div className={`gs-kpi-icon is-${tone}`}><Icon size={16} /></div>
-              <div className="gs-kpi-v2-body">
-                <div className={`mx-kpi-value gs-kpi-value-${tone}`}>{value}</div>
-                <div className="mx-kpi-label">{label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-          <button className="mx-btn-icon gs-kpi-refresh" onClick={handleRefresh} aria-label="Actualizar panel" title="Actualizar panel">
-            <RotateCcw size={18} />
-          </button>
-        </div>
 
-        <div className="gs-dashboard">
-          <article className="mx-card gs-priority-panel">
-            <header className="mx-card-header">
+      {/* â”€â”€ Zone 1: Status strip â”€â”€ */}
+      <div className="gs-status-strip">
+        {[
+          { label: 'Vencidos', value: taskBoard.overdue.length, Icon: AlertCircle, tone: 'danger' },
+          { label: 'Para hoy', value: taskBoard.today.length, Icon: Clock, tone: 'info' },
+          { label: 'En seguimiento', value: seguimiento.active.length, Icon: Activity, tone: 'success' },
+          { label: 'Pausados', value: seguimiento.paused.length, Icon: PauseCircle, tone: 'warning' },
+        ].map(({ label, value, Icon, tone }) => (
+          <div key={label} className={`gs-status-item is-${tone}`}>
+            <Icon size={16} className="gs-status-icon" />
+            <span className="gs-status-num">{value}</span>
+            <span className="gs-status-label">{label}</span>
+          </div>
+        ))}
+        <button className="gs-status-refresh mx-btn-icon" onClick={handleRefresh} title="Actualizar">
+          <RotateCcw size={15} />
+        </button>
+      </div>
+
+      {/* â”€â”€ Zone 2+3: Main grid â”€â”€ */}
+      <div className="gs-main-grid">
+
+        {/* â”€â”€ LEFT: AtenciÃ³n requerida â”€â”€ */}
+        <section className="gs-attention-panel">
+          <div className="gs-panel-header">
+            <div>
+              <span className="mx-eyebrow">Operaciones</span>
+              <h3 className="gs-panel-title">AtenciÃ³n requerida</h3>
+            </div>
+            <div className="gs-panel-header-right">
+              {taskBoard.overdue.length > 0 && <span className="mx-badge mx-badge-danger">{taskBoard.overdue.length} vencido{taskBoard.overdue.length !== 1 ? 's' : ''}</span>}
+              {taskBoard.today.length > 0 && <span className="mx-badge mx-badge-warning">{taskBoard.today.length} hoy</span>}
+              {taskBoard.next.length > 0 && <span className="mx-badge mx-badge-muted">{taskBoard.next.length} semana</span>}
+              <Link className="mx-btn-icon sm" to="/gestion/agenda"><ChevronRight size={16} /></Link>
+            </div>
+          </div>
+
+          <div className="gs-action-feed">
+            {priorityItems.length === 0 ? (
+              <div className="gs-feed-empty">
+                <Activity size={20} />
+                <span>Sin tareas urgentes ni compromisos esta semana</span>
+              </div>
+            ) : (
+              priorityItems.map((item) => {
+                const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
+                const Icon = meta.icon;
+                return (
+                  <div key={item.id} className={`gs-feed-item is-${item.bucket}`}>
+                    <div className="gs-feed-stripe" />
+                    <div className={`gs-feed-icon is-${meta.tone}`}><Icon size={13} /></div>
+                    <div className="gs-feed-body">
+                      <div className="gs-feed-topline">
+                        <strong>{item.provider}</strong>
+                        <span className={`gs-feed-due is-${item.bucket === 'overdue' ? 'danger' : item.bucket === 'today' ? 'warning' : 'info'}`}>{dueText(item.dueAt)}</span>
+                      </div>
+                      <p className="gs-feed-task">{item.title}</p>
+                      <div className="gs-feed-meta">
+                        <span>{meta.label}</span>
+                        <span className="gs-feed-dot">Â·</span>
+                        <span>{item.owner}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="gs-panel-section-label">Esta semana</div>
+          <div className="gs-week-mini">
+            {agendaByDay.map((day) => {
+              const todayKey = new Date().toISOString().slice(0, 10);
+              const isToday = day.key === todayKey;
+              return (
+                <div key={day.key} className={`gs-week-col${day.items.length > 0 ? ' has-tasks' : ''}${isToday ? ' is-today' : ''}`}>
+                  <span className="gs-week-dow">{formatDayOfWeek(day.date)}</span>
+                  <div className="gs-week-dot">{day.items.length > 0 ? day.items.length : ''}</div>
+                  <span className="gs-week-num">{day.date.getDate()}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* â”€â”€ RIGHT: Estado / AnÃ¡lisis â”€â”€ */}
+        <div className="gs-estado-zone">
+
+          {/* Pipeline */}
+          <section className="gs-estado-panel">
+            <div className="gs-panel-header">
               <div>
-                <p className="mx-eyebrow">Prioridades</p>
-                <h3 className="mx-card-title">Qué revisar ahora</h3>
+                <span className="mx-eyebrow">Comercial</span>
+                <h3 className="gs-panel-title">Pipeline de negociaciÃ³n</h3>
               </div>
-              <Link className="mx-btn-icon sm" to="/gestion/agenda">
-                <ChevronRight size={18} />
-              </Link>
-            </header>
-
-            <div className="mx-toolbar gs-priority-toolbar">
-              <div className="mx-toggle-group">
-                <span className="mx-badge mx-badge-danger">Vencidos: {taskBoard.overdue.length}</span>
-                <span className="mx-badge mx-badge-warning">Hoy: {taskBoard.today.length}</span>
-                <span className="mx-badge mx-badge-info">Semana: {taskBoard.next.length}</span>
-              </div>
+              <Link className="mx-btn-icon sm" to="/biomasa/tratos"><ChevronRight size={16} /></Link>
             </div>
+            <div className="gs-pipeline-steps">
+              {pipeline.counts.map((item, index) => (
+                <div key={item.key} className={`gs-step${item.count > 0 ? ' is-active' : ''} is-${item.key}`}>
+                  <div className="gs-step-badge">{item.count}</div>
+                  <div className="gs-step-label">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-            <div className="gs-priority-list">
-              {priorityItems.length === 0 ? (
-                <div className="mx-state-placeholder gs-empty-priority">Sin tareas vencidas ni compromisos para esta semana.</div>
+          {/* Muestreos */}
+          <section className="gs-estado-panel">
+            <div className="gs-panel-header">
+              <div>
+                <span className="mx-eyebrow">TÃ©cnico</span>
+                <h3 className="gs-panel-title">Ãšltimos muestreos</h3>
+              </div>
+              <Link className="mx-btn-icon sm" to="/biomasa/muestreos"><ChevronRight size={16} /></Link>
+            </div>
+            {recentSamples.length === 0 ? (
+              <div className="mx-state-placeholder sm" style={{ padding: '20px 16px' }}>No hay muestreos recientes.</div>
+            ) : (
+              <div className="gs-samples-table">
+                {recentSamples.slice(0, 5).map((item) => (
+                  <div key={item._id} className="gs-sample-row">
+                    <div className="gs-sample-name">{item.proveedorNombre}</div>
+                    <div className="gs-sample-rend">
+                      <div className="gs-rend-bar-wrap">
+                        <div className="gs-rend-bar-fill" style={{
+                          width: `${Math.min((item.rendimiento || 0), 40) / 40 * 100}%`,
+                          background: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)',
+                        }} />
+                      </div>
+                      <span style={{ color: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                        {Number(item.rendimiento || 0).toFixed(1)}%
+                      </span>
+                    </div>
+                    <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Activity */}
+          <section className="gs-estado-panel">
+            <div className="gs-panel-header">
+              <div>
+                <span className="mx-eyebrow">Historial</span>
+                <h3 className="gs-panel-title">Actividad reciente</h3>
+              </div>
+              <Link className="mx-btn-icon sm" to="/historial"><ChevronRight size={16} /></Link>
+            </div>
+            <div className="gs-activity-compact">
+              {compactActivityFeed.length === 0 ? (
+                <div className="mx-state-placeholder sm" style={{ padding: '20px 16px' }}>Sin gestiones recientes.</div>
               ) : (
-                priorityItems.map((item) => {
-                  const meta = FOLLOWUP_META[item.source] || FOLLOWUP_META.activo;
-                  const Icon = meta.icon;
-
+                compactActivityFeed.map((item) => {
+                  const ActivityIcon = ACTIVITY_ICONS[item.kind] || MessageSquare;
+                  const meta = EVENT_META[item.kind] || EVENT_META.interaccion;
                   return (
-                    <div key={item.id} className={`gs-priority-item gs-priority-item--${item.bucket}`}>
-                      <div className={`gs-priority-badge is-${meta.tone}`}>
-                        <Icon size={14} />
+                    <div key={item.id} className="gs-activity-row">
+                      <div className={`gs-activity-icon-dot is-${meta.tone}`}><ActivityIcon size={11} /></div>
+                      <div className="gs-activity-info">
+                        <strong>{item.provider}</strong>
+                        <span>{item.title}</span>
                       </div>
-
-                      <div className="gs-priority-content">
-                        <div className="gs-priority-topline">
-                          <strong>{item.provider}</strong>
-                          <span className={`mx-badge mx-badge-${item.bucket === 'overdue' ? 'danger' : item.bucket === 'today' ? 'warning' : 'muted'}`}>
-                            {dueText(item.dueAt)}
-                          </span>
-                        </div>
-                        <p>{item.title}</p>
-                        <div className="gs-priority-meta">
-                          <span>{meta.label}</span>
-                          <span>{item.owner}</span>
-                          <span className="gs-date-strong">{formatShortDate(item.dueAt)}</span>
-                        </div>
-                      </div>
+                      <time className="gs-activity-time">{formatShortDate(item.date)}</time>
                     </div>
                   );
                 })
               )}
             </div>
-          </article>
+          </section>
 
-          <article className="mx-card">
-            <header className="mx-card-header">
-              <div>
-                <p className="mx-eyebrow">Agenda</p>
-                <h3 className="mx-card-title">Esta semana</h3>
-              </div>
-              <Link className="mx-btn-icon sm" to="/gestion/agenda">
-                <ChevronRight size={18} />
-              </Link>
-            </header>
-
-            <div className="gs-week-strip">
-              {agendaByDay.map((day) => {
-                const todayKey = new Date().toISOString().slice(0, 10);
-                const isToday = day.key === todayKey;
-                return (
-                  <div key={day.key} className={`gs-week-col${day.items.length > 0 ? ' has-tasks' : ''}${isToday ? ' is-today' : ''}`}>
-                    <span className="gs-week-dow">{formatDayOfWeek(day.date)}</span>
-                    <div className="gs-week-dot">{day.items.length > 0 ? day.items.length : ''}</div>
-                    <span className="gs-week-num">{day.date.getDate()}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="gs-agenda-list gs-agenda-compact">
-              {agendaByDay.filter((d) => d.items.length > 0).length === 0 ? (
-                <div className="mx-state-placeholder sm">Semana sin compromisos agendados.</div>
-              ) : (
-                agendaByDay.filter((d) => d.items.length > 0).map((day) => (
-                  <div key={day.key} className="gs-agenda-day">
-                    <div className="gs-agenda-date">
-                      <strong>{formatLongDate(day.date)}</strong>
-                      <span>{day.items.length} tarea{day.items.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="gs-agenda-items">
-                      {day.items.slice(0, 2).map((item, index) => (
-                        <span
-                          key={`${day.key}-${index}`}
-                          className={`mx-badge mx-badge-${item.source === 'pausado' ? 'warning' : 'primary'}`}
-                        >
-                          {item.proveedorNombre}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="mx-card">
-            <header className="mx-card-header">
-              <div>
-                <p className="mx-eyebrow">Negociación</p>
-                <h3 className="mx-card-title">Estado de negociación</h3>
-              </div>
-              <Link className="mx-btn-icon sm" to="/biomasa/tratos">
-                <ChevronRight size={18} />
-              </Link>
-            </header>
-
-            <div className="gs-pipeline-list">
-              {pipeline.counts.every((item) => item.count === 0) ? (
-                <div className="mx-state-placeholder sm">No hay tratos activos.</div>
-              ) : (
-                pipeline.counts.map((item) => (
-                  <div key={item.key} className={`gs-pipeline-row is-${item.key}`}>
-                    <div className="gs-pipeline-copy">
-                      <span>{item.label}</span>
-                      <strong>{item.count}</strong>
-                    </div>
-                    <div className="gs-pipeline-track">
-                      <div className="gs-pipeline-fill" style={{ width: `${pipeline.max > 0 ? (item.count / pipeline.max) * 100 : 0}%` }} />
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="mx-card">
-            <header className="mx-card-header">
-              <div>
-                <p className="mx-eyebrow">Biomasa</p>
-                <h3 className="mx-card-title">Próximos compromisos</h3>
-              </div>
-              <Link className="mx-btn-icon sm" to="/biomasa/programa">
-                <ChevronRight size={18} />
-              </Link>
-            </header>
-
-            <div className="gs-mini-list">
-              {compactDeals.length === 0 ? (
-                <div className="mx-state-placeholder sm">No hay compromisos próximos.</div>
-              ) : (
-                compactDeals.map((item) => (
-                  <div key={item._id} className="gs-mini-item">
-                    <div>
-                      <strong>{item.proveedorNombre}</strong>
-                      <p>{formatShortDate(item.closeDate)} · {formatTons(item.tonsAcordadas)}</p>
-                    </div>
-                    <span className={`mx-badge mx-badge-${item.estado === 'acordado' ? 'success' : 'info'}`}>
-                      {item.estado || 'sin estado'}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="mx-card">
-            <header className="mx-card-header">
-              <div>
-                <p className="mx-eyebrow">Actividad</p>
-              <h3 className="mx-card-title">Último movimiento</h3>
-            </div>
-            <Link className="mx-btn-icon sm" to="/historial">
-              <ChevronRight size={18} />
-            </Link>
-          </header>
-
-          <div className="gs-activity-list">
-            {compactActivityFeed.length === 0 ? (
-              <div className="mx-state-placeholder sm">Sin gestiones recientes.</div>
-            ) : (
-              compactActivityFeed.map((item) => {
-                const ActivityIcon = ACTIVITY_ICONS[item.kind] || MessageSquare;
-                const meta = EVENT_META[item.kind] || EVENT_META.interaccion;
-                return (
-                <div key={item.id} className="gs-activity-item">
-                  <div className={`gs-priority-badge is-${meta.tone}`}>
-                    <ActivityIcon size={13} />
-                  </div>
-                  <div className="gs-activity-copy">
-                    <strong>{item.provider}</strong>
-                    <p>{item.title}</p>
-                    <span>{formatShortDate(item.date)}</span>
-                  </div>
-                </div>
-                );
-              })
-            )}
-          </div>
-        </article>
-
-        <article className="mx-card">
-          <header className="mx-card-header">
-            <div>
-              <p className="mx-eyebrow">Muestreos</p>
-              <h3 className="mx-card-title">Últimos resultados</h3>
-            </div>
-            <Link className="mx-btn-icon sm" to="/biomasa/muestreos">
-              <ChevronRight size={18} />
-            </Link>
-          </header>
-
-          <div className="gs-sample-list">
-            {recentSamples.length === 0 ? (
-              <div className="mx-state-placeholder sm">No hay muestreos recientes.</div>
-            ) : (
-              recentSamples.map((item) => (
-                <div key={item._id} className="gs-sample-item">
-                  <div className="gs-sample-topline">
-                    <strong>{item.proveedorNombre}</strong>
-                    <span className={`mx-badge mx-badge-${item.mainClass === 'Sin clasificación' ? 'warning' : 'success'}`}>
-                      {item.mainClass}
-                    </span>
-                  </div>
-                  <p>{item.centroCodigo}</p>
-                  <div className="gs-sample-metrics">
-                    <span>Rend: <strong style={{ color: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)' }}>{Number(item.rendimiento || 0).toFixed(1)}%</strong></span>
-                    <span>UX/Kg: {Math.round(item.uxkg || 0)}</span>
-                    <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
-                  </div>
-                  <div className="gs-rend-track">
-                    <div className="gs-rend-fill" style={{
-                      width: `${Math.min((item.rendimiento || 0), 40) / 40 * 100}%`,
-                      background: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)',
-                    }} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </article>
         </div>
+      </div>
 
-      <footer className="mx-state-placeholder sm gs-footer-summary">
-        <Target size={20} className="gs-footer-icon" />
-        <p>
-          Usa <strong>Registrar</strong> para agregar llamadas, visitas o muestreos al vuelo. Este panel prioriza lo vencido, lo de hoy y los seguimientos activos.
-        </p>
-      </footer>
     </div>
   );
 }
