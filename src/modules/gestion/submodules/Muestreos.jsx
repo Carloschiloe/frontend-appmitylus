@@ -413,7 +413,14 @@ export default function Muestreos() {
           onStepChange={setStep}
           onClose={() => setIsModalOpen(false)}
           isLoadingDetails={isLoadingDetails}
-          onSave={handleSave}
+          onSave={() => {
+            if (!form.proveedorKey?.trim()) {
+              addToast({ title: 'Proveedor requerido', message: 'Debes seleccionar un proveedor antes de guardar.', type: 'warning' });
+              setStep(1);
+              return;
+            }
+            handleSave();
+          }}
           totals={totals}
           uxkg={form.uxkg}
         >

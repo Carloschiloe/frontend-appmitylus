@@ -506,6 +506,7 @@
   position: relative;
   transition: flex-basis 0.2s ease;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 }
 
