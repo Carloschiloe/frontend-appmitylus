@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Camera, ChevronLeft, ChevronRight, FileText, Layers, Settings2, Target, X } from 'lucide-react';
 import { fmtNum } from './muestreos.helpers';
 
-const GROUP_META = {
-  procesable: { label: 'Procesables', color: '#22c55e' },
-  rechazo:    { label: 'Rechazos',    color: '#ef4444' },
-  defecto:    { label: 'Defectos',    color: '#f59e0b' },
+const TYPE_COLOR = {
+  procesable: 'var(--color-primary)',
+  rechazo:    '#ef4444',
+  defecto:    '#f59e0b',
 };
 
 export default function MuestreoStepAnalisis({
@@ -36,51 +36,32 @@ export default function MuestreoStepAnalisis({
   const [paramsOpen, setParamsOpen] = useState(true);
   const [notesOpen, setNotesOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
+  const [hiddenItems, setHiddenItems] = useState(new Set());
   const [activeItemId, setActiveItemId] = useState(null);
   const [popoverPos, setPopoverPos] = useState(null);
 
   const handleOpenItemPopover = (id, e) => {
-    if (activeItemId === id) {
-      setActiveItemId(null);
-      setPopoverPos(null);
-    } else {
-      const rect = e.currentTarget.getBoundingClientRect();
-      setPopoverPos({ top: rect.bottom + 6, left: Math.max(8, rect.left - 230) });
-      setActiveItemId(id);
-    }
+    if (activeItemId === id) { setActiveItemId(null); setPopoverPos(null); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoverPos({ top: rect.bottom + 6, left: Math.max(8, rect.left - 230) });
+    setActiveItemId(id);
   };
-
-  const closeItemPopover = () => {
-    setActiveItemId(null);
-    setPopoverPos(null);
-  };
-
-  // Todos los ítems de maestros agrupados — sin filtro de selección
-  const groupedCats = Object.keys(GROUP_META).map((type) => ({
-    type,
-    ...GROUP_META[type],
-    items: maestros.cats.filter((c) => c.tipoCat === type),
-  }));
 
   const handleWeightChange = (id, val) => {
     setForm({ ...form, cats: { ...form.cats, [id]: val } });
-    // Auto-agregar a selectedCats la primera vez que se ingresa un valor
-    if ((Number(val) || 0) > 0 && !selectedCats.has(id)) {
-      toggleCatSelection(id);
-    }
+    if ((Number(val) || 0) > 0 && !selectedCats.has(id)) toggleCatSelection(id);
   };
+
+  const hideItem = (id) => setHiddenItems((prev) => new Set([...prev, id]));
+
+  const allItems = maestros.cats.filter((c) => !hiddenItems.has(c._id));
 
   return (
     <div className="mu-step-container mu-analysis-step">
 
-      {/* Panel izquierdo: parámetros */}
+      {/* Panel izquierdo */}
       <div className={`mu-params-side${paramsOpen ? '' : ' collapsed'}`}>
-        <button
-          type="button"
-          className="mu-params-side-toggle"
-          onClick={() => setParamsOpen((p) => !p)}
-          title={paramsOpen ? 'Ocultar' : 'Ver parámetros'}
-        >
+        <button type="button" className="mu-params-side-toggle" onClick={() => setParamsOpen((p) => !p)} title={paramsOpen ? 'Ocultar' : 'Ver'}>
           {paramsOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
         </button>
 
@@ -103,11 +84,52 @@ export default function MuestreoStepAnalisis({
               <label>Peso Carne</label>
               <input type="number" className="mx-input mu-params-side-input" value={form.pesoCocida} onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
             </div>
+
+            <div className="mu-params-side-divider" />
+
+            {/* Notas inline en el panel */}
+            <div className="mu-params-side-extra">
+              <button type="button" className={`mu-params-extra-btn${notesOpen ? ' active' : ''}`} onClick={() => setNotesOpen((o) => !o)}>
+                <FileText size={12} />
+                <span>Notas</span>
+                {form.comentarios?.trim() && <span className="mu-action-dot" />}
+              </button>
+              {notesOpen && (
+                <textarea
+                  className="mx-input mu-params-extra-textarea"
+                  rows={3}
+                  placeholder="Observaciones..."
+                  value={form.comentarios}
+                  onChange={(e) => setForm({ ...form, comentarios: e.target.value })}
+                  autoFocus
+                />
+              )}
+            </div>
+
+            {/* Fotos inline en el panel */}
+            <div className="mu-params-side-extra">
+              <button type="button" className={`mu-params-extra-btn${photosOpen ? ' active' : ''}`} onClick={() => setPhotosOpen((o) => !o)}>
+                <Camera size={12} />
+                <span>Fotos grales</span>
+                {generalPhotos.length > 0 && <span className="mu-action-badge">{generalPhotos.length}</span>}
+              </button>
+              {photosOpen && (
+                <div className="mu-params-extra-photos">
+                  <label className="mu-evidence-upload compact">
+                    <Camera size={15} color="#64748b" />
+                    <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleGeneralFileUpload(e.target.files)} />
+                  </label>
+                  {generalPhotos.map((photo, index) => (
+                    <EvidenceThumb key={`gen-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removeGeneralPhoto(index)} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Contenido principal */}
+      {/* Lista de ítems */}
       <div className="mu-analysis-main">
         <div className="mu-analysis-toolbar">
           <div className="mu-analysis-section-title success">
@@ -121,52 +143,48 @@ export default function MuestreoStepAnalisis({
             <span>Item</span>
             <span className="align-right">Peso</span>
             <span className="align-right">%</span>
-            <span />
+            <span /><span />
           </div>
 
           <div className="mu-analysis-items-body">
-            {groupedCats.map((group) => (
-              <div key={group.type} className="mu-analysis-group">
-                <div className="mu-group-separator">
-                  <div className="mu-group-line" style={{ backgroundColor: group.color }} />
-                  <span className="mu-group-label" style={{ color: group.color }}>{group.label}</span>
-                </div>
+            {allItems.map((cat) => {
+              const id = cat._id;
+              const value = Number(form.cats[id]) || 0;
+              const pct = totals.totalMuestra > 0 ? (value / totals.totalMuestra) * 100 : 0;
+              const hasContent = !!(catDetails[id]?.obs?.trim() || (catDetails[id]?.fotos || []).length > 0 || (catDetails[id]?.photos || []).length > 0);
+              const typeColor = TYPE_COLOR[cat.tipoCat] || '#64748b';
 
-                {group.items.map((cat) => {
-                  const id = cat._id;
-                  const value = Number(form.cats[id]) || 0;
-                  const pct = totals.totalMuestra > 0 ? (value / totals.totalMuestra) * 100 : 0;
-                  const hasContent = !!(catDetails[id]?.obs?.trim() || (catDetails[id]?.fotos || []).length > 0 || (catDetails[id]?.photos || []).length > 0);
-
-                  return (
-                    <div key={id} className="mu-analysis-item">
-                      <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
-                        <span className="mu-analysis-item-name">{cat.nombre}</span>
-                        <input
-                          type="number"
-                          className="mx-input mu-analysis-weight-input"
-                          value={form.cats[id] || ''}
-                          onChange={(e) => handleWeightChange(id, e.target.value)}
-                          onKeyDown={handleAdvanceOnEnter}
-                          placeholder="0"
-                        />
-                        <div className={`mu-analysis-percent${value > 0 ? ' active' : ''}`}>
-                          {value > 0 ? `${fmtNum(pct, 1)}%` : '—'}
-                        </div>
-                        <button
-                          type="button"
-                          className="mx-btn-icon mu-analysis-icon-btn"
-                          onClick={(e) => handleOpenItemPopover(id, e)}
-                          title="Observaciones y fotos"
-                        >
-                          <Settings2 size={12} color={hasContent ? 'var(--color-primary)' : undefined} />
-                        </button>
-                      </div>
+              return (
+                <div key={id} className="mu-analysis-item">
+                  <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
+                    <span className="mu-analysis-item-name" style={{ color: typeColor }}>{cat.nombre}</span>
+                    <input
+                      type="number"
+                      className="mx-input mu-analysis-weight-input"
+                      value={form.cats[id] || ''}
+                      onChange={(e) => handleWeightChange(id, e.target.value)}
+                      onKeyDown={handleAdvanceOnEnter}
+                      placeholder="0"
+                    />
+                    <div className={`mu-analysis-percent${value > 0 ? ' active' : ''}`}>
+                      {value > 0 ? `${fmtNum(pct, 1)}%` : '—'}
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={(e) => handleOpenItemPopover(id, e)} title="Obs. y fotos">
+                      <Settings2 size={11} color={hasContent ? 'var(--color-primary)' : undefined} />
+                    </button>
+                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn mu-hide-btn" onClick={() => hideItem(id)} title="Ocultar">
+                      <X size={10} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {hiddenItems.size > 0 && (
+              <button type="button" className="mu-restore-btn" onClick={() => setHiddenItems(new Set())}>
+                + Mostrar {hiddenItems.size} ítem{hiddenItems.size > 1 ? 's' : ''} oculto{hiddenItems.size > 1 ? 's' : ''}
+              </button>
+            )}
           </div>
         </div>
 
@@ -177,16 +195,9 @@ export default function MuestreoStepAnalisis({
           const s3Photos = catDetails[id]?.photos || [];
           return (
             <>
-              <div className="mu-action-backdrop" onClick={closeItemPopover} />
+              <div className="mu-action-backdrop" onClick={() => { setActiveItemId(null); setPopoverPos(null); }} />
               <div className="mu-item-popover" style={{ top: popoverPos.top, left: popoverPos.left }}>
-                <textarea
-                  className="mx-input mu-item-popover-textarea"
-                  rows={3}
-                  placeholder="Observaciones de calidad..."
-                  value={catDetails[id]?.obs || ''}
-                  onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })}
-                  autoFocus
-                />
+                <textarea className="mx-input mu-item-popover-textarea" rows={3} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} autoFocus />
                 <div className="mu-item-popover-photos">
                   <label className="mu-evidence-upload compact" title="Agregar foto">
                     <Camera size={15} color="#64748b" />
@@ -203,50 +214,6 @@ export default function MuestreoStepAnalisis({
             </>
           );
         })()}
-
-        {/* Barra de acciones */}
-        <div className="mu-action-bar">
-          <div className="mu-action-wrap">
-            <button type="button" className={`mu-action-btn${notesOpen ? ' active' : ''}`} onClick={() => { setNotesOpen((o) => !o); setPhotosOpen(false); }}>
-              <FileText size={13} />
-              <span>Notas</span>
-              {form.comentarios?.trim() && <span className="mu-action-dot" />}
-            </button>
-            {notesOpen && (
-              <>
-                <div className="mu-action-backdrop" onClick={() => setNotesOpen(false)} />
-                <div className="mu-action-popover mu-notes-popover">
-                  <textarea className="mx-input mu-action-notes-textarea" rows={4} placeholder="Observaciones del muestreo..." value={form.comentarios} onChange={(e) => setForm({ ...form, comentarios: e.target.value })} autoFocus />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mu-action-wrap">
-            <button type="button" className={`mu-action-btn${photosOpen ? ' active' : ''}`} onClick={() => { setPhotosOpen((o) => !o); setNotesOpen(false); }}>
-              <Camera size={13} />
-              <span>Fotos generales</span>
-              {generalPhotos.length > 0 && <span className="mu-action-badge">{generalPhotos.length}</span>}
-            </button>
-            {photosOpen && (
-              <>
-                <div className="mu-action-backdrop" onClick={() => setPhotosOpen(false)} />
-                <div className="mu-action-popover mu-photos-popover">
-                  <div className="mu-evidence-row">
-                    <label className="mu-evidence-upload">
-                      <Camera size={18} color="#64748b" />
-                      <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleGeneralFileUpload(e.target.files)} />
-                    </label>
-                    {generalPhotos.map((photo, index) => (
-                      <EvidenceThumb key={`gen-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removeGeneralPhoto(index)} />
-                    ))}
-                  </div>
-                  {generalPhotos.length === 0 && <p className="mu-action-popover-empty">Agrega fotos con el botón de cámara.</p>}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
