@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ChevronRight,
@@ -28,7 +28,7 @@ const PIPELINE_ORDER = [
   { key: 'negociando', label: 'Negociando' },
   { key: 'acordado', label: 'Acordados' },
   { key: 'compra_efectuada', label: 'Compras' },
-  { key: 'caido', label: 'CaÃ­dos' },
+  { key: 'caido', label: 'Caídos' },
 ];
 
 const FOLLOWUP_META = {
@@ -41,13 +41,13 @@ const PAUSE_REASON_LABELS = {
   esperando_disponibilidad: 'Esperando disponibilidad',
   esperando_respuesta: 'Esperando respuesta',
   esperando_resultado_muestra: 'Esperando resultado de muestra',
-  esperando_decision_interna: 'Esperando decisiÃ³n interna',
+  esperando_decision_interna: 'Esperando decisión interna',
 };
 
 const EVENT_META = {
-  interaccion: { label: 'InteracciÃ³n', tone: 'info' },
+  interaccion: { label: 'Interacción', tone: 'info' },
   llamada: { label: 'Llamada', tone: 'info' },
-  reunion: { label: 'ReuniÃ³n', tone: 'warning' },
+  reunion: { label: 'Reunión', tone: 'warning' },
   visita: { label: 'Visita', tone: 'primary' },
   muestreo: { label: 'Muestreo', tone: 'success' },
   seguimiento: { label: 'Seguimiento', tone: 'primary' },
@@ -122,8 +122,8 @@ function dueText(value) {
 
   if (diffDays < 0) return `Vencido hace ${Math.abs(diffDays)} d`;
   if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'MaÃ±ana';
-  return `En ${diffDays} dÃ­as`;
+  if (diffDays === 1) return 'Mañana';
+  return `En ${diffDays} días`;
 }
 
 function getPauseReasonLabel(value) {
@@ -141,7 +141,7 @@ export default function Bandeja() {
   const { data: visitasData, isLoading: loadingVis } = useVisitas();
   const { data: muestreosRes, isLoading: loadingMue } = useMuestreos({ limit: 50, page: 1 });
 
-  // EstabilizaciÃ³n de datos para los memos
+  // Estabilización de datos para los memos
   const oportunidades = useMemo(() => toList(oportunidadesData), [oportunidadesData]);
   const interacciones = useMemo(() => toList(interaccionesData), [interaccionesData]);
   const visitas = useMemo(() => toList(visitasData), [visitasData]);
@@ -204,7 +204,7 @@ export default function Bandeja() {
           id: `opp-${item._id}`,
           source,
           provider: item.proveedorNombre || 'Proveedor sin nombre',
-          title: item.proximaAccion || (source === 'pausado' ? 'Revisar caso pausado' : 'Definir prÃ³ximo paso'),
+          title: item.proximaAccion || (source === 'pausado' ? 'Revisar caso pausado' : 'Definir próximo paso'),
           subtitle: source === 'pausado'
             ? getPauseReasonLabel(item.motivoPausa)
             : (item.notasTrato || 'Seguimiento pendiente'),
@@ -265,7 +265,7 @@ export default function Bandeja() {
         id: `a-int-${item._id}`,
         kind: item.tipo || 'interaccion',
         provider: item.proveedorNombre || item.contactoNombre || 'Proveedor sin nombre',
-        title: item.resumen || 'InteracciÃ³n registrada',
+        title: item.resumen || 'Interacción registrada',
         date: item.updatedAt || item.createdAt || item.fecha,
         caption: item.proximoPaso || item.resultado || item.responsablePG || 'Sin detalle',
       })),
@@ -325,7 +325,7 @@ export default function Bandeja() {
       .map((item) => ({
         ...item,
         sampleDate: toDate(item.fecha),
-        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificaciÃ³n',
+        mainClass: item.clasificaciones?.[0]?.nombre || 'Sin clasificación',
       }))
       .filter((item) => item.sampleDate)
       .sort((left, right) => right.sampleDate - left.sampleDate)
@@ -340,7 +340,7 @@ export default function Bandeja() {
     return (
       <div className="mx-state-placeholder">
         <div className="mx-spinner"></div>
-        <p>Construyendo panel de gestiÃ³n...</p>
+        <p>Construyendo panel de gestión...</p>
       </div>
     );
   }
@@ -370,12 +370,12 @@ export default function Bandeja() {
       {/* â”€â”€ Zone 2+3: Main grid â”€â”€ */}
       <div className="gs-main-grid">
 
-        {/* â”€â”€ LEFT: AtenciÃ³n requerida â”€â”€ */}
+        {/* â”€â”€ LEFT: Atención requerida â”€â”€ */}
         <section className="gs-attention-panel">
           <div className="gs-panel-header">
             <div>
               <span className="mx-eyebrow">Operaciones</span>
-              <h3 className="gs-panel-title">AtenciÃ³n requerida</h3>
+              <h3 className="gs-panel-title">Atención requerida</h3>
             </div>
             <div className="gs-panel-header-right">
               {taskBoard.overdue.length > 0 && <span className="mx-badge mx-badge-danger">{taskBoard.overdue.length} vencido{taskBoard.overdue.length !== 1 ? 's' : ''}</span>}
@@ -433,7 +433,7 @@ export default function Bandeja() {
           </div>
         </section>
 
-        {/* â”€â”€ RIGHT: Estado / AnÃ¡lisis â”€â”€ */}
+        {/* â”€â”€ RIGHT: Estado / Análisis â”€â”€ */}
         <div className="gs-estado-zone">
 
           {/* Pipeline */}
@@ -441,7 +441,7 @@ export default function Bandeja() {
             <div className="gs-panel-header">
               <div>
                 <span className="mx-eyebrow">Comercial</span>
-                <h3 className="gs-panel-title">Pipeline de negociaciÃ³n</h3>
+                <h3 className="gs-panel-title">Pipeline de negociación</h3>
               </div>
               <Link className="mx-btn-icon sm" to="/biomasa/tratos"><ChevronRight size={16} /></Link>
             </div>
@@ -459,8 +459,8 @@ export default function Bandeja() {
           <section className="gs-estado-panel">
             <div className="gs-panel-header">
               <div>
-                <span className="mx-eyebrow">TÃ©cnico</span>
-                <h3 className="gs-panel-title">Ãšltimos muestreos</h3>
+                <span className="mx-eyebrow">Técnico</span>
+                <h3 className="gs-panel-title">Últimos muestreos</h3>
               </div>
               <Link className="mx-btn-icon sm" to="/biomasa/muestreos"><ChevronRight size={16} /></Link>
             </div>
@@ -482,7 +482,10 @@ export default function Bandeja() {
                         {Number(item.rendimiento || 0).toFixed(1)}%
                       </span>
                     </div>
-                    <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
+                    <div className="gs-sample-secondary">
+                      <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
+                      {item.uxkg > 0 && <span className="gs-sample-ux">{Math.round(item.uxkg)}ux</span>}
+                    </div>
                   </div>
                 ))}
               </div>

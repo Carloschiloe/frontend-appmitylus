@@ -18,6 +18,10 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .gs-status-item {
@@ -89,7 +93,16 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
+
+.gs-attention-panel {
+  border-top: 2px solid var(--color-primary);
+}
+
+.gs-estado-panel:nth-child(1) { border-top: 2px solid var(--color-info, #3b82f6); }
+.gs-estado-panel:nth-child(2) { border-top: 2px solid var(--color-success); }
+.gs-estado-panel:nth-child(3) { border-top: 2px solid var(--color-border); }
 
 .gs-estado-zone {
   display: flex;
@@ -254,12 +267,14 @@
   letter-spacing: 0.1em;
   color: var(--color-text-subtle);
   border-top: 1px solid var(--color-border);
+  background: var(--color-bg-alt, #f8fafc);
 }
 
 .gs-week-mini {
   display: flex;
   justify-content: space-around;
   padding: 8px 16px 14px;
+  background: var(--color-bg-alt, #f8fafc);
 }
 
 .gs-week-col {
@@ -310,16 +325,17 @@
 .gs-pipeline-steps {
   display: flex;
   align-items: flex-start;
-  padding: 16px 16px 18px;
+  padding: 18px 12px 16px;
   position: relative;
+  gap: 0;
 }
 
 .gs-pipeline-steps::before {
   content: '';
   position: absolute;
-  left: 40px;
-  right: 40px;
-  top: calc(16px + 14px);
+  left: calc(10% + 6px);
+  right: calc(10% + 6px);
+  top: calc(18px + 14px);
   height: 2px;
   background: var(--color-border);
   z-index: 0;
@@ -337,51 +353,56 @@
 }
 
 .gs-step-badge {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 800;
   border: 2px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-muted);
   transition: all 0.2s;
+  position: relative;
+  z-index: 1;
 }
 
 .gs-step.is-active .gs-step-badge {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: #fff;
-  box-shadow: 0 0 0 3px var(--color-primary-bg);
+  box-shadow: 0 0 0 4px var(--color-primary-bg);
+  transform: scale(1.1);
 }
 
 .gs-step.is-active.is-caido .gs-step-badge {
   border-color: var(--color-error);
   background: var(--color-error);
-  box-shadow: 0 0 0 3px var(--color-error-bg);
+  box-shadow: 0 0 0 4px var(--color-error-bg);
 }
 
 .gs-step.is-active.is-compra_efectuada .gs-step-badge {
   border-color: #10b981;
   background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
 }
 
 .gs-step-label {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   text-align: center;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.2;
+  padding: 0 2px;
 }
 
 .gs-step.is-active .gs-step-label {
-  color: var(--color-text);
+  color: var(--color-primary);
+  font-weight: 800;
 }
 
 /* ══ Muestreos: compact table ══ */
@@ -393,7 +414,7 @@
 
 .gs-sample-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px 48px;
+  grid-template-columns: minmax(0, 1fr) 100px 52px;
   align-items: center;
   gap: 8px;
   padding: 9px 16px;
@@ -446,8 +467,22 @@
   text-align: right;
 }
 
+.gs-sample-secondary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
 .gs-sample-date {
   font-size: 0.68rem;
+  color: var(--color-text-subtle);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gs-sample-ux {
+  font-size: 0.62rem;
   color: var(--color-text-subtle);
   text-align: right;
   white-space: nowrap;
