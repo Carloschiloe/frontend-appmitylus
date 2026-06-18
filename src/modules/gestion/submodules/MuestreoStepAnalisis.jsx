@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Camera, ChevronDown, ChevronLeft, ChevronRight, FileText, Layers, Plus, Settings2, Target, X } from 'lucide-react';
 import { fmtNum } from './muestreos.helpers';
 
-const TABS = ['procesable', 'rechazo', 'defecto'];
+const GROUP_META = {
+  procesable: { label: 'Procesables', color: '#22c55e' },
+  rechazo:    { label: 'Rechazos',    color: '#ef4444' },
+  defecto:    { label: 'Defectos',    color: '#f59e0b' },
+};
 
 export default function MuestreoStepAnalisis({
   form,
@@ -34,6 +38,7 @@ export default function MuestreoStepAnalisis({
   const [photosOpen, setPhotosOpen] = useState(false);
   const [activeItemId, setActiveItemId] = useState(null);
   const [popoverPos, setPopoverPos] = useState(null);
+  const [openDropdownType, setOpenDropdownType] = useState(null);
 
   const handleOpenItemPopover = (id, e) => {
     if (activeItemId === id) {
@@ -50,6 +55,14 @@ export default function MuestreoStepAnalisis({
     setActiveItemId(null);
     setPopoverPos(null);
   };
+
+  // Lista unificada agrupada: procesables → rechazos → defectos
+  const groupedCats = Object.keys(GROUP_META).map((type) => ({
+    type,
+    ...GROUP_META[type],
+    selected: maestros.cats.filter((c) => c.tipoCat === type && selectedCats.has(c._id)),
+    available: maestros.cats.filter((c) => c.tipoCat === type && !selectedCats.has(c._id)),
+  }));
 
   return (
     <div className="mu-step-container mu-analysis-step">
@@ -111,7 +124,7 @@ export default function MuestreoStepAnalisis({
         )}
       </div>
 
-      {/* Contenido principal: tabs + lista ítems */}
+      {/* Contenido principal: lista unificada */}
       <div className="mu-analysis-main">
         <div className="mu-analysis-toolbar">
           <div className="mu-analysis-section-title success">
@@ -119,46 +132,6 @@ export default function MuestreoStepAnalisis({
             <h4>Análisis Técnico</h4>
           </div>
         </div>
-
-        <div className="mu-analysis-tabs">
-          {TABS.map((type) => {
-            const count = maestros.cats.filter((cat) => cat.tipoCat === type && selectedCats.has(cat._id)).length;
-            const isActive = activeTab === type;
-            return (
-              <button key={type} type="button" onClick={() => setActiveTab(type)} className={`mu-analysis-tab ${isActive ? 'active' : ''}`}>
-                <span>{type}s</span>
-                {count > 0 && <span className="mu-analysis-tab-count">{count}</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {activeTab !== 'procesable' && (
-          <div className="mu-analysis-dropdown-wrap">
-            <button type="button" className="mx-btn mx-btn-outline mu-analysis-dropdown-trigger" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-              <span>+ Añadir {activeTab}s...</span>
-              <ChevronDown size={14} className={isDropdownOpen ? 'mu-rotate-180' : ''} />
-            </button>
-
-            {isDropdownOpen && (
-              <>
-                <div className="mu-analysis-dropdown-backdrop" onClick={() => setIsDropdownOpen(false)} />
-                <div className="mu-analysis-dropdown">
-                  {filteredAvailableCats.length === 0 ? (
-                    <div className="mu-analysis-dropdown-empty">No hay mas items disponibles</div>
-                  ) : (
-                    filteredAvailableCats.map((cat) => (
-                      <button key={cat._id} type="button" onClick={() => toggleCatSelection(cat._id)} className="mu-analysis-dropdown-option">
-                        <Plus size={12} color="var(--color-primary)" />
-                        {cat.nombre}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
 
         <div className="mu-analysis-items">
           <div className="mu-analysis-items-head">
@@ -169,35 +142,86 @@ export default function MuestreoStepAnalisis({
           </div>
 
           <div className="mu-analysis-items-body">
-            {filteredSelectedCats.map((cat) => {
-              const id = cat._id;
-              const value = Number(form.cats[id]) || 0;
-              const pct = totals.totalMuestra > 0 ? (value / totals.totalMuestra) * 100 : 0;
-              const legacyFotos = catDetails[id]?.fotos || [];
-              const s3Photos = catDetails[id]?.photos || [];
-              const hasContent = !!(catDetails[id]?.obs?.trim() || legacyFotos.length > 0 || s3Photos.length > 0);
+            {groupedCats.map((group) => (
+              <div key={group.type} className="mu-analysis-group">
 
-              return (
-                <div key={id} className="mu-analysis-item">
-                  <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
-                    <span className="mu-analysis-item-name">{cat.nombre}</span>
-                    <input type="number" className="mx-input mu-analysis-weight-input" value={form.cats[id] || ''} onChange={(e) => setForm({ ...form, cats: { ...form.cats, [id]: e.target.value } })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
-                    <div className="mu-analysis-percent">{fmtNum(pct, 1)}%</div>
+                <div className="mu-group-separator">
+                  <div className="mu-group-line" style={{ backgroundColor: group.color }} />
+                  <span className="mu-group-label" style={{ color: group.color }}>{group.label}</span>
+                  {group.selected.length > 0 && (
+                    <span className="mu-group-badge" style={{ backgroundColor: group.color }}>{group.selected.length}</span>
+                  )}
+                </div>
+
+                {group.selected.map((cat) => {
+                  const id = cat._id;
+                  const value = Number(form.cats[id]) || 0;
+                  const pct = totals.totalMuestra > 0 ? (value / totals.totalMuestra) * 100 : 0;
+                  const legacyFotos = catDetails[id]?.fotos || [];
+                  const s3Photos = catDetails[id]?.photos || [];
+                  const hasContent = !!(catDetails[id]?.obs?.trim() || legacyFotos.length > 0 || s3Photos.length > 0);
+
+                  return (
+                    <div key={id} className="mu-analysis-item">
+                      <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
+                        <span className="mu-analysis-item-name">{cat.nombre}</span>
+                        <input
+                          type="number"
+                          className="mx-input mu-analysis-weight-input"
+                          value={form.cats[id] || ''}
+                          onChange={(e) => setForm({ ...form, cats: { ...form.cats, [id]: e.target.value } })}
+                          onKeyDown={handleAdvanceOnEnter}
+                          placeholder="0"
+                        />
+                        <div className="mu-analysis-percent">{fmtNum(pct, 1)}%</div>
+                        <button
+                          type="button"
+                          className="mx-btn-icon mu-analysis-icon-btn"
+                          onClick={(e) => handleOpenItemPopover(id, e)}
+                          title="Observaciones y fotos"
+                        >
+                          <Settings2 size={12} color={hasContent ? 'var(--color-primary)' : undefined} />
+                        </button>
+                        {group.type !== 'procesable'
+                          ? <button type="button" className="mx-btn-icon mu-analysis-icon-btn danger" onClick={() => toggleCatSelection(id)}><X size={12} /></button>
+                          : <div />}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {group.type !== 'procesable' && (
+                  <div className="mu-analysis-dropdown-wrap mu-group-add-wrap">
                     <button
                       type="button"
-                      className="mx-btn-icon mu-analysis-icon-btn"
-                      onClick={(e) => handleOpenItemPopover(id, e)}
-                      title="Observaciones y fotos"
+                      className="mx-btn mx-btn-outline mu-group-add-trigger"
+                      onClick={() => setOpenDropdownType(openDropdownType === group.type ? null : group.type)}
                     >
-                      <Settings2 size={12} color={hasContent ? 'var(--color-primary)' : undefined} />
+                      <Plus size={11} />
+                      <span>Añadir {group.type}...</span>
+                      <ChevronDown size={11} className={openDropdownType === group.type ? 'mu-rotate-180' : ''} />
                     </button>
-                    {activeTab !== 'procesable'
-                      ? <button type="button" className="mx-btn-icon mu-analysis-icon-btn danger" onClick={() => toggleCatSelection(id)}><X size={12} /></button>
-                      : <div />}
+                    {openDropdownType === group.type && (
+                      <>
+                        <div className="mu-analysis-dropdown-backdrop" onClick={() => setOpenDropdownType(null)} />
+                        <div className="mu-analysis-dropdown">
+                          {group.available.length === 0 ? (
+                            <div className="mu-analysis-dropdown-empty">No hay más items disponibles</div>
+                          ) : (
+                            group.available.map((cat) => (
+                              <button key={cat._id} type="button" onClick={() => toggleCatSelection(cat._id)} className="mu-analysis-dropdown-option">
+                                <Plus size={12} color="var(--color-primary)" />
+                                {cat.nombre}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

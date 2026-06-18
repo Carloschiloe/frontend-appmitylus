@@ -827,8 +827,59 @@
 
 .mu-analysis-items-body {
   margin-top: 4px;
-  max-height: 220px;
-  overflow-y: auto;
+}
+
+.mu-analysis-group {
+  margin-bottom: 4px;
+}
+
+.mu-group-separator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 3px;
+}
+
+.mu-group-line {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.mu-group-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+
+.mu-group-badge {
+  color: white;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.mu-group-add-wrap {
+  padding: 2px 10px 8px;
+}
+
+.mu-group-add-trigger {
+  height: 26px !important;
+  font-size: 0.72rem !important;
+  padding: 0 10px !important;
+  border-style: dashed !important;
+  color: #94a3b8 !important;
+  gap: 4px !important;
+}
+
+.mu-group-add-trigger:hover {
+  border-style: solid !important;
+  color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
 }
 
 .mu-analysis-item {

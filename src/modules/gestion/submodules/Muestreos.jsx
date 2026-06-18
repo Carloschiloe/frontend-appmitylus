@@ -256,7 +256,7 @@ export default function Muestreos() {
       e.preventDefault();
       const container = e.target.closest('.mu-step-container');
       if (!container) return;
-      const focusable = Array.from(container.querySelectorAll('input:not([disabled]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"])'));
+      const focusable = Array.from(container.querySelectorAll('input[type="number"]:not([disabled]):not([readonly]):not([tabindex="-1"])'));
       const index = focusable.indexOf(e.target);
       if (index > -1 && index < focusable.length - 1) {
         focusable[index + 1].focus();
