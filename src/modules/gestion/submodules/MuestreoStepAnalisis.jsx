@@ -1,4 +1,5 @@
-import { Camera, ChevronDown, Layers, Plus, Settings2, Target, X } from 'lucide-react';
+import { useState } from 'react';
+import { Camera, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Settings2, Target, X } from 'lucide-react';
 import { fmtNum } from './muestreos.helpers';
 
 const TABS = ['procesable', 'rechazo', 'defecto'];
@@ -28,39 +29,78 @@ export default function MuestreoStepAnalisis({
   handleGeneralFileUpload,
   removeGeneralPhoto,
 }) {
+  const [paramsOpen, setParamsOpen] = useState(true);
+
   return (
     <div className="mu-step-container mu-analysis-step">
 
-      {/* Franja de parámetros — horizontal */}
-      <div className="mu-analysis-params-bar">
-        <div className="mu-params-bar-title">
-          <Target size={13} />
-          <span>Parámetros</span>
-        </div>
-        <div className="mu-params-bar-fields">
-          <div className="mu-params-bar-field">
-            <label>U×Kg</label>
-            <input type="number" className="mx-input mu-params-bar-input" value={form.uxkg} onChange={(e) => setForm({ ...form, uxkg: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
-          </div>
-          <div className="mu-params-bar-field">
-            <label>Peso Vivo</label>
-            <input type="number" className="mx-input mu-params-bar-input" value={form.pesoVivo} onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
-          </div>
-          <div className="mu-params-bar-field">
-            <label>Peso Carne</label>
-            <input type="number" className="mx-input mu-params-bar-input" value={form.pesoCocida} onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
-          </div>
-        </div>
-        <select
-          className="mx-select mu-analysis-unit"
-          value={form.unidadPeso || 'kg'}
-          onChange={(e) => setForm({ ...form, unidadPeso: e.target.value })}
+      {/* Panel izquierdo: parámetros de rendimiento */}
+      <div className={`mu-params-side${paramsOpen ? '' : ' collapsed'}`}>
+        <button
+          type="button"
+          className="mu-params-side-toggle"
+          onClick={() => setParamsOpen((p) => !p)}
+          title={paramsOpen ? 'Ocultar parámetros' : 'Ver parámetros'}
         >
-          <option value="kg">kg</option>
-          <option value="g">g</option>
-        </select>
+          {paramsOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
+        </button>
+
+        {paramsOpen && (
+          <div className="mu-params-side-content">
+            <div className="mu-params-side-title">
+              <Target size={12} />
+              <span>Rendimiento</span>
+            </div>
+
+            <div className="mu-params-side-field">
+              <label>U×Kg</label>
+              <input
+                type="number"
+                className="mx-input mu-params-side-input"
+                value={form.uxkg}
+                onChange={(e) => setForm({ ...form, uxkg: e.target.value })}
+                onKeyDown={handleAdvanceOnEnter}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="mu-params-side-field">
+              <label>Peso Vivo</label>
+              <input
+                type="number"
+                className="mx-input mu-params-side-input"
+                value={form.pesoVivo}
+                onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })}
+                onKeyDown={handleAdvanceOnEnter}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="mu-params-side-field">
+              <label>Peso Carne</label>
+              <input
+                type="number"
+                className="mx-input mu-params-side-input"
+                value={form.pesoCocida}
+                onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })}
+                onKeyDown={handleAdvanceOnEnter}
+                placeholder="0.00"
+              />
+            </div>
+
+            <select
+              className="mx-select mu-analysis-unit"
+              value={form.unidadPeso || 'kg'}
+              onChange={(e) => setForm({ ...form, unidadPeso: e.target.value })}
+            >
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+            </select>
+          </div>
+        )}
       </div>
 
+      {/* Contenido principal: tabs + lista ítems */}
       <div className="mu-analysis-main">
         <div className="mu-analysis-toolbar">
           <div className="mu-analysis-section-title success">
@@ -125,7 +165,6 @@ export default function MuestreoStepAnalisis({
               const isExpanded = expandedItems.has(id);
               const legacyFotos = catDetails[id]?.fotos || [];
               const s3Photos = catDetails[id]?.photos || [];
-
               const hasPhotos = legacyFotos.length > 0 || s3Photos.length > 0;
 
               return (
@@ -180,7 +219,7 @@ export default function MuestreoStepAnalisis({
           <div className="mu-evidence-row">
             <label className="mu-evidence-upload">
               <Camera size={20} color="#64748b" />
-              <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(event) => handleGeneralFileUpload(event.target.files)} />
+              <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleGeneralFileUpload(e.target.files)} />
             </label>
             {generalPhotos.map((photo, index) => (
               <EvidenceThumb key={`gen-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removeGeneralPhoto(index)} />
@@ -196,7 +235,7 @@ function EvidenceThumb({ src, onPreview, onRemove }) {
   return (
     <div className="mu-evidence-thumb">
       <img src={src} onClick={() => onPreview(src)} className="mu-evidence-thumb-img" />
-      <button type="button" onClick={(event) => { event.stopPropagation(); onRemove(); }} className="mu-evidence-thumb-remove">
+      <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="mu-evidence-thumb-remove">
         <X size={10} strokeWidth={3} />
       </button>
     </div>
