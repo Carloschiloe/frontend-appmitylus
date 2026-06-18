@@ -961,23 +961,40 @@
   opacity: 1;
 }
 
-.mu-restore-btn {
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 6px;
-  margin-top: 8px;
-  font-size: 0.72rem;
-  color: #94a3b8;
-  background: none;
-  border: 1px dashed #e2e8f0;
-  border-radius: 6px;
-  cursor: pointer;
+.mu-hidden-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 8px 4px;
+  border-top: 1px dashed #e2e8f0;
+  margin-top: 4px;
 }
 
-.mu-restore-btn:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+.mu-restore-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.mu-restore-item-btn:hover {
+  border-style: solid;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.mu-restore-plus {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1;
 }
 
 .mu-item-popover {

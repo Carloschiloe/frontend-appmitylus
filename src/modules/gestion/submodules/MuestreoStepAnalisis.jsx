@@ -181,9 +181,20 @@ export default function MuestreoStepAnalisis({
             })}
 
             {hiddenItems.size > 0 && (
-              <button type="button" className="mu-restore-btn" onClick={() => setHiddenItems(new Set())}>
-                + Mostrar {hiddenItems.size} ítem{hiddenItems.size > 1 ? 's' : ''} oculto{hiddenItems.size > 1 ? 's' : ''}
-              </button>
+              <div className="mu-hidden-items-list">
+                {maestros.cats.filter((c) => hiddenItems.has(c._id)).map((cat) => (
+                  <button
+                    key={cat._id}
+                    type="button"
+                    className="mu-restore-item-btn"
+                    onClick={() => setHiddenItems((prev) => { const next = new Set(prev); next.delete(cat._id); return next; })}
+                    title="Agregar de vuelta"
+                  >
+                    <span style={{ color: TYPE_COLOR[cat.tipoCat] }}>{cat.nombre}</span>
+                    <span className="mu-restore-plus">+</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
