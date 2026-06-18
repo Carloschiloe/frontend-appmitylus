@@ -415,6 +415,7 @@ export default function Muestreos() {
           isLoadingDetails={isLoadingDetails}
           onSave={handleSave}
           totals={totals}
+          uxkg={form.uxkg}
         >
           {step === 1 && (
             <MuestreoStepContext

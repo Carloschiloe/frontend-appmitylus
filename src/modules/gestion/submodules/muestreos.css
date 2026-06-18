@@ -245,7 +245,7 @@
 
 .mu-side-car-item {
   background: white;
-  padding: 14px;
+  padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   display: flex;
@@ -266,7 +266,7 @@
 }
 
 .mu-side-car-item .val {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #1e293b;
   line-height: 1;

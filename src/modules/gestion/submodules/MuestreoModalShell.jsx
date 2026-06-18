@@ -16,6 +16,7 @@ export default function MuestreoModalShell({
   isLoadingDetails,
   onSave,
   totals,
+  uxkg,
   children,
 }) {
   return (
@@ -66,6 +67,11 @@ export default function MuestreoModalShell({
                   <div className="mu-side-car-item primary">
                     <div className="label">R% Carne</div>
                     <div className="val">{fmtNum(totals.rend, 1)}%</div>
+                  </div>
+
+                  <div className="mu-side-car-item">
+                    <div className="label">U/Kg</div>
+                    <div className="val">{uxkg || '—'}</div>
                   </div>
 
                   <div className="mu-side-car-item">
