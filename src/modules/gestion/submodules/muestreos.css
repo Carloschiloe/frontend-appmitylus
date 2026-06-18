@@ -15,7 +15,7 @@
 }
 
 .mu-main-modal {
-  max-width: 980px;
+  max-width: 780px;
   width: 100%;
   max-height: calc(100vh - 24px);
   box-sizing: border-box;
