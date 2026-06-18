@@ -332,8 +332,8 @@ export default function Bandeja() {
       .slice(0, 5);
   }, [muestreos]);
 
-  const priorityItems = taskBoard.spotlight.slice(0, 4);
-  const compactActivityFeed = activityFeed.slice(0, 4);
+  const priorityItems = taskBoard.spotlight.slice(0, 5);
+  const compactActivityFeed = activityFeed.slice(0, 3);
   const compactDeals = upcomingDeals.slice(0, 3);
 
   if (loading) {
@@ -468,26 +468,28 @@ export default function Bandeja() {
               <div className="mx-state-placeholder sm" style={{ padding: '20px 16px' }}>No hay muestreos recientes.</div>
             ) : (
               <div className="gs-samples-table">
-                {recentSamples.slice(0, 5).map((item) => (
+                {recentSamples.slice(0, 4).map((item) => {
+                  const rend = item.rendimiento || 0;
+                  const isGood = rend >= 20;
+                  return (
                   <div key={item._id} className="gs-sample-row">
                     <div className="gs-sample-name">{item.proveedorNombre}</div>
-                    <div className="gs-sample-rend">
-                      <div className="gs-rend-bar-wrap">
-                        <div className="gs-rend-bar-fill" style={{
-                          width: `${Math.min((item.rendimiento || 0), 40) / 40 * 100}%`,
-                          background: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)',
-                        }} />
-                      </div>
-                      <span style={{ color: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                        {Number(item.rendimiento || 0).toFixed(1)}%
-                      </span>
+                    <div className="gs-rend-bar-wrap">
+                      <div className="gs-rend-bar-fill" style={{
+                        width: `${Math.min(rend, 40) / 40 * 100}%`,
+                        background: isGood ? 'var(--color-success)' : 'var(--color-warning)',
+                      }} />
                     </div>
-                    <div className="gs-sample-secondary">
-                      <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
-                      {item.uxkg > 0 && <span className="gs-sample-ux">{Math.round(item.uxkg)}ux</span>}
-                    </div>
+                    <span className="gs-sample-pct" style={{ color: isGood ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                      {Number(rend).toFixed(1)}%
+                    </span>
+                    <span className="gs-sample-uk">
+                      {Math.round(item.uxkg || 0)}<em>uk</em>
+                    </span>
+                    <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>

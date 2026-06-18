@@ -5,8 +5,8 @@
 .gs-summary-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 0 2px 28px;
+  gap: 12px;
+  padding: 0 2px 24px;
 }
 
 /* ══ Zone 1: Status Strip ══ */
@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 13px 20px;
+  padding: 12px 20px;
   border-right: 1px solid var(--color-border);
   transition: background 0.15s;
   cursor: default;
@@ -45,14 +45,14 @@
 }
 
 .gs-status-num {
-  font-size: 1.65rem;
+  font-size: 1.6rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
 .gs-status-label {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -76,13 +76,13 @@
   color: var(--color-text-muted);
 }
 
-/* ══ Zone 2+3: Main grid ══ */
+/* ══ Zone 2+3: Main grid — igual altura ══ */
 
 .gs-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 56%) minmax(0, 44%);
-  gap: 14px;
-  align-items: start;
+  gap: 12px;
+  align-items: stretch;
 }
 
 /* ══ Panel base shared ══ */
@@ -93,30 +93,33 @@
   border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
 .gs-attention-panel {
   border-top: 2px solid var(--color-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.gs-estado-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .gs-estado-panel:nth-child(1) { border-top: 2px solid var(--color-info, #3b82f6); }
 .gs-estado-panel:nth-child(2) { border-top: 2px solid var(--color-success); }
 .gs-estado-panel:nth-child(3) { border-top: 2px solid var(--color-border); }
 
-.gs-estado-zone {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
 .gs-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 10px;
+  padding: 10px 16px 8px;
   border-bottom: 1px solid var(--color-border);
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .gs-panel-header .mx-eyebrow {
@@ -130,7 +133,7 @@
 }
 
 .gs-panel-title {
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--color-text);
   margin: 0;
@@ -144,18 +147,19 @@
   flex-shrink: 0;
 }
 
-/* ══ Action Feed (Atención requerida) ══ */
+/* ══ Action Feed ══ */
 
 .gs-action-feed {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .gs-feed-item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 11px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--color-border);
   transition: background 0.12s;
 }
@@ -173,7 +177,7 @@
   border-radius: 999px;
   flex-shrink: 0;
   align-self: stretch;
-  min-height: 36px;
+  min-height: 34px;
 }
 
 .gs-feed-item.is-overdue .gs-feed-stripe { background: var(--color-error); }
@@ -209,7 +213,7 @@
 }
 
 .gs-feed-topline strong {
-  font-size: 0.84rem;
+  font-size: 0.83rem;
   font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
@@ -218,7 +222,7 @@
 }
 
 .gs-feed-due {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
@@ -229,9 +233,9 @@
 .gs-feed-due.is-info    { color: var(--color-info, #3b82f6); }
 
 .gs-feed-task {
-  font-size: 0.8rem;
+  font-size: 0.79rem;
   color: var(--color-text-muted);
-  margin: 0 0 3px;
+  margin: 0 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -241,13 +245,14 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   color: var(--color-text-subtle);
 }
 
 .gs-feed-dot { opacity: 0.35; }
 
 .gs-feed-empty {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -257,24 +262,26 @@
   font-size: 0.82rem;
 }
 
-/* ══ Agenda week mini (dentro de attention panel) ══ */
+/* ══ Agenda week mini ══ */
 
 .gs-panel-section-label {
-  padding: 8px 16px 2px;
-  font-size: 0.58rem;
+  padding: 7px 16px 2px;
+  font-size: 0.57rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--color-text-subtle);
   border-top: 1px solid var(--color-border);
   background: var(--color-bg-alt, #f8fafc);
+  flex-shrink: 0;
 }
 
 .gs-week-mini {
   display: flex;
   justify-content: space-around;
-  padding: 8px 16px 14px;
+  padding: 8px 16px 12px;
   background: var(--color-bg-alt, #f8fafc);
+  flex-shrink: 0;
 }
 
 .gs-week-col {
@@ -285,7 +292,7 @@
 }
 
 .gs-week-dow {
-  font-size: 0.55rem;
+  font-size: 0.54rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -296,7 +303,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--color-bg-alt, #f1f5f9);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,6 +317,7 @@
 .gs-week-col.has-tasks .gs-week-dot {
   background: var(--color-primary);
   color: #fff;
+  border-color: var(--color-primary);
 }
 
 .gs-week-col.is-today .gs-week-dot {
@@ -316,7 +325,7 @@
 }
 
 .gs-week-num {
-  font-size: 0.58rem;
+  font-size: 0.57rem;
   color: var(--color-text-subtle);
 }
 
@@ -325,7 +334,7 @@
 .gs-pipeline-steps {
   display: flex;
   align-items: flex-start;
-  padding: 18px 12px 16px;
+  padding: 16px 12px 14px;
   position: relative;
   gap: 0;
 }
@@ -333,9 +342,9 @@
 .gs-pipeline-steps::before {
   content: '';
   position: absolute;
-  left: calc(10% + 6px);
-  right: calc(10% + 6px);
-  top: calc(18px + 14px);
+  left: calc(10% + 8px);
+  right: calc(10% + 8px);
+  top: calc(16px + 16px);
   height: 2px;
   background: var(--color-border);
   z-index: 0;
@@ -345,7 +354,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
   position: relative;
@@ -397,7 +406,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.2;
-  padding: 0 2px;
 }
 
 .gs-step.is-active .gs-step-label {
@@ -405,7 +413,7 @@
   font-weight: 800;
 }
 
-/* ══ Muestreos: compact table ══ */
+/* ══ Muestreos: tabla con UK prominente ══ */
 
 .gs-samples-table {
   display: flex;
@@ -414,10 +422,10 @@
 
 .gs-sample-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 100px 52px;
+  grid-template-columns: minmax(0, 1fr) 48px 40px 44px 44px;
   align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
+  gap: 6px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--color-border);
   transition: background 0.12s;
 }
@@ -431,7 +439,7 @@
 }
 
 .gs-sample-name {
-  font-size: 0.78rem;
+  font-size: 0.77rem;
   font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
@@ -439,18 +447,12 @@
   text-overflow: ellipsis;
 }
 
-.gs-sample-rend {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .gs-rend-bar-wrap {
-  flex: 1;
   height: 4px;
   background: var(--color-bg-alt, #f1f5f9);
   border-radius: 999px;
   overflow: hidden;
+  align-self: center;
 }
 
 .gs-rend-bar-fill {
@@ -459,30 +461,33 @@
   transition: width 0.4s ease;
 }
 
-.gs-sample-rend span {
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  min-width: 34px;
+.gs-sample-pct {
+  font-size: 0.8rem;
+  font-weight: 800;
   text-align: right;
+  white-space: nowrap;
 }
 
-.gs-sample-secondary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
+.gs-sample-uk {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-align: right;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.gs-sample-uk em {
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-left: 1px;
+  text-transform: uppercase;
 }
 
 .gs-sample-date {
-  font-size: 0.68rem;
-  color: var(--color-text-subtle);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.gs-sample-ux {
-  font-size: 0.62rem;
+  font-size: 0.67rem;
   color: var(--color-text-subtle);
   text-align: right;
   white-space: nowrap;
@@ -553,7 +558,7 @@
 }
 
 .gs-activity-time {
-  font-size: 0.66rem;
+  font-size: 0.65rem;
   color: var(--color-text-subtle);
   text-align: right;
   white-space: nowrap;
@@ -564,6 +569,7 @@
 @media (max-width: 1100px) {
   .gs-main-grid {
     grid-template-columns: 1fr;
+    align-items: start;
   }
 }
 
@@ -579,5 +585,11 @@
 
   .gs-status-item:nth-child(2) {
     border-right: none;
+  }
+
+  .gs-sample-row {
+    grid-template-columns: minmax(0, 1fr) 40px 36px 38px 40px;
+    gap: 4px;
+    padding: 7px 12px;
   }
 }
