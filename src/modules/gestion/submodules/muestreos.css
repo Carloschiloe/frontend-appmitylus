@@ -808,7 +808,7 @@
 
 .mu-analysis-items-head {
   display: grid;
-  grid-template-columns: 1fr 80px 50px 30px 28px 30px;
+  grid-template-columns: 1fr 80px 50px 30px 30px;
   gap: 4px;
   padding: 4px 8px;
   border-bottom: 1px solid #f1f5f9;
@@ -837,18 +837,41 @@
 
 .mu-analysis-item-row {
   display: grid;
-  grid-template-columns: 1fr 90px 60px 30px 28px 30px;
+  grid-template-columns: 1fr 90px 60px 30px 30px;
   gap: 6px;
   align-items: center;
   padding: 8px 10px;
   border-radius: 6px;
 }
 
-.mu-analysis-camera-btn {
-  cursor: pointer;
+.mu-item-popover {
+  position: fixed;
+  z-index: 2600;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  width: 260px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.mu-item-popover-textarea {
+  width: 100%;
+  resize: none;
+  font-size: 0.8rem;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.mu-item-popover-photos {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
   align-items: center;
-  justify-content: center;
 }
 
 .mu-analysis-item-row.expanded {

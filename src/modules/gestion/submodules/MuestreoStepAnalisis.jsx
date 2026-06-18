@@ -32,6 +32,24 @@ export default function MuestreoStepAnalisis({
   const [paramsOpen, setParamsOpen] = useState(true);
   const [notesOpen, setNotesOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
+  const [activeItemId, setActiveItemId] = useState(null);
+  const [popoverPos, setPopoverPos] = useState(null);
+
+  const handleOpenItemPopover = (id, e) => {
+    if (activeItemId === id) {
+      setActiveItemId(null);
+      setPopoverPos(null);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setPopoverPos({ top: rect.bottom + 6, left: Math.max(8, rect.left - 230) });
+      setActiveItemId(id);
+    }
+  };
+
+  const closeItemPopover = () => {
+    setActiveItemId(null);
+    setPopoverPos(null);
+  };
 
   return (
     <div className="mu-step-container mu-analysis-step">
@@ -89,7 +107,6 @@ export default function MuestreoStepAnalisis({
                 placeholder="0.00"
               />
             </div>
-
           </div>
         )}
       </div>
@@ -148,7 +165,7 @@ export default function MuestreoStepAnalisis({
             <span>Item</span>
             <span className="align-right">Peso</span>
             <span className="align-right">%</span>
-            <span /><span /><span />
+            <span /><span />
           </div>
 
           <div className="mu-analysis-items-body">
@@ -156,47 +173,67 @@ export default function MuestreoStepAnalisis({
               const id = cat._id;
               const value = Number(form.cats[id]) || 0;
               const pct = totals.totalMuestra > 0 ? (value / totals.totalMuestra) * 100 : 0;
-              const isExpanded = expandedItems.has(id);
               const legacyFotos = catDetails[id]?.fotos || [];
               const s3Photos = catDetails[id]?.photos || [];
-              const hasPhotos = legacyFotos.length > 0 || s3Photos.length > 0;
+              const hasContent = !!(catDetails[id]?.obs?.trim() || legacyFotos.length > 0 || s3Photos.length > 0);
 
               return (
                 <div key={id} className="mu-analysis-item">
-                  <div className={`mu-analysis-item-row ${isExpanded ? 'expanded' : ''}`}>
+                  <div className={`mu-analysis-item-row${activeItemId === id ? ' expanded' : ''}`}>
                     <span className="mu-analysis-item-name">{cat.nombre}</span>
                     <input type="number" className="mx-input mu-analysis-weight-input" value={form.cats[id] || ''} onChange={(e) => setForm({ ...form, cats: { ...form.cats, [id]: e.target.value } })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
                     <div className="mu-analysis-percent">{fmtNum(pct, 1)}%</div>
-                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={() => { const next = new Set(expandedItems); if (next.has(id)) next.delete(id); else next.add(id); setExpandedItems(next); }} title="Observaciones">
-                      <Settings2 size={12} />
+                    <button
+                      type="button"
+                      className="mx-btn-icon mu-analysis-icon-btn"
+                      onClick={(e) => handleOpenItemPopover(id, e)}
+                      title="Observaciones y fotos"
+                    >
+                      <Settings2 size={12} color={hasContent ? 'var(--color-primary)' : undefined} />
                     </button>
-                    <label className="mx-btn-icon mu-analysis-icon-btn mu-analysis-camera-btn" title="Agregar foto">
-                      <Camera size={12} color={hasPhotos ? 'var(--color-primary)' : '#94a3b8'} />
-                      <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleFileUpload(id, e.target.files)} />
-                    </label>
-                    {activeTab !== 'procesable' ? <button type="button" className="mx-btn-icon mu-analysis-icon-btn danger" onClick={() => toggleCatSelection(id)}><X size={12} /></button> : <div />}
+                    {activeTab !== 'procesable'
+                      ? <button type="button" className="mx-btn-icon mu-analysis-icon-btn danger" onClick={() => toggleCatSelection(id)}><X size={12} /></button>
+                      : <div />}
                   </div>
-
-                  {isExpanded && (
-                    <div className="mu-analysis-item-details">
-                      <textarea className="mx-input mu-analysis-detail-textarea" rows={2} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} />
-                      {hasPhotos && (
-                        <div className="mu-evidence-row">
-                          {legacyFotos.map((foto, index) => (
-                            <EvidenceThumb key={`legacy-${index}`} src={foto} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, true)} />
-                          ))}
-                          {s3Photos.map((photo, index) => (
-                            <EvidenceThumb key={`s3-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, false)} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
         </div>
+
+        {/* Popover de ítem — único, posicionado con fixed */}
+        {activeItemId && popoverPos && (() => {
+          const id = activeItemId;
+          const legacyFotos = catDetails[id]?.fotos || [];
+          const s3Photos = catDetails[id]?.photos || [];
+          return (
+            <>
+              <div className="mu-action-backdrop" onClick={closeItemPopover} />
+              <div className="mu-item-popover" style={{ top: popoverPos.top, left: popoverPos.left }}>
+                <textarea
+                  className="mx-input mu-item-popover-textarea"
+                  rows={3}
+                  placeholder="Observaciones de calidad..."
+                  value={catDetails[id]?.obs || ''}
+                  onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })}
+                  autoFocus
+                />
+                <div className="mu-item-popover-photos">
+                  <label className="mu-evidence-upload compact" title="Agregar foto">
+                    <Camera size={15} color="#64748b" />
+                    <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleFileUpload(id, e.target.files)} />
+                  </label>
+                  {legacyFotos.map((foto, index) => (
+                    <EvidenceThumb key={`legacy-${index}`} src={foto} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, true)} />
+                  ))}
+                  {s3Photos.map((photo, index) => (
+                    <EvidenceThumb key={`s3-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, false)} />
+                  ))}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Barra de acciones compacta */}
         <div className="mu-action-bar">
