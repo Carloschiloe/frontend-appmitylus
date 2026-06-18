@@ -8,6 +8,18 @@ const TYPE_COLOR = {
   defecto:    '#f59e0b',
 };
 
+// Evalúa expresiones de suma: "+10+10" → 20, "10+5.5+4.5" → 20
+const evalWeightExpr = (val) => {
+  const clean = String(val).trim().replace(/[^0-9.+]/g, '');
+  if (!clean) return 0;
+  return clean.split('+').reduce((sum, n) => sum + (parseFloat(n) || 0), 0);
+};
+
+// Bloquea letras y símbolos en inputs numéricos puros
+const blockNonNumeric = (e) => {
+  if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+};
+
 export default function MuestreoStepAnalisis({
   form,
   setForm,
@@ -39,6 +51,7 @@ export default function MuestreoStepAnalisis({
   const [hiddenItems, setHiddenItems] = useState(new Set());
   const [activeItemId, setActiveItemId] = useState(null);
   const [popoverPos, setPopoverPos] = useState(null);
+  const [rawWeights, setRawWeights] = useState({});
 
   const handleOpenItemPopover = (id, e) => {
     if (activeItemId === id) { setActiveItemId(null); setPopoverPos(null); return; }
@@ -47,9 +60,28 @@ export default function MuestreoStepAnalisis({
     setActiveItemId(id);
   };
 
-  const handleWeightChange = (id, val) => {
-    setForm({ ...form, cats: { ...form.cats, [id]: val } });
-    if ((Number(val) || 0) > 0 && !selectedCats.has(id)) toggleCatSelection(id);
+  const getWeightDisplay = (id) =>
+    rawWeights[id] !== undefined ? rawWeights[id] : (form.cats[id] || '');
+
+  const commitWeight = (id) => {
+    const raw = rawWeights[id] !== undefined ? rawWeights[id] : String(form.cats[id] || '');
+    const evaluated = evalWeightExpr(raw);
+    const display = evaluated > 0 ? String(evaluated) : '';
+    setRawWeights((prev) => ({ ...prev, [id]: display }));
+    setForm((prev) => ({ ...prev, cats: { ...prev.cats, [id]: evaluated } }));
+    if (evaluated > 0 && !selectedCats.has(id)) toggleCatSelection(id);
+  };
+
+  const handleWeightInputChange = (id, val) => {
+    setRawWeights((prev) => ({ ...prev, [id]: val }));
+  };
+
+  const handleWeightKeyDown = (e, id) => {
+    const isAllowedChar = /^[0-9.+]$/.test(e.key);
+    const isControl = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Enter', 'Home', 'End'].includes(e.key);
+    if (!isAllowedChar && !isControl) { e.preventDefault(); return; }
+    if (e.key === 'Enter') commitWeight(id);
+    handleAdvanceOnEnter(e);
   };
 
   const hideItem = (id) => setHiddenItems((prev) => new Set([...prev, id]));
@@ -74,15 +106,15 @@ export default function MuestreoStepAnalisis({
 
             <div className="mu-params-side-field">
               <label>U×Kg</label>
-              <input type="number" className="mx-input mu-params-side-input" value={form.uxkg} onChange={(e) => setForm({ ...form, uxkg: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0" />
+              <input type="number" className="mx-input mu-params-side-input" value={form.uxkg} onChange={(e) => setForm({ ...form, uxkg: e.target.value })} onKeyDown={(e) => { blockNonNumeric(e); handleAdvanceOnEnter(e); }} placeholder="0" />
             </div>
             <div className="mu-params-side-field">
               <label>Peso Vivo</label>
-              <input type="number" className="mx-input mu-params-side-input" value={form.pesoVivo} onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+              <input type="number" className="mx-input mu-params-side-input" value={form.pesoVivo} onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })} onKeyDown={(e) => { blockNonNumeric(e); handleAdvanceOnEnter(e); }} placeholder="0.00" />
             </div>
             <div className="mu-params-side-field">
               <label>Peso Carne</label>
-              <input type="number" className="mx-input mu-params-side-input" value={form.pesoCocida} onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })} onKeyDown={handleAdvanceOnEnter} placeholder="0.00" />
+              <input type="number" className="mx-input mu-params-side-input" value={form.pesoCocida} onChange={(e) => setForm({ ...form, pesoCocida: e.target.value })} onKeyDown={(e) => { blockNonNumeric(e); handleAdvanceOnEnter(e); }} placeholder="0.00" />
             </div>
 
             <div className="mu-params-side-divider" />
@@ -165,11 +197,14 @@ export default function MuestreoStepAnalisis({
                     </button>
                     <span className="mu-analysis-item-name" style={{ color: typeColor }}>{cat.nombre}</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      data-weight-input
                       className="mx-input mu-analysis-weight-input"
-                      value={form.cats[id] || ''}
-                      onChange={(e) => handleWeightChange(id, e.target.value)}
-                      onKeyDown={handleAdvanceOnEnter}
+                      value={getWeightDisplay(id)}
+                      onChange={(e) => handleWeightInputChange(id, e.target.value)}
+                      onBlur={() => commitWeight(id)}
+                      onKeyDown={(e) => handleWeightKeyDown(e, id)}
                       placeholder="0"
                     />
                     <div className={`mu-analysis-percent${value > 0 ? ' active' : ''}`}>
