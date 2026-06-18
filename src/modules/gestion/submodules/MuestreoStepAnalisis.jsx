@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, ChevronDown, ChevronLeft, ChevronRight, Layers, Plus, Settings2, Target, X } from 'lucide-react';
+import { Camera, ChevronDown, ChevronLeft, ChevronRight, FileText, Layers, Plus, Settings2, Target, X } from 'lucide-react';
 import { fmtNum } from './muestreos.helpers';
 
 const TABS = ['procesable', 'rechazo', 'defecto'];
@@ -30,6 +30,8 @@ export default function MuestreoStepAnalisis({
   removeGeneralPhoto,
 }) {
   const [paramsOpen, setParamsOpen] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
 
   return (
     <div className="mu-step-container mu-analysis-step">
@@ -196,27 +198,67 @@ export default function MuestreoStepAnalisis({
           </div>
         </div>
 
-        <div className="mu-analysis-notes">
-          <label className="mx-label mu-analysis-notes-label">Obs. Muestreo</label>
-          <textarea
-            className="mx-input mu-analysis-notes-input"
-            placeholder="Notas..."
-            value={form.comentarios}
-            onChange={(e) => setForm({ ...form, comentarios: e.target.value })}
-          />
-        </div>
+        {/* Barra de acciones compacta */}
+        <div className="mu-action-bar">
 
-        <div className="mu-general-evidence">
-          <h4>Evidencias generales del muestreo</h4>
-          <div className="mu-evidence-row">
-            <label className="mu-evidence-upload">
-              <Camera size={20} color="#64748b" />
-              <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleGeneralFileUpload(e.target.files)} />
-            </label>
-            {generalPhotos.map((photo, index) => (
-              <EvidenceThumb key={`gen-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removeGeneralPhoto(index)} />
-            ))}
+          <div className="mu-action-wrap">
+            <button
+              type="button"
+              className={`mu-action-btn${notesOpen ? ' active' : ''}`}
+              onClick={() => { setNotesOpen((o) => !o); setPhotosOpen(false); }}
+            >
+              <FileText size={13} />
+              <span>Notas</span>
+              {form.comentarios?.trim() && <span className="mu-action-dot" />}
+            </button>
+            {notesOpen && (
+              <>
+                <div className="mu-action-backdrop" onClick={() => setNotesOpen(false)} />
+                <div className="mu-action-popover mu-notes-popover">
+                  <textarea
+                    className="mx-input mu-action-notes-textarea"
+                    rows={4}
+                    placeholder="Observaciones del muestreo..."
+                    value={form.comentarios}
+                    onChange={(e) => setForm({ ...form, comentarios: e.target.value })}
+                    autoFocus
+                  />
+                </div>
+              </>
+            )}
           </div>
+
+          <div className="mu-action-wrap">
+            <button
+              type="button"
+              className={`mu-action-btn${photosOpen ? ' active' : ''}`}
+              onClick={() => { setPhotosOpen((o) => !o); setNotesOpen(false); }}
+            >
+              <Camera size={13} />
+              <span>Fotos generales</span>
+              {generalPhotos.length > 0 && <span className="mu-action-badge">{generalPhotos.length}</span>}
+            </button>
+            {photosOpen && (
+              <>
+                <div className="mu-action-backdrop" onClick={() => setPhotosOpen(false)} />
+                <div className="mu-action-popover mu-photos-popover">
+                  <div className="mu-evidence-row">
+                    <label className="mu-evidence-upload">
+                      <Camera size={18} color="#64748b" />
+                      <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleGeneralFileUpload(e.target.files)} />
+                    </label>
+                    {generalPhotos.map((photo, index) => (
+                      <EvidenceThumb key={`gen-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removeGeneralPhoto(index)} />
+                    ))}
+                  </div>
+                  {generalPhotos.length === 0 && (
+                    <p className="mu-action-popover-empty">Agrega fotos con el botón de cámara.</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

@@ -930,6 +930,107 @@
   display: none;
 }
 
+.mu-action-bar {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+  margin-top: auto;
+}
+
+.mu-action-wrap {
+  position: relative;
+}
+
+.mu-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.15s;
+}
+
+.mu-action-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mu-action-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.mu-action-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.mu-action-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #22c55e;
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mu-action-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.mu-action-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.mu-notes-popover {
+  width: 320px;
+}
+
+.mu-photos-popover {
+  width: 320px;
+}
+
+.mu-action-notes-textarea {
+  width: 100%;
+  resize: none;
+  font-size: 0.8rem;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.mu-action-popover-empty {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
 .mu-general-evidence {
   margin-top: 16px;
   background: #f8fafc;
