@@ -7,6 +7,8 @@
 /* Hero y content-frame con estilos globales desde enterprise-polish.css */
 .mx-content-frame.biomasa-content-frame {
   padding-top: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
   gap: 8px;
 }
 
