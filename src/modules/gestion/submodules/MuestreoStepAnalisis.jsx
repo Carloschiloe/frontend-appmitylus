@@ -49,7 +49,7 @@ export default function MuestreoStepAnalisis({
           <div className="mu-params-side-content">
             <div className="mu-params-side-title">
               <Target size={12} />
-              <span>Rendimiento</span>
+              <span>Rdmto y uk</span>
             </div>
 
             <div className="mu-params-side-field">
@@ -88,14 +88,6 @@ export default function MuestreoStepAnalisis({
               />
             </div>
 
-            <select
-              className="mx-select mu-analysis-unit"
-              value={form.unidadPeso || 'kg'}
-              onChange={(e) => setForm({ ...form, unidadPeso: e.target.value })}
-            >
-              <option value="kg">kg</option>
-              <option value="g">g</option>
-            </select>
           </div>
         )}
       </div>
