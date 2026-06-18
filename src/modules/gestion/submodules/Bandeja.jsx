@@ -6,6 +6,12 @@ import {
   RotateCcw,
   Target,
   PauseCircle,
+  AlertCircle,
+  Clock,
+  Activity,
+  Phone,
+  MapPin,
+  Users,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
@@ -92,6 +98,19 @@ function formatLongDate(value) {
 function formatTons(value) {
   return `${Number(value || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 })} t`;
 }
+
+function formatDayOfWeek(date) {
+  return new Intl.DateTimeFormat('es-CL', { weekday: 'short' }).format(date);
+}
+
+const ACTIVITY_ICONS = {
+  llamada: Phone,
+  visita: MapPin,
+  reunion: Users,
+  muestreo: Target,
+  interaccion: MessageSquare,
+  seguimiento: Target,
+};
 
 function dueText(value) {
   const date = toDate(value);
@@ -330,22 +349,20 @@ export default function Bandeja() {
     <div className="gs-summary-dashboard">
         <div className="gs-kpi-row">
         <div className="mx-kpi-grid gs-kpi-strip">
-          <div className="mx-kpi-card">
-            <div className="mx-kpi-label">Pendientes vencidos</div>
-            <div className="mx-kpi-value gs-kpi-value-danger">{taskBoard.overdue.length}</div>
-          </div>
-          <div className="mx-kpi-card">
-            <div className="mx-kpi-label">Actividades de hoy</div>
-            <div className="mx-kpi-value gs-kpi-value-info">{taskBoard.today.length}</div>
-          </div>
-          <div className="mx-kpi-card">
-            <div className="mx-kpi-label">Seguimiento activo</div>
-            <div className="mx-kpi-value gs-kpi-value-success">{seguimiento.active.length}</div>
-          </div>
-          <div className="mx-kpi-card">
-            <div className="mx-kpi-label">Casos pausados</div>
-            <div className="mx-kpi-value gs-kpi-value-warning">{seguimiento.paused.length}</div>
-          </div>
+          {[
+            { label: 'Vencidos', value: taskBoard.overdue.length, Icon: AlertCircle, tone: 'danger' },
+            { label: 'Para hoy', value: taskBoard.today.length, Icon: Clock, tone: 'info' },
+            { label: 'En seguimiento', value: seguimiento.active.length, Icon: Activity, tone: 'success' },
+            { label: 'Pausados', value: seguimiento.paused.length, Icon: PauseCircle, tone: 'warning' },
+          ].map(({ label, value, Icon, tone }) => (
+            <div key={label} className={`mx-kpi-card gs-kpi-v2 is-${tone}`}>
+              <div className={`gs-kpi-icon is-${tone}`}><Icon size={16} /></div>
+              <div className="gs-kpi-v2-body">
+                <div className={`mx-kpi-value gs-kpi-value-${tone}`}>{value}</div>
+                <div className="mx-kpi-label">{label}</div>
+              </div>
+            </div>
+          ))}
         </div>
           <button className="mx-btn-icon gs-kpi-refresh" onClick={handleRefresh} aria-label="Actualizar panel" title="Actualizar panel">
             <RotateCcw size={18} />
@@ -381,7 +398,7 @@ export default function Bandeja() {
                   const Icon = meta.icon;
 
                   return (
-                    <div key={item.id} className="gs-priority-item">
+                    <div key={item.id} className={`gs-priority-item gs-priority-item--${item.bucket}`}>
                       <div className={`gs-priority-badge is-${meta.tone}`}>
                         <Icon size={14} />
                       </div>
@@ -418,29 +435,42 @@ export default function Bandeja() {
               </Link>
             </header>
 
-            <div className="gs-agenda-list">
-              {agendaByDay.map((day) => (
-                <div key={day.key} className="gs-agenda-day">
-                  <div className="gs-agenda-date">
-                    <strong>{formatLongDate(day.date)}</strong>
-                    <span>{day.items.length} tareas</span>
+            <div className="gs-week-strip">
+              {agendaByDay.map((day) => {
+                const todayKey = new Date().toISOString().slice(0, 10);
+                const isToday = day.key === todayKey;
+                return (
+                  <div key={day.key} className={`gs-week-col${day.items.length > 0 ? ' has-tasks' : ''}${isToday ? ' is-today' : ''}`}>
+                    <span className="gs-week-dow">{formatDayOfWeek(day.date)}</span>
+                    <div className="gs-week-dot">{day.items.length > 0 ? day.items.length : ''}</div>
+                    <span className="gs-week-num">{day.date.getDate()}</span>
                   </div>
-                  <div className="gs-agenda-items">
-                    {day.items.length === 0 ? (
-                      <span className="gs-agenda-empty">Libre</span>
-                    ) : (
-                      day.items.slice(0, 2).map((item, index) => (
+                );
+              })}
+            </div>
+            <div className="gs-agenda-list gs-agenda-compact">
+              {agendaByDay.filter((d) => d.items.length > 0).length === 0 ? (
+                <div className="mx-state-placeholder sm">Semana sin compromisos agendados.</div>
+              ) : (
+                agendaByDay.filter((d) => d.items.length > 0).map((day) => (
+                  <div key={day.key} className="gs-agenda-day">
+                    <div className="gs-agenda-date">
+                      <strong>{formatLongDate(day.date)}</strong>
+                      <span>{day.items.length} tarea{day.items.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="gs-agenda-items">
+                      {day.items.slice(0, 2).map((item, index) => (
                         <span
                           key={`${day.key}-${index}`}
                           className={`mx-badge mx-badge-${item.source === 'pausado' ? 'warning' : 'primary'}`}
                         >
                           {item.proveedorNombre}
                         </span>
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </article>
 
@@ -465,7 +495,9 @@ export default function Bandeja() {
                       <span>{item.label}</span>
                       <strong>{item.count}</strong>
                     </div>
-                    <progress className="gs-pipeline-progress" value={item.count} max={pipeline.max}></progress>
+                    <div className="gs-pipeline-track">
+                      <div className="gs-pipeline-fill" style={{ width: `${pipeline.max > 0 ? (item.count / pipeline.max) * 100 : 0}%` }} />
+                    </div>
                   </div>
                 ))
               )}
@@ -517,10 +549,13 @@ export default function Bandeja() {
             {compactActivityFeed.length === 0 ? (
               <div className="mx-state-placeholder sm">Sin gestiones recientes.</div>
             ) : (
-              compactActivityFeed.map((item) => (
+              compactActivityFeed.map((item) => {
+                const ActivityIcon = ACTIVITY_ICONS[item.kind] || MessageSquare;
+                const meta = EVENT_META[item.kind] || EVENT_META.interaccion;
+                return (
                 <div key={item.id} className="gs-activity-item">
-                  <div className={`mx-btn-icon sm is-${(EVENT_META[item.kind] || EVENT_META.interaccion).tone}`}>
-                    <MessageSquare size={14} />
+                  <div className={`gs-priority-badge is-${meta.tone}`}>
+                    <ActivityIcon size={13} />
                   </div>
                   <div className="gs-activity-copy">
                     <strong>{item.provider}</strong>
@@ -528,7 +563,8 @@ export default function Bandeja() {
                     <span>{formatShortDate(item.date)}</span>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </article>
@@ -558,9 +594,15 @@ export default function Bandeja() {
                   </div>
                   <p>{item.centroCodigo}</p>
                   <div className="gs-sample-metrics">
-                    <span>Rend: {Number(item.rendimiento || 0).toFixed(1)}%</span>
+                    <span>Rend: <strong style={{ color: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)' }}>{Number(item.rendimiento || 0).toFixed(1)}%</strong></span>
                     <span>UX/Kg: {Math.round(item.uxkg || 0)}</span>
                     <span className="gs-sample-date">{formatShortDate(item.fecha)}</span>
+                  </div>
+                  <div className="gs-rend-track">
+                    <div className="gs-rend-fill" style={{
+                      width: `${Math.min((item.rendimiento || 0), 40) / 40 * 100}%`,
+                      background: (item.rendimiento || 0) >= 20 ? 'var(--color-success)' : 'var(--color-warning)',
+                    }} />
                   </div>
                 </div>
               ))
