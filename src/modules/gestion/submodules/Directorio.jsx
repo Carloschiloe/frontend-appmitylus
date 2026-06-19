@@ -1247,67 +1247,78 @@ export default function Directorio() {
         </div>
        )}
 
-      {/* Modal de Detalle Moderno */}
+      {/* Drawer de detalle de proveedor */}
       {detailModal.open && detailModal.provider && (
-        <div className="mx-modal-overlay dir-detail-overlay">
-          <div className="mx-modal dir-detail-modal">
-            <div className="mx-modal-header dir-detail-header">
-              <div className="dir-detail-title-wrap">
-                <div className="dir-detail-icon">
-                  <Building2 size={24} />
-                </div>
-                <div>
-                  <h2 className="dir-detail-title">{detailModal.provider.nombre}</h2>
-                  <div className="dir-detail-subtitle">{detailModal.provider.comuna} - {detailModal.provider.centros} centros</div>
+        <>
+          <div className="dir-drawer-backdrop" onClick={() => setDetailModal({ open: false, provider: null })} />
+          <div className="dir-drawer">
+            <div className="dir-drawer-header">
+              <div className={`dir-provider-avatar is-${detailModal.provider.seguimientoEstado || 'none'}`} style={{ width: 40, height: 40, borderRadius: 10, fontSize: '1.05rem', flexShrink: 0 }}>
+                {detailModal.provider.nombre.charAt(0).toUpperCase()}
+              </div>
+              <div className="dir-drawer-title-wrap">
+                <div className="dir-drawer-title">{detailModal.provider.nombre}</div>
+                <div className="dir-drawer-subtitle">
+                  {[
+                    detailModal.provider.comuna && detailModal.provider.comuna !== '-' && detailModal.provider.comuna,
+                    detailModal.provider.centros > 0 && `${detailModal.provider.centros} centro${detailModal.provider.centros === 1 ? '' : 's'}`,
+                  ].filter(Boolean).join(' · ')}
                 </div>
               </div>
-              <button type="button" className="mx-btn-icon" onClick={() => setDetailModal({ open: false, provider: null })}><X size={20} /></button>
+              <button type="button" className="mx-btn-icon" onClick={() => setDetailModal({ open: false, provider: null })}><X size={18} /></button>
             </div>
 
-            <div className="mx-modal-body dir-detail-body">
-              <div className="dir-detail-summary-grid">
-                <div className="dir-detail-summary-card">
-                  <div className="mx-eyebrow dir-detail-eyebrow">Estado Comercial</div>
-                  <div className="dir-detail-strong">{detailModal.provider.seguimientoEstado?.toUpperCase() || 'SIN SEGUIMIENTO'}</div>
-                  {detailModal.provider.estadoComercial && <div className="dir-detail-muted">{ESTADO_COMERCIAL_LABELS[detailModal.provider.estadoComercial] || detailModal.provider.estadoComercial}</div>}
+            <div className="dir-drawer-body">
+              <div className="dir-drawer-grid">
+                <div className="dir-drawer-card">
+                  <div className="dir-drawer-label">Estado</div>
+                  {(() => {
+                    const p = detailModal.provider;
+                    const s = STATUS_META[p.seguimientoEstado || 'none'] || STATUS_META.none;
+                    const SIcon = s.icon;
+                    return (
+                      <span className={`mx-badge mx-badge-${p.seguimientoEstado === 'activo' ? 'success' : p.seguimientoEstado === 'pausado' ? 'warning' : p.seguimientoEstado === 'acordado' ? 'primary' : 'muted'}`}>
+                        <SIcon size={11} /> {s.label}
+                      </span>
+                    );
+                  })()}
+                  {detailModal.provider.estadoComercial && detailModal.provider.estadoComercial !== detailModal.provider.seguimientoEstado && (
+                    <div className="dir-drawer-sub" style={{ marginTop: 4 }}>{ESTADO_COMERCIAL_LABELS[detailModal.provider.estadoComercial] || detailModal.provider.estadoComercial}</div>
+                  )}
                 </div>
-                <div className="dir-detail-summary-card">
-                  <div className="mx-eyebrow dir-detail-eyebrow">Contacto Principal</div>
-                  <div className="dir-detail-strong">{detailModal.provider.contactoPrincipal}</div>
-                  <div className="dir-detail-muted">{detailModal.provider.contactoTelefono || 'Sin telefono'}</div>
+                <div className="dir-drawer-card">
+                  <div className="dir-drawer-label">Contacto</div>
+                  <div className="dir-drawer-value">{detailModal.provider.contactoPrincipal}</div>
+                  {detailModal.provider.contactoTelefono && <div className="dir-drawer-sub">{detailModal.provider.contactoTelefono}</div>}
+                  {detailModal.provider.contactoEmail && <div className="dir-drawer-sub">{detailModal.provider.contactoEmail}</div>}
                 </div>
               </div>
 
-              <div className="dir-detail-activity">
-                <h3 className="dir-detail-section-title">
-                  <Clock3 size={16} /> Última Actividad Registrada
-                </h3>
-                
-                <div className="dir-detail-timeline">
-                  <div className="dir-detail-timeline-dot is-primary"></div>
-                  <div className="dir-detail-date">{detailModal.provider.ultimaInteraccionFecha ? formatShortDate(detailModal.provider.ultimaInteraccionFecha) : 'Sin fecha'}</div>
-                  <div className="dir-detail-note-card">
-                    <p>
-                      {detailModal.provider.ultimaInteraccionResumen || 'No hay notas registradas para este proveedor.'}
-                    </p>
-                  </div>
-                </div>
-
-                {detailModal.provider.proximaAccion && (
-                  <div className="dir-detail-timeline dir-detail-timeline-next">
-                    <div className="dir-detail-timeline-dot is-muted"></div>
-                    <div className="mx-eyebrow dir-detail-next-label">Próxima Acción Programada</div>
-                    <div className="dir-detail-next-text">{detailModal.provider.proximaAccion}</div>
-                    <div className="dir-detail-next-date">{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>
-                  </div>
+              <div className="dir-drawer-section">
+                <div className="dir-drawer-label">Última gestión</div>
+                {detailModal.provider.ultimaInteraccionFecha ? (
+                  <>
+                    <div className="dir-drawer-value">{detailModal.provider.ultimaInteraccionResumen || '—'}</div>
+                    <div className="dir-drawer-sub">{formatShortDate(detailModal.provider.ultimaInteraccionFecha)} · {formatDaysAgo(detailModal.provider.ultimaInteraccionFecha)}</div>
+                  </>
+                ) : (
+                  <div className="dir-drawer-sub">Sin gestiones registradas</div>
                 )}
               </div>
+
+              {detailModal.provider.proximaAccion && (
+                <div className="dir-drawer-section">
+                  <div className="dir-drawer-label">Próxima acción</div>
+                  <div className="dir-drawer-value">{detailModal.provider.proximaAccion}</div>
+                  {detailModal.provider.fechaProximaAccion && <div className="dir-drawer-sub">{formatShortDate(detailModal.provider.fechaProximaAccion)}</div>}
+                </div>
+              )}
             </div>
 
-            <div className="mx-modal-footer dir-detail-footer">
+            <div className="dir-drawer-footer">
               <button
                 type="button"
-                className="mx-btn mx-btn-outline dir-detail-footer-btn"
+                className="mx-btn mx-btn-primary"
                 onClick={() => {
                   const p = detailModal.provider;
                   setDetailModal({ open: false, provider: null });
@@ -1329,7 +1340,7 @@ export default function Directorio() {
               </button>
               <button
                 type="button"
-                className="mx-btn mx-btn-outline dir-detail-footer-btn"
+                className="mx-btn mx-btn-outline"
                 onClick={() => {
                   const p = detailModal.provider;
                   const key = p.key || p.providerKey;
@@ -1348,28 +1359,30 @@ export default function Directorio() {
               >
                 <FileText size={16} /> Nueva negociación
               </button>
-              {(detailModal.provider.key || detailModal.provider.providerKey) && (
-                <button
-                  type="button"
-                  className="mx-btn mx-btn-outline dir-detail-footer-btn"
-                  onClick={() => {
-                    const key = detailModal.provider.key || detailModal.provider.providerKey;
-                    setDetailModal({ open: false, provider: null });
-                    navigate(`/historial?proveedor=${encodeURIComponent(key)}`);
-                  }}
-                >
-                  <History size={16} /> Ver historial
+              <div className="dir-drawer-footer-row">
+                {(detailModal.provider.key || detailModal.provider.providerKey) && (
+                  <button
+                    type="button"
+                    className="mx-btn mx-btn-outline"
+                    onClick={() => {
+                      const key = detailModal.provider.key || detailModal.provider.providerKey;
+                      setDetailModal({ open: false, provider: null });
+                      navigate(`/historial?proveedor=${encodeURIComponent(key)}`);
+                    }}
+                  >
+                    <History size={16} /> Historial
+                  </button>
+                )}
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => openProviderCenters(detailModal.provider)}>
+                  <ExternalLink size={16} /> Centros
                 </button>
-              )}
-              <button type="button" className="mx-btn mx-btn-outline dir-detail-footer-btn" onClick={() => openProviderCenters(detailModal.provider)}>
-                <ExternalLink size={16} /> Ver Centros
-              </button>
-              <button type="button" className="mx-btn mx-btn-primary dir-detail-footer-btn" onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
-                <Edit size={16} /> Editar Proveedor
-              </button>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
+                  <Edit size={16} /> Editar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       <ConfirmDeleteModal
