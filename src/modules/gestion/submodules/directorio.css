@@ -192,7 +192,7 @@
 .mx-page > .mx-toolbar:has(.dir-toolbar-search) {
   align-items: center;
   padding: 2px 0 4px;
-  margin-bottom: 18px;
+  margin-bottom: 8px;
 }
 
 .mx-page > .mx-kpi-grid.am-mt-16 {
@@ -302,7 +302,7 @@
 }
 
 .dir-col-provider {
-  width: 24%;
+  width: 26%;
 }
 
 .dir-col-contact,
@@ -312,11 +312,11 @@
 }
 
 .dir-col-main-contact {
-  width: 16%;
+  width: 17%;
 }
 
 .dir-col-last {
-  width: 11%;
+  width: 13%;
 }
 
 .dir-col-followup,
@@ -325,15 +325,11 @@
 }
 
 .dir-col-next {
-  width: 10%;
+  width: 11%;
 }
 
-.dir-col-reg {
-  width: 9%;
-}
-
-.dir-col-resp {
-  width: 8%;
+.dir-col-ingreso {
+  width: 11%;
 }
 
 .dir-col-actions {
@@ -891,14 +887,47 @@ button.dir-status-item.is-active .dir-status-label {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--color-primary-bg, rgba(10, 92, 255, 0.08));
-  color: var(--color-primary);
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.84rem;
   font-weight: 800;
   flex-shrink: 0;
+}
+
+.dir-provider-avatar.is-activo   { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.dir-provider-avatar.is-pausado  { background: rgba(217, 119, 6, 0.12);  color: #d97706; }
+.dir-provider-avatar.is-acordado { background: rgba(8, 145, 178, 0.12);  color: #0891b2; }
+.dir-provider-avatar.is-none     { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+
+/* ── Row status left stripe ── */
+
+.dir-row-activo  > td:first-child { box-shadow: inset 3px 0 0 #10b981; }
+.dir-row-pausado > td:first-child  { box-shadow: inset 3px 0 0 var(--color-warning); }
+.dir-row-acordado > td:first-child { box-shadow: inset 3px 0 0 #0891b2; }
+
+/* ── Pending contact dimmed ── */
+
+.dir-primary-text.is-pending {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-text-muted);
+  font-size: 0.81rem;
+}
+
+/* ── Compact rows ── */
+
+.dir-providers-table td {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+/* ── Reduce table top gap (scoped to Directorio via am-p-0) ── */
+
+.mx-page.am-p-0 > .mx-table-card.am-mt-16 {
+  margin-top: 8px;
 }
 
 @media (max-width: 760px) {

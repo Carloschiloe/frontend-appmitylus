@@ -837,8 +837,7 @@ export default function Directorio() {
                   <th className="dir-col-followup">Estado comercial</th>
                   <th className="dir-col-last">Última gestión</th>
                   <th className="dir-col-next">Próxima acción</th>
-                  <th className="dir-col-reg">Registro</th>
-                  <th className="dir-col-resp">Responsable</th>
+                  <th className="dir-col-ingreso">Ingreso</th>
                   <th className="dir-col-actions"></th>
                 </tr>
               ) : (
@@ -855,13 +854,13 @@ export default function Directorio() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 8 : 5} className="dir-table-state">
+                  <td colSpan={tab === 'proveedores' ? 7 : 5} className="dir-table-state">
                     <div className="mx-spinner dir-spinner"></div>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={tab === 'proveedores' ? 8 : 5} className="dir-table-state">
+                  <td colSpan={tab === 'proveedores' ? 7 : 5} className="dir-table-state">
                     No se encontraron resultados.
                   </td>
                 </tr>
@@ -871,10 +870,10 @@ export default function Directorio() {
                   const StatusIcon = status.icon;
 
                   return (
-                    <tr key={provider.providerKey}>
+                    <tr key={provider.providerKey} className={`dir-row-${provider.seguimientoEstado || 'none'}`}>
                       <td>
                         <div className="dir-provider-cell">
-                          <div className="dir-provider-avatar">
+                          <div className={`dir-provider-avatar is-${provider.seguimientoEstado || 'none'}`}>
                             {provider.nombre.charAt(0).toUpperCase()}
                           </div>
                           <div className="dir-provider-text">
@@ -889,7 +888,7 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        <div className="dir-primary-text">{provider.contactoPrincipal}</div>
+                        <div className={`dir-primary-text${provider.contactoPrincipal === 'Primer contacto pendiente' ? ' is-pending' : ''}`}>{provider.contactoPrincipal}</div>
                         <div className="dir-contact-meta">
                           <span>{provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}</span>
                           {provider.contactoTelefono ? <span><Phone size={10} />{provider.contactoTelefono}</span> : null}
@@ -920,26 +919,22 @@ export default function Directorio() {
                             </div>
                           </>
                         ) : (
-                          <span className="dir-subtle-note">Sin interacción</span>
+                          <span className="dir-subtle-note">—</span>
                         )}
                       </td>
 
                       <td>
                         <div className="dir-clamped-text" title={provider.proximaAccion}>
-                          {provider.proximaAccion || 'Sin acción definida'}
+                          {provider.proximaAccion || '—'}
                         </div>
-                        <div className="dir-subtle-note">
-                          {provider.fechaProximaAccion ? formatShortDate(provider.fechaProximaAccion) : 'Sin fecha programada'}
-                        </div>
+                        {provider.fechaProximaAccion && (
+                          <div className="dir-subtle-note">{formatShortDate(provider.fechaProximaAccion)}</div>
+                        )}
                       </td>
 
                       <td>
-                        <div className="dir-reg-date">{provider.fechaIngreso ? formatShortDate(provider.fechaIngreso) : '-'}</div>
-                        <div className="dir-subtle-note">{provider.fechaIngreso ? formatDaysAgo(provider.fechaIngreso) : ''}</div>
-                      </td>
-
-                      <td>
-                        <div className="dir-resp-name">{provider.ingresadoPor || '-'}</div>
+                        <div className="dir-reg-date">{provider.fechaIngreso ? formatShortDate(provider.fechaIngreso) : '—'}</div>
+                        {provider.ingresadoPor && <div className="dir-subtle-note">{provider.ingresadoPor}</div>}
                       </td>
 
                       <td className="dir-actions-cell">
