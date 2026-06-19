@@ -192,7 +192,17 @@
 .mx-page > .mx-toolbar:has(.dir-toolbar-search) {
   align-items: center;
   padding: 2px 0 4px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+/* Aplasta el gap de 18px de gestion y los am-mt-16 sueltos */
+.gestion-content-frame .mx-submodule-body > .mx-page.am-p-0 {
+  gap: 6px;
+}
+
+.mx-page.am-p-0 > .mx-toolbar.am-mt-16,
+.mx-page.am-p-0 > .mx-table-card.am-mt-16 {
+  margin-top: 0;
 }
 
 .mx-page > .mx-kpi-grid.am-mt-16 {
@@ -924,11 +934,6 @@ button.dir-status-item.is-active .dir-status-label {
   padding-bottom: 7px;
 }
 
-/* ── Reduce table top gap (scoped to Directorio via am-p-0) ── */
-
-.mx-page.am-p-0 > .mx-table-card.am-mt-16 {
-  margin-top: 8px;
-}
 
 @media (max-width: 760px) {
   .dir-form-row,
