@@ -238,9 +238,8 @@ export default function CentrosTable() {
       const matchComuna = comunaFilter === '' || c.comuna === comunaFilter;
       const matchArea =
         areaFilter === '' ||
-        (areaFilter === 'con_area' && Boolean(areaPSMB)) ||
-        (areaFilter === 'abierta' && String(estadoArea).toLowerCase() === 'abierta') ||
-        (areaFilter === 'sin_area' && !areaPSMB);
+        (areaFilter === 'sin_area' && !areaPSMB) ||
+        String(estadoArea) === areaFilter;
       const matchProveedor = providerFilter === '' || String(c.proveedorKey || '').toLowerCase() === String(providerFilter || '').toLowerCase();
       return matchSearch && matchAreaSearch && matchComuna && matchArea && matchProveedor;
     });
@@ -390,10 +389,11 @@ export default function CentrosTable() {
             {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <select className="mx-input ct-select" value={areaFilter} onChange={(e) => { setAreaFilter(e.target.value); syncUrl({ area: e.target.value }); }}>
-            <option value="">Todos los estados</option>
-            <option value="con_area">Con área</option>
-            <option value="abierta">Área abierta</option>
-            <option value="sin_area">Sin área</option>
+            <option value="">Estado área</option>
+            <option value="Abierta">Abierta</option>
+            <option value="Cerrada">Cerrada</option>
+            <option value="Suspendida">Suspendida</option>
+            <option value="sin_area">Sin área PSMB</option>
           </select>
           {hasActiveFilters && (
             <button type="button" className="mx-btn mx-btn-outline" onClick={handleClearFilters}>
@@ -447,11 +447,12 @@ export default function CentrosTable() {
                       )}
                     </td>
                     <td>
-                      <span className={`mx-badge mx-badge-${
+                      <span className={`mx-badge ct-estado-badge mx-badge-${
                         centro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                        centro.estadoAreaSernapesca === 'Cerrada' ? 'error' : 'muted'
+                        centro.estadoAreaSernapesca === 'Cerrada' ? 'error' :
+                        centro.estadoAreaSernapesca === 'Suspendida' ? 'warning' : 'muted'
                       }`}>
-                        {centro.estadoAreaSernapesca || 'Desconocido'}
+                        {centro.estadoAreaSernapesca || '—'}
                       </span>
                     </td>
                     <td className="ct-col-right">

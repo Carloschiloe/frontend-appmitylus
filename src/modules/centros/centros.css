@@ -24,12 +24,21 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.centros-tabs-row .mx-tabs {
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .centros-tab-actions {
   display: flex;
   gap: 8px;
   padding-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .mx-tabs {
@@ -980,6 +989,12 @@
   padding: 12px 16px;
   border-top: 1px solid var(--color-border, #e2e8f0);
   flex-shrink: 0;
+}
+
+/* Estado badge — no uppercase, capitalize only */
+.ct-estado-badge {
+  text-transform: capitalize;
+  font-size: 11px;
 }
 
 /* Hover tooltip */
