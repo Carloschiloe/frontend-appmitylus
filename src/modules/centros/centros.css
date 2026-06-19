@@ -719,3 +719,202 @@
     min-width: 150px;
   }
 }
+
+/* ── CentrosTable redesign ──────────────────────────────────── */
+
+.ct-page {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Provider banner */
+.ct-provider-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--color-primary-50, #eff6ff);
+  border: 1px solid var(--color-primary-200, #bfdbfe);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+.ct-banner-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.ct-banner-meta {
+  flex: 1;
+}
+
+/* Status strip */
+.ct-status-strip {
+  display: flex;
+  gap: 2px;
+  background: var(--color-surface-card, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ct-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 9px 14px;
+  border-right: 1px solid var(--color-border, #e2e8f0);
+}
+.ct-status-item:last-child { border-right: none; }
+.ct-status-icon { color: var(--color-text-muted); flex-shrink: 0; }
+.ct-status-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+.ct-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ct-status-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.ct-status-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* Toolbar */
+.ct-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ct-search-group {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.ct-search {
+  flex: 1.4;
+  min-width: 0;
+  position: relative;
+}
+.ct-search-area {
+  flex: 1;
+  min-width: 0;
+}
+.ct-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ct-select {
+  height: 34px;
+  font-size: 13px;
+  padding: 0 8px;
+  min-width: 130px;
+}
+
+/* Autocomplete suggestions */
+.ct-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface-card, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  z-index: 200;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+.ct-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: none;
+  background: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text-primary);
+}
+.ct-suggestion-item:hover { background: var(--color-surface-hover, #f1f5f9); }
+.ct-suggestion-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted, #f1f5f9);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Table tweaks */
+.ct-table th, .ct-table td { vertical-align: middle; }
+.ct-col-right { text-align: right; width: 100px; }
+.ct-col-actions { width: 44px; padding: 0 8px; text-align: center; }
+.ct-code {
+  font-family: 'SF Mono', 'Fira Mono', monospace;
+  font-size: 12px;
+  background: var(--color-surface-muted, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--color-text-secondary);
+}
+.ct-cell-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  display: block;
+}
+.ct-table-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* Row action menu */
+.ct-menu-wrap { position: relative; display: flex; justify-content: center; }
+.ct-dropdown {
+  position: fixed;
+  z-index: 600;
+  background: var(--color-surface-card, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 9px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.14);
+  padding: 4px;
+  min-width: 160px;
+}
+.ct-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  text-align: left;
+}
+.ct-dropdown-item:hover { background: var(--color-surface-hover, #f1f5f9); }
+.ct-dropdown-danger { color: var(--color-error, #ef4444); }
+.ct-dropdown-danger:hover { background: #fef2f2; }

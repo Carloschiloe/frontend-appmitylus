@@ -11,7 +11,8 @@ import {
   Building2,
   Ruler,
   X,
-  Plus,
+  MoreHorizontal,
+  Globe,
 } from 'lucide-react';
 import { deleteCentro, getCentros, syncSubpesca, upsertCentro } from '../../../api/api-centros';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
@@ -22,7 +23,7 @@ const PAGE_SIZE = 100;
 
 const isSalmonCentro = (centro = {}) => {
   const especies = Array.isArray(centro.especies) ? centro.especies.join(' ') : centro.especies || '';
-  const text = `${centro.grupoEspecie || ''} ${especies}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const text = `${centro.grupoEspecie || ''} ${especies}`.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   return /\b(salmon|salmonido|trucha)/.test(text);
 };
 
@@ -67,6 +68,9 @@ export default function CentrosTable() {
   const searchWrapperRef = useRef(null);
   const [importing, setImporting] = useState(false);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', item: null });
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const menuRef = useRef(null);
 
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
@@ -102,21 +106,18 @@ export default function CentrosTable() {
     };
   }, []);
 
-  const openCreateModal = useCallback(() => {
-    setModalState({ open: true, mode: 'create', item: null });
-  }, []);
+  useEffect(() => {
+    if (!openMenuId) return;
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpenMenuId(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [openMenuId]);
 
-  const openViewModal = useCallback((item) => {
-    setModalState({ open: true, mode: 'view', item });
-  }, []);
-
-  const openEditModal = useCallback((item) => {
-    setModalState({ open: true, mode: 'edit', item });
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setModalState({ open: false, mode: 'create', item: null });
-  }, []);
+  const openViewModal = useCallback((item) => setModalState({ open: true, mode: 'view', item }), []);
+  const openEditModal = useCallback((item) => setModalState({ open: true, mode: 'edit', item }), []);
+  const closeModal = useCallback(() => setModalState({ open: false, mode: 'create', item: null }), []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -158,19 +159,11 @@ export default function CentrosTable() {
     if (!confirmDelete?._id) return;
     try {
       await deleteCentro(confirmDelete._id);
-      addToast({
-        title: 'Centro eliminado',
-        message: `El centro ${confirmDelete.code || ''} fue eliminado correctamente.`,
-        type: 'success',
-      });
+      addToast({ title: 'Centro eliminado', message: `El centro ${confirmDelete.code || ''} fue eliminado.`, type: 'success' });
       setConfirmDelete(null);
       queryClient.invalidateQueries({ queryKey: ['centros'] });
     } catch (err) {
-      addToast({
-        title: 'No se pudo eliminar',
-        message: err?.data?.error || err?.message || 'No se pudo eliminar el centro.',
-        type: 'error',
-      });
+      addToast({ title: 'No se pudo eliminar', message: err?.data?.error || err?.message || 'Error al eliminar.', type: 'error' });
     }
   }, [confirmDelete, addToast, queryClient]);
 
@@ -185,11 +178,7 @@ export default function CentrosTable() {
         proveedor: providerFilter || undefined,
       });
     } catch (err) {
-      addToast({
-        title: 'No se pudo exportar',
-        message: err?.message || 'No se pudo generar el archivo de centros.',
-        type: 'error',
-      });
+      addToast({ title: 'No se pudo exportar', message: err?.message || 'Error al exportar.', type: 'error' });
     } finally {
       setExportandoCentros(false);
     }
@@ -202,17 +191,9 @@ export default function CentrosTable() {
       const result = await syncSubpesca();
       setConfirmImport(false);
       queryClient.invalidateQueries({ queryKey: ['centros'] });
-      addToast({
-        title: 'Centros actualizados',
-        message: `SUBPESCA sincronizo ${result?.centros || 0} centros.`,
-        type: 'success',
-      });
+      addToast({ title: 'Centros actualizados', message: `SUBPESCA sincronizo ${result?.centros || 0} centros.`, type: 'success' });
     } catch (err) {
-      addToast({
-        title: 'No se pudo importar',
-        message: err?.data?.error || err?.message || 'No se pudo sincronizar desde SUBPESCA.',
-        type: 'error',
-      });
+      addToast({ title: 'No se pudo importar', message: err?.data?.error || err?.message || 'Error al sincronizar.', type: 'error' });
     } finally {
       setImporting(false);
     }
@@ -232,22 +213,13 @@ export default function CentrosTable() {
       hectareas: String(formData.get('hectareas') || '').trim(),
       tonsMax: String(formData.get('tonsMax') || '').trim(),
     };
-
     try {
       await upsertCentro(payload);
-      addToast({
-        title: modalState.item?._id ? 'Centro actualizado' : 'Centro creado',
-        message: `${payload.code || 'El centro'} fue guardado correctamente.`,
-        type: 'success',
-      });
+      addToast({ title: modalState.item?._id ? 'Centro actualizado' : 'Centro creado', message: `${payload.code || 'El centro'} fue guardado.`, type: 'success' });
       closeModal();
       queryClient.invalidateQueries({ queryKey: ['centros'] });
     } catch (err) {
-      addToast({
-        title: 'Error',
-        message: err?.data?.error || err?.message || 'No se pudo guardar el centro.',
-        type: 'error',
-      });
+      addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo guardar.', type: 'error' });
     }
   }, [modalState.item, addToast, closeModal, queryClient]);
 
@@ -261,32 +233,20 @@ export default function CentrosTable() {
       const areaPSMB = c.areaPSMB || c.sanitario?.areaPSMB || '';
       const codigoArea = String(c.codigoArea || c.sanitario?.codigoArea || '').trim().toLowerCase();
       const estadoArea = c.estadoAreaSernapesca || c.sanitario?.estadoSernapesca || '';
-      const matchSearch =
-        query === '' ||
-        c.proveedor?.toLowerCase().includes(query) ||
-        c.code?.toLowerCase().includes(query);
-      const matchAreaSearch =
-        areaQuery === '' ||
-        (hasExactAreaCode
-          ? codigoArea === areaQuery
-          : areaPSMB.toLowerCase().includes(areaQuery) ||
-            codigoArea.includes(areaQuery));
+      const matchSearch = query === '' || c.proveedor?.toLowerCase().includes(query) || c.code?.toLowerCase().includes(query);
+      const matchAreaSearch = areaQuery === '' || (hasExactAreaCode ? codigoArea === areaQuery : areaPSMB.toLowerCase().includes(areaQuery) || codigoArea.includes(areaQuery));
       const matchComuna = comunaFilter === '' || c.comuna === comunaFilter;
       const matchArea =
         areaFilter === '' ||
         (areaFilter === 'con_area' && Boolean(areaPSMB)) ||
         (areaFilter === 'abierta' && String(estadoArea).toLowerCase() === 'abierta') ||
         (areaFilter === 'sin_area' && !areaPSMB);
-      const matchProveedor =
-        providerFilter === '' ||
-        String(c.proveedorKey || '').toLowerCase() === String(providerFilter || '').toLowerCase();
+      const matchProveedor = providerFilter === '' || String(c.proveedorKey || '').toLowerCase() === String(providerFilter || '').toLowerCase();
       return matchSearch && matchAreaSearch && matchComuna && matchArea && matchProveedor;
     });
   }, [data, deferredSearchTerm, deferredAreaSearchTerm, comunaFilter, areaFilter, providerFilter]);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [deferredSearchTerm, deferredAreaSearchTerm, comunaFilter, areaFilter, providerFilter]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [deferredSearchTerm, deferredAreaSearchTerm, comunaFilter, areaFilter, providerFilter]);
 
   const visibleRows = useMemo(() => filteredData.slice(0, visibleCount), [filteredData, visibleCount]);
   const hasMoreRows = visibleCount < filteredData.length;
@@ -305,9 +265,7 @@ export default function CentrosTable() {
     };
   }, [filteredData]);
 
-  const comunas = useMemo(() => {
-    return [...new Set(data.map((c) => c.comuna).filter(Boolean))].sort();
-  }, [data]);
+  const comunas = useMemo(() => [...new Set(data.map((c) => c.comuna).filter(Boolean))].sort(), [data]);
 
   const providerOptions = useMemo(() => {
     const map = new Map();
@@ -330,225 +288,191 @@ export default function CentrosTable() {
 
   const providerSummary = useMemo(() => {
     if (!providerFilter || filteredData.length === 0) return null;
-    const first = filteredData[0];
-    return {
-      nombre: first?.proveedor || 'Proveedor filtrado',
-      centros: filteredData.length,
-    };
+    return { nombre: filteredData[0]?.proveedor || 'Proveedor filtrado', centros: filteredData.length };
   }, [providerFilter, filteredData]);
 
   const isViewMode = modalState.mode === 'view';
   const hasActiveFilters = Boolean(searchTerm || areaSearchTerm || comunaFilter || areaFilter || providerFilter);
 
   return (
-    <div className="centros-table-container">
-      {providerSummary ? (
-        <div className="mx-table-card" style={{ marginBottom: 12, padding: 14 }}>
-          <div style={{ fontWeight: 800, color: 'var(--color-text)' }}>{providerSummary.nombre}</div>
-          <div style={{ marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.92rem' }}>
-            Vista filtrada desde Proveedores - {providerSummary.centros} centro{providerSummary.centros === 1 ? '' : 's'}
+    <div className="ct-page">
+      {providerSummary && (
+        <div className="ct-provider-banner">
+          <Building2 size={14} />
+          <span className="ct-banner-name">{providerSummary.nombre}</span>
+          <span className="ct-banner-meta">{providerSummary.centros} centro{providerSummary.centros === 1 ? '' : 's'} · filtrado desde Proveedores</span>
+          <button type="button" className="mx-btn-icon" onClick={handleClearFilters}><X size={14} /></button>
+        </div>
+      )}
+
+      <div className="ct-status-strip">
+        <div className="ct-status-item">
+          <Building2 size={15} className="ct-status-icon" />
+          <span className="ct-status-num">{stats.count}</span>
+          <div className="ct-status-text">
+            <span className="ct-status-label">Centros</span>
+            {stats.comunas > 0 && <span className="ct-status-sub">{stats.comunas} comunas</span>}
           </div>
         </div>
-      ) : null}
-
-      <div className="mx-kpi-grid">
-        <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><Building2 size={16} /> Centros</header>
-          <div className="mx-kpi-value">{stats.count}</div>
-        </article>
-        <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><Ruler size={16} /> Hectareas</header>
-          <div className="mx-kpi-value">{stats.hectareas} <small className="mx-kpi-sub">ha</small></div>
-        </article>
-        <article className="mx-kpi-card">
-          <header className="mx-kpi-label"><MapPin size={16} /> Areas cultivo</header>
-          <div className="mx-kpi-value">{stats.areas}</div>
-        </article>
+        <div className="ct-status-item">
+          <Ruler size={15} className="ct-status-icon" />
+          <span className="ct-status-num">{stats.hectareas}</span>
+          <div className="ct-status-text">
+            <span className="ct-status-label">Hectáreas</span>
+          </div>
+        </div>
+        <div className="ct-status-item">
+          <MapPin size={15} className="ct-status-icon" />
+          <span className="ct-status-num">{stats.areas}</span>
+          <div className="ct-status-text">
+            <span className="ct-status-label">Áreas cultivo</span>
+          </div>
+        </div>
+        <div className="ct-status-item">
+          <Globe size={15} className="ct-status-icon" />
+          <span className="ct-status-num">{stats.tonsMax}</span>
+          <div className="ct-status-text">
+            <span className="ct-status-label">Tons máx</span>
+          </div>
+        </div>
       </div>
 
-      <div className="centros-summary-strip">
-        <span>{stats.comunas} comunas</span>
-        <span>{stats.tonsMax} t max</span>
-        <b>{hasActiveFilters ? 'Vista filtrada' : 'Vista general'}</b>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 'var(--spacing-lg)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1 }}>
-            <div className="mx-search-box" style={{ position: 'relative', minWidth: 220, flex: '1 1 220px', maxWidth: 340 }} ref={searchWrapperRef}>
-              <Search size={18} />
-              <input
-                type="text"
-                placeholder="Buscar proveedor o codigo centro..."
-                value={searchTerm}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSearchTerm(value);
-                  setShowSuggestions(Boolean(value.trim()));
-                  syncUrl({ q: value });
-                }}
-                onFocus={() => { if (searchTerm.trim()) setShowSuggestions(true); }}
-                onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => { setSearchTerm(''); setShowSuggestions(false); syncUrl({ q: '' }); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
-                  aria-label="Limpiar búsqueda"
-                >
-                  <X size={14} />
-                </button>
-              )}
-              {showSuggestions && suggestions.length > 0 && (
-                <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, margin: '4px 0 0', padding: 0, listStyle: 'none', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', maxHeight: 280, overflowY: 'auto' }}>
-                  {suggestions.map((opt) => (
-                    <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border-subtle, var(--color-border))' }}>
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelectProvider(opt)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text)', fontSize: '0.88rem' }}
-                      >
-                        <Building2 size={13} style={{ flexShrink: 0, color: 'var(--color-text-muted)' }} />
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt.nombre}</span>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>{opt.count} centro{opt.count !== 1 ? 's' : ''}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="mx-search-box" style={{ minWidth: 200, flex: '1 1 200px', maxWidth: 300 }}>
-              <Search size={18} />
-              <input
-                type="text"
-                placeholder="Buscar area PSMB o codigo area..."
-                value={areaSearchTerm}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAreaSearchTerm(value);
-                  syncUrl({ areaQ: value });
-                }}
-              />
-            </div>
-
-            <select
-              className="mx-input"
-              style={{ width: 'auto', flexShrink: 0 }}
-              value={comunaFilter}
+      <div className="ct-toolbar">
+        <div className="ct-search-group">
+          <div className="mx-search-box ct-search" ref={searchWrapperRef}>
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Proveedor o código centro..."
+              value={searchTerm}
               onChange={(e) => {
                 const value = e.target.value;
-                setComunaFilter(value);
-                syncUrl({ comuna: value });
+                setSearchTerm(value);
+                setShowSuggestions(Boolean(value.trim()));
+                syncUrl({ q: value });
               }}
-            >
-              <option value="">Todas las comunas</option>
-              {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-
-            <select
-              className="mx-input"
-              style={{ width: 'auto', flexShrink: 0 }}
-              value={areaFilter}
-              onChange={(e) => {
-                const value = e.target.value;
-                setAreaFilter(value);
-                syncUrl({ area: value });
-              }}
-            >
-              <option value="">Todas las areas</option>
-              <option value="con_area">Solo con area cultivo</option>
-              <option value="abierta">Area abierta</option>
-              <option value="sin_area">Sin area asociada</option>
-            </select>
-
-            <button
-              className="mx-btn mx-btn-outline"
-              style={{ flexShrink: 0 }}
-              onClick={handleClearFilters}
-            >
-              Limpiar
-            </button>
+              onFocus={() => { if (searchTerm.trim()) setShowSuggestions(true); }}
+              onKeyDown={(e) => { if (e.key === 'Escape') setShowSuggestions(false); }}
+            />
+            {searchTerm && (
+              <button type="button" onClick={() => { setSearchTerm(''); setShowSuggestions(false); syncUrl({ q: '' }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}>
+                <X size={14} />
+              </button>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="ct-suggestions">
+                {suggestions.map((opt) => (
+                  <li key={opt.key}>
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectProvider(opt)} className="ct-suggestion-item">
+                      <Building2 size={12} />
+                      <span>{opt.nombre}</span>
+                      <span className="ct-suggestion-count">{opt.count}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <button className="mx-btn mx-btn-outline" onClick={handleExportCentros} disabled={exportandoCentros}>
-              <FileDown size={18} /> Exportar
-            </button>
-            <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
-              <Plus size={18} /> Nuevo Centro
-            </button>
+          <div className="mx-search-box ct-search-area">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Área PSMB o código área..."
+              value={areaSearchTerm}
+              onChange={(e) => { setAreaSearchTerm(e.target.value); syncUrl({ areaQ: e.target.value }); }}
+            />
           </div>
+        </div>
+
+        <div className="ct-filter-group">
+          <select className="mx-input ct-select" value={comunaFilter} onChange={(e) => { setComunaFilter(e.target.value); syncUrl({ comuna: e.target.value }); }}>
+            <option value="">Todas las comunas</option>
+            {comunas.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select className="mx-input ct-select" value={areaFilter} onChange={(e) => { setAreaFilter(e.target.value); syncUrl({ area: e.target.value }); }}>
+            <option value="">Todos los estados</option>
+            <option value="con_area">Con área</option>
+            <option value="abierta">Área abierta</option>
+            <option value="sin_area">Sin área</option>
+          </select>
+          {hasActiveFilters && (
+            <button type="button" className="mx-btn mx-btn-outline" onClick={handleClearFilters}>
+              <X size={14} /> Limpiar
+            </button>
+          )}
+          <button type="button" className="mx-btn-icon" title="Exportar a Excel" onClick={handleExportCentros} disabled={exportandoCentros}>
+            <FileDown size={16} />
+          </button>
         </div>
       </div>
 
       <div className="mx-table-card">
         <div className="mx-table-wrap">
-          <table className="mx-table">
+          <table className="mx-table ct-table">
             <thead>
               <tr>
                 <th>Proveedor</th>
-                <th>Codigo Centro</th>
-                <th>Area PSMB</th>
-                <th>Estado Area</th>
-                <th>Hectareas</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
+                <th>Código</th>
+                <th>Área PSMB</th>
+                <th>Estado área</th>
+                <th className="ct-col-right">Hectáreas</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <div className="mx-spinner" style={{ margin: '0 auto 12px' }}></div>
-                    <p>Cargando centros...</p>
-                  </td>
-                </tr>
+                <tr><td colSpan="6" className="ct-table-state"><div className="mx-spinner"></div></td></tr>
               ) : !selectedTenantDb ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <p>Selecciona una empresa para ver los centros de cultivo.</p>
-                  </td>
-                </tr>
+                <tr><td colSpan="6" className="ct-table-state">Selecciona una empresa para ver los centros.</td></tr>
               ) : filteredData.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                    <p>No se encontraron centros que coincidan con la busqueda.</p>
-                  </td>
-                </tr>
+                <tr><td colSpan="6" className="ct-table-state">No se encontraron centros.</td></tr>
               ) : (
                 visibleRows.map((centro) => (
                   <tr key={centro._id} className="centros-row">
                     <td>
                       <div className="centros-cell-main">
-                        <span style={{ fontWeight: 'var(--weight-bold)' }}>{centro.proveedor}</span>
+                        <span className="ct-cell-name">{centro.proveedor}</span>
                         <span className="centros-cell-sub">{centro.comuna}</span>
                       </div>
                     </td>
-                    <td><code>{centro.code}</code></td>
+                    <td><code className="ct-code">{centro.code}</code></td>
                     <td>
                       {centro.areaPSMB ? (
                         <div className="centros-area-cell">
                           <strong>{centro.areaPSMB}</strong>
-                          {centro.codigoArea ? <span>Codigo area {centro.codigoArea}</span> : null}
+                          {centro.codigoArea && <span>Código {centro.codigoArea}</span>}
                         </div>
                       ) : (
-                        <span className="centros-muted">Sin area</span>
+                        <span className="centros-muted">Sin área</span>
                       )}
                     </td>
                     <td>
-                      <span className={`mx-badge ${centro.estadoAreaSernapesca === 'Abierta' ? 'mx-badge-success' : 'mx-badge-muted'}`}>
+                      <span className={`mx-badge mx-badge-${
+                        centro.estadoAreaSernapesca === 'Abierta' ? 'success' :
+                        centro.estadoAreaSernapesca === 'Cerrada' ? 'error' : 'muted'
+                      }`}>
                         {centro.estadoAreaSernapesca || 'Desconocido'}
                       </span>
                     </td>
-                    <td>{Number(centro.hectareas || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}</td>
-                    <td>
-                      <div className="centros-actions">
-                        <button className="mx-btn-icon" title="Ver en mapa" onClick={() => handleOpenMap(centro)}><MapPin size={16} /></button>
-                        <button className="mx-btn-icon" title="Ver detalles" onClick={() => openViewModal(centro)}><Eye size={16} /></button>
-                        <button className="mx-btn-icon" title="Editar" onClick={() => openEditModal(centro)}><Edit size={16} /></button>
-                        <button className="mx-btn-icon" title="Eliminar" onClick={() => setConfirmDelete(centro)}><Trash2 size={16} /></button>
+                    <td className="ct-col-right">
+                      {Number(centro.hectareas || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="ct-col-actions">
+                      <div className="ct-menu-wrap">
+                        <button
+                          className="mx-action-btn"
+                          onClick={(e) => {
+                            if (openMenuId === centro._id) {
+                              setOpenMenuId(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                              setOpenMenuId(centro._id);
+                            }
+                          }}
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -559,30 +483,38 @@ export default function CentrosTable() {
         </div>
       </div>
 
-      {!loading && filteredData.length > 0 ? (
+      {!loading && filteredData.length > 0 && (
         <div className="centros-pagination-footer">
           <span>Mostrando {visibleRows.length} de {filteredData.length} centros</span>
-          {hasMoreRows ? (
-            <button
-              className="mx-btn mx-btn-outline"
-              onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
-            >
-              Ver mas
-            </button>
-          ) : null}
+          {hasMoreRows && (
+            <button className="mx-btn mx-btn-outline" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>Ver más</button>
+          )}
         </div>
-      ) : null}
+      )}
+
+      {openMenuId && (
+        <div ref={menuRef} className="ct-dropdown" style={{ top: menuPos.top, right: menuPos.right }}>
+          {(() => {
+            const centro = visibleRows.find((c) => c._id === openMenuId);
+            if (!centro) return null;
+            return (
+              <>
+                <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); handleOpenMap(centro); }}><MapPin size={14} /> Ver en mapa</button>
+                <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); openViewModal(centro); }}><Eye size={14} /> Ver detalles</button>
+                <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); openEditModal(centro); }}><Edit size={14} /> Editar</button>
+                <button className="ct-dropdown-item ct-dropdown-danger" onClick={() => { setOpenMenuId(null); setConfirmDelete(centro); }}><Trash2 size={14} /> Eliminar</button>
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       <ConfirmDeleteModal
         isOpen={Boolean(confirmDelete)}
         onClose={() => setConfirmDelete(null)}
         onConfirm={handleDeleteCentro}
         title="¿Eliminar centro?"
-        description={
-          confirmDelete
-            ? `Estás a punto de borrar el centro "${confirmDelete.code || 'sin código'}" de ${confirmDelete.proveedor || 'este proveedor'}. Esta acción es irreversible.`
-            : ''
-        }
+        description={confirmDelete ? `Estás a punto de borrar el centro "${confirmDelete.code || 'sin código'}" de ${confirmDelete.proveedor || 'este proveedor'}. Esta acción es irreversible.` : ''}
       />
 
       <ConfirmDeleteModal
@@ -590,11 +522,7 @@ export default function CentrosTable() {
         onClose={() => setConfirmImport(false)}
         onConfirm={handleImportSubpesca}
         title="Actualizar centros desde SUBPESCA"
-        description={
-          importing
-            ? 'Sincronizando centros oficiales...'
-            : 'Se consultara la fuente oficial y se actualizaran los centros existentes por codigo. Esta accion puede tardar unos segundos.'
-        }
+        description={importing ? 'Sincronizando centros oficiales...' : 'Se consultara la fuente oficial y se actualizaran los centros existentes por codigo. Esta accion puede tardar unos segundos.'}
         confirmLabel={importing ? 'Sincronizando...' : 'Actualizar'}
       />
 
@@ -603,119 +531,61 @@ export default function CentrosTable() {
           <div className="mx-modal" style={{ maxWidth: '760px' }}>
             <div className="mx-modal-header">
               <h2>{isViewMode ? 'Detalle Centro' : modalState.item?._id ? 'Editar Centro' : 'Nuevo Centro'}</h2>
-              <button type="button" className="mx-btn-icon" onClick={closeModal}>
-                <X size={20} />
-              </button>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
             {isViewMode ? (
               <>
                 <div className="mx-modal-body">
                   <div className="centros-detail-grid">
-                    <div className="detail-item">
-                      <label>Proveedor</label>
-                      <span>{modalState.item?.proveedor || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Codigo centro</label>
-                      <span>{modalState.item?.code || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Comuna</label>
-                      <span>{modalState.item?.comuna || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Region</label>
-                      <span>{modalState.item?.region || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Area PSMB</label>
-                      <span>{modalState.item?.areaPSMB || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Estado Area</label>
-                      <span>{modalState.item?.estadoAreaSernapesca || 'Desconocido'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Hectareas</label>
-                      <span>{Number(modalState.item?.hectareas || 0).toLocaleString('es-CL')} ha</span>
-                    </div>
-                    <div className="detail-item">
-                      <label>Tons max</label>
-                      <span>{Number(modalState.item?.tonsMax || 0).toLocaleString('es-CL')}</span>
-                    </div>
+                    <div className="detail-item"><label>Proveedor</label><span>{modalState.item?.proveedor || '-'}</span></div>
+                    <div className="detail-item"><label>Codigo centro</label><span>{modalState.item?.code || '-'}</span></div>
+                    <div className="detail-item"><label>Comuna</label><span>{modalState.item?.comuna || '-'}</span></div>
+                    <div className="detail-item"><label>Region</label><span>{modalState.item?.region || '-'}</span></div>
+                    <div className="detail-item"><label>Area PSMB</label><span>{modalState.item?.areaPSMB || '-'}</span></div>
+                    <div className="detail-item"><label>Estado Area</label><span>{modalState.item?.estadoAreaSernapesca || 'Desconocido'}</span></div>
+                    <div className="detail-item"><label>Hectareas</label><span>{Number(modalState.item?.hectareas || 0).toLocaleString('es-CL')} ha</span></div>
+                    <div className="detail-item"><label>Tons max</label><span>{Number(modalState.item?.tonsMax || 0).toLocaleString('es-CL')}</span></div>
                   </div>
                 </div>
                 <div className="mx-modal-footer">
                   <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cerrar</button>
-                  <button type="button" className="mx-btn mx-btn-outline" onClick={() => handleOpenMap(modalState.item)}>
-                    <MapPin size={18} /> Ver en mapa
-                  </button>
-                  <button type="button" className="mx-btn mx-btn-primary" onClick={() => openEditModal(modalState.item)}>
-                    <Edit size={18} /> Editar
-                  </button>
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={() => handleOpenMap(modalState.item)}><MapPin size={18} /> Ver en mapa</button>
+                  <button type="button" className="mx-btn mx-btn-primary" onClick={() => openEditModal(modalState.item)}><Edit size={18} /> Editar</button>
                 </div>
               </>
             ) : (
-            <form onSubmit={handleSubmitCentro} className="mx-form">
-              <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Proveedor</label>
-                    <input className="mx-input" name="proveedor" defaultValue={modalState.item?.proveedor || ''} required />
+              <form onSubmit={handleSubmitCentro} className="mx-form">
+                <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '16px' }}>
+                    <div className="mx-form-group"><label className="mx-label">Proveedor</label><input className="mx-input" name="proveedor" defaultValue={modalState.item?.proveedor || ''} required /></div>
+                    <div className="mx-form-group"><label className="mx-label">Codigo Centro</label><input className="mx-input" name="code" defaultValue={modalState.item?.code || ''} required /></div>
                   </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Codigo Centro</label>
-                    <input className="mx-input" name="code" defaultValue={modalState.item?.code || ''} required />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="mx-form-group"><label className="mx-label">Comuna</label><input className="mx-input" name="comuna" defaultValue={modalState.item?.comuna || ''} required /></div>
+                    <div className="mx-form-group"><label className="mx-label">Región</label><input className="mx-input" name="region" defaultValue={modalState.item?.region || ''} /></div>
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Comuna</label>
-                    <input className="mx-input" name="comuna" defaultValue={modalState.item?.comuna || ''} required />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="mx-form-group"><label className="mx-label">Área PSMB</label><input className="mx-input" name="areaPSMB" defaultValue={modalState.item?.areaPSMB || ''} /></div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Estado Area</label>
+                      <select className="mx-select" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
+                        <option value="">Seleccionar</option>
+                        <option value="Abierta">Abierta</option>
+                        <option value="Cerrada">Cerrada</option>
+                        <option value="Suspendida">Suspendida</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Región</label>
-                    <input className="mx-input" name="region" defaultValue={modalState.item?.region || ''} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Área PSMB</label>
-                    <input className="mx-input" name="areaPSMB" defaultValue={modalState.item?.areaPSMB || ''} />
-                  </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Estado Area</label>
-                    <select className="mx-select" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
-                      <option value="">Seleccionar</option>
-                      <option value="Abierta">Abierta</option>
-                      <option value="Cerrada">Cerrada</option>
-                      <option value="Suspendida">Suspendida</option>
-                    </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="mx-form-group"><label className="mx-label">Hectareas</label><input className="mx-input" name="hectareas" type="number" step="0.01" defaultValue={modalState.item?.hectareas ?? ''} /></div>
+                    <div className="mx-form-group"><label className="mx-label">Tons Máx</label><input className="mx-input" name="tonsMax" type="number" step="0.01" defaultValue={modalState.item?.tonsMax ?? ''} /></div>
                   </div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Hectareas</label>
-                    <input className="mx-input" name="hectareas" type="number" step="0.01" defaultValue={modalState.item?.hectareas ?? ''} />
-                  </div>
-                  <div className="mx-form-group">
-                    <label className="mx-label">Tons Máx</label>
-                    <input className="mx-input" name="tonsMax" type="number" step="0.01" defaultValue={modalState.item?.tonsMax ?? ''} />
-                  </div>
+                <div className="mx-modal-footer">
+                  <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
+                  <button type="submit" className="mx-btn mx-btn-primary">{modalState.item?._id ? 'Guardar cambios' : 'Crear centro'}</button>
                 </div>
-              </div>
-              <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="mx-btn mx-btn-primary">
-                  {modalState.item?._id ? 'Guardar cambios' : 'Crear centro'}
-                </button>
-              </div>
-            </form>
+              </form>
             )}
           </div>
         </div>
@@ -723,6 +593,3 @@ export default function CentrosTable() {
     </div>
   );
 }
-
-
-
