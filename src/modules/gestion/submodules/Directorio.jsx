@@ -885,9 +885,8 @@ export default function Directorio() {
                           <div className="dir-provider-text">
                             <div className="dir-primary-text dir-name-truncate" title={provider.nombre}>{provider.nombre}</div>
                             <div className="dir-provider-meta">
-                              <span className="mx-badge dir-key-badge">{provider.key || 'sin-key'}</span>
-                              <span><MapPin size={10} /> {provider.comuna}</span>
-                              <span>{provider.centros} centro{provider.centros === 1 ? '' : 's'}</span>
+                              {provider.comuna && provider.comuna !== '-' && <span><MapPin size={10} /> {provider.comuna}</span>}
+                              {provider.centros > 0 && <span>{provider.centros} centro{provider.centros === 1 ? '' : 's'}</span>}
                             </div>
                           </div>
                         </div>
@@ -895,11 +894,13 @@ export default function Directorio() {
 
                       <td>
                         <div className={`dir-primary-text${provider.contactoPrincipal === 'Primer contacto pendiente' ? ' is-pending' : ''}`}>{provider.contactoPrincipal}</div>
-                        <div className="dir-contact-meta">
-                          <span>{provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}</span>
-                          {provider.contactoTelefono ? <span><Phone size={10} />{provider.contactoTelefono}</span> : null}
-                          {provider.contactoEmail ? <span><Mail size={10} />{provider.contactoEmail}</span> : null}
-                        </div>
+                        {provider.contactoPrincipal !== 'Primer contacto pendiente' && (
+                          <div className="dir-contact-meta">
+                            {provider.totalContactos > 1 && <span>{provider.totalContactos} contactos</span>}
+                            {provider.contactoTelefono ? <span><Phone size={10} />{provider.contactoTelefono}</span> : null}
+                            {provider.contactoEmail ? <span><Mail size={10} />{provider.contactoEmail}</span> : null}
+                          </div>
+                        )}
                       </td>
 
                       <td>
@@ -907,9 +908,9 @@ export default function Directorio() {
                           <StatusIcon size={12} />
                           {status.label}
                         </span>
-                        {provider.estadoComercial ? (
+                        {provider.estadoComercial && provider.estadoComercial !== provider.seguimientoEstado ? (
                           <div className="dir-muted-note">
-                            {ESTADO_COMERCIAL_LABELS[provider.estadoComercial] || provider.estadoComercial}
+                            {ESTADO_COMERCIAL_LABELS[provider.estadoComercial] || null}
                           </div>
                         ) : null}
                       </td>
