@@ -916,14 +916,10 @@ export default function Directorio() {
                       </td>
 
                       <td>
-                        {provider.ultimaInteraccionResumen ? (
+                        {provider.ultimaInteraccionFecha ? (
                           <>
-                            <div className="dir-clamped-text" title={provider.ultimaInteraccionResumen}>
-                              {provider.ultimaInteraccionResumen}
-                            </div>
-                            <div className="dir-subtle-note">
-                              {formatShortDate(provider.ultimaInteraccionFecha)} · {formatDaysAgo(provider.ultimaInteraccionFecha)}
-                            </div>
+                            <div className="dir-reg-date">{formatDaysAgo(provider.ultimaInteraccionFecha)}</div>
+                            <div className="dir-subtle-note">{formatShortDate(provider.ultimaInteraccionFecha)}</div>
                           </>
                         ) : (
                           <span className="dir-subtle-note">—</span>
