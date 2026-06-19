@@ -974,6 +974,25 @@
   gap: 4px;
 }
 
+.map-panel-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+/* Hover tooltip */
+.map-tooltip-hover .tooltip-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.map-tooltip-hover .tooltip-code { font-weight: 700; font-size: 13px; }
+.map-tooltip-hover .tooltip-provider { font-size: 11px; opacity: 0.8; }
+.map-tooltip-hover .tooltip-estado { font-size: 11px; opacity: 0.75; }
+.map-tooltip-hover .tooltip-meta { font-size: 11px; opacity: 0.7; }
+
 /* ── CentrosTable redesign ──────────────────────────────────── */
 
 .ct-page {

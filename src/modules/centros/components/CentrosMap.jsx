@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -18,6 +18,16 @@ import { apiClient } from '../../../api/apiClient';
 
 const CONCESSION_COLOR = '#22c55e';
 const HARVEST_COLOR = '#f59e0b';
+const CLOSED_COLOR = '#ef4444';
+const SUSPENDED_COLOR = '#f97316';
+
+function getPolygonColor(centro, isHarvestActive) {
+  if (isHarvestActive) return HARVEST_COLOR;
+  const estado = String(centro.estadoAreaSernapesca || '').toLowerCase();
+  if (estado === 'cerrada') return CLOSED_COLOR;
+  if (estado === 'suspendida') return SUSPENDED_COLOR;
+  return CONCESSION_COLOR;
+}
 const SATELLITE_LAYER = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
 const ALLOWED_SPECIES_KEYS = [
@@ -213,7 +223,7 @@ const CentroPolygon = memo(function CentroPolygon({
         },
       }}
     >
-      {showLabel && (
+      {showLabel ? (
         <Tooltip
           key={`tooltip-${centro._id}-${labelLevel}-${showProvider}`}
           permanent
@@ -225,6 +235,19 @@ const CentroPolygon = memo(function CentroPolygon({
             {showProvider && <div className="tooltip-provider">{centro.proveedor}</div>}
           </div>
         </Tooltip>
+      ) : (
+        <Tooltip sticky className="map-tooltip-hover">
+          <div className="tooltip-inner">
+            <div className="tooltip-code">{centro.code}</div>
+            <div className="tooltip-provider">{centro.proveedor}</div>
+            {centro.estadoAreaSernapesca && (
+              <div className="tooltip-estado">{centro.estadoAreaSernapesca}</div>
+            )}
+            {centro.hectareas != null && (
+              <div className="tooltip-meta">{centro.hectareas} ha</div>
+            )}
+          </div>
+        </Tooltip>
       )}
     </Polygon>
   );
@@ -232,6 +255,7 @@ const CentroPolygon = memo(function CentroPolygon({
 
 export default function CentrosMap() {
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [concessionFilter, setConcessionFilter] = useState('all');
@@ -556,7 +580,8 @@ export default function CentrosMap() {
             preferCanvas
             scrollWheelZoom
             style={{
-              height: isFullscreen ? '100vh' : '650px',
+              height: isFullscreen ? '100vh' : 'calc(100vh - 220px)',
+              minHeight: '400px',
               width: '100%',
               borderRadius: isFullscreen ? '0' : '12px',
               background: '#0f172a',
@@ -571,7 +596,7 @@ export default function CentrosMap() {
             {mapCentros.map((centro) => {
               const isHarvestActive = harvestKeys.codes.has(centro.codeNorm)
                 || harvestKeys.providers.has(centro.proveedorNorm);
-              const color = isHarvestActive ? HARVEST_COLOR : CONCESSION_COLOR;
+              const color = getPolygonColor(centro, isHarvestActive);
 
               return (
                 <CentroPolygon
@@ -594,11 +619,19 @@ export default function CentrosMap() {
         <div className="map-legend">
           <span className="map-legend-item">
             <span className="map-legend-dot" style={{ background: CONCESSION_COLOR }}></span>
-            Concesión
+            Abierta
           </span>
           <span className="map-legend-item">
             <span className="map-legend-dot" style={{ background: HARVEST_COLOR }}></span>
             En cosecha
+          </span>
+          <span className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: SUSPENDED_COLOR }}></span>
+            Suspendida
+          </span>
+          <span className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: CLOSED_COLOR }}></span>
+            Cerrada
           </span>
           {focusedCentroCode && (
             <span className="map-legend-item">
@@ -617,6 +650,12 @@ export default function CentrosMap() {
               <div className="map-panel-title">
                 <div className="map-panel-code">{selectedCentro.code}</div>
                 <div className="map-panel-provider">{selectedCentro.proveedor}</div>
+                <span className={`mx-badge mx-badge-${
+                  selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' :
+                  selectedCentro.estadoAreaSernapesca === 'Cerrada' ? 'error' : 'muted'
+                }`} style={{ marginTop: '4px', display: 'inline-flex' }}>
+                  {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
+                </span>
               </div>
               <button type="button" className="mx-btn-icon" onClick={() => setSelectedCentro(null)}>
                 <X size={18} />
@@ -692,6 +731,19 @@ export default function CentrosMap() {
                   </div>
                 </>
               )}
+            </div>
+            <div className="map-panel-footer">
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setSelectedCentro(null);
+                  navigate(`/centros/directorio?proveedor=${encodeURIComponent(selectedCentro.proveedorKey || selectedCentro.proveedor || '')}`);
+                }}
+              >
+                Ver en Directorio
+              </button>
             </div>
           </div>
         </>
