@@ -720,6 +720,260 @@
   }
 }
 
+/* ── Map toolbar restructure ────────────────────────────────── */
+
+.map-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.map-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.map-density-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-density-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.map-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-btn-active {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border-color: #f97316 !important;
+  color: #c2410c !important;
+}
+
+.map-count-inline {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  background: var(--color-surface-muted, #f1f5f9);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.map-count-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.map-count-of {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.map-harvest-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  padding: 0 4px;
+}
+
+/* Measure banner — horizontal strip between toolbar and map */
+.map-measure-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #c2410c;
+  margin-bottom: 4px;
+}
+
+.map-measure-total {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ea580c;
+}
+
+.map-measure-exit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 5px;
+  color: #c2410c;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.map-measure-exit:hover { background: rgba(249, 115, 22, 0.12); }
+
+/* Legend */
+.map-legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 800;
+  display: flex;
+  gap: 10px;
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.82);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.82);
+  white-space: nowrap;
+}
+
+.map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Centro detail side panel */
+.map-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+.map-detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  z-index: 9999;
+  background: var(--color-surface-card, #fff);
+  border-left: 1px solid var(--color-border, #e2e8f0);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  animation: map-panel-in 0.22s ease;
+}
+
+@keyframes map-panel-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.map-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.map-panel-title { flex: 1; min-width: 0; }
+
+.map-panel-code {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: 'SF Mono', 'Fira Mono', monospace;
+}
+
+.map-panel-provider {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.map-panel-section { padding: 8px 16px; }
+
+.map-panel-divider {
+  height: 1px;
+  background: var(--color-border, #e2e8f0);
+  margin: 0 16px;
+}
+
+.map-panel-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.map-panel-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.map-panel-value {
+  font-size: 13px;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+.map-panel-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 /* ── CentrosTable redesign ──────────────────────────────────── */
 
 .ct-page {

@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Maximize, Ruler, Search, Trash2, X } from 'lucide-react';
+import { Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import {
   CircleMarker,
@@ -362,9 +362,7 @@ export default function CentrosMap() {
     if (!centroCode || !allowedCentros.length) return;
 
     const target = allowedCentros.find((centro) => String(centro.code || '').trim().toUpperCase() === centroCode);
-    if (!target) {
-      return;
-    }
+    if (!target) return;
 
     if (mapInstance && target.coords?.length > 0) {
       setFocusedCentroCode(target.codeNorm);
@@ -399,108 +397,139 @@ export default function CentrosMap() {
 
   const centerPosition = [-42.5, -73.5];
 
+  const harvestCount = useMemo(() =>
+    mapCentros.filter((c) => harvestKeys.codes.has(c.codeNorm) || harvestKeys.providers.has(c.proveedorNorm)).length,
+    [mapCentros, harvestKeys]
+  );
+
   return (
     <div className={`centros-map-container ${isFullscreen ? 'is-fullscreen' : ''}`}>
       <div className="map-toolbar">
-        <div className="centros-search-wrap map-search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar codigo o proveedor..."
-            className="centros-search"
-            value={searchTerm}
-            onChange={(event) => {
-              setSearchTerm(event.target.value);
-              setFocusedCentroCode('');
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && searchSuggestions[0]) {
-                handleSelectSuggestion(searchSuggestions[0]);
-              }
-            }}
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              className="map-search-clear"
-              onClick={() => {
-                setSearchTerm('');
+        <div className="map-toolbar-left">
+          <div className="centros-search-wrap map-search" style={{ position: 'relative' }}>
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Buscar código o proveedor..."
+              className="centros-search"
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
                 setFocusedCentroCode('');
               }}
-              title="Limpiar busqueda"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && searchSuggestions[0]) {
+                  handleSelectSuggestion(searchSuggestions[0]);
+                }
+              }}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className="map-search-clear"
+                onClick={() => { setSearchTerm(''); setFocusedCentroCode(''); }}
+                title="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
+            {searchSuggestions.length > 0 && (
+              <div className="mx-search-dropdown">
+                {searchSuggestions.map((centro) => (
+                  <div
+                    key={centro._id}
+                    className="mx-search-item"
+                    onClick={() => handleSelectSuggestion(centro)}
+                  >
+                    <div className="search-item-main">{centro.code}</div>
+                    <div className="search-item-sub">{centro.proveedor}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mx-toggle-group">
+            <button
+              className={`mx-toggle-btn ${concessionFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setConcessionFilter('all')}
             >
-              <X size={14} />
+              Todas
             </button>
-          )}
-          {searchSuggestions.length > 0 && (
-            <div className="mx-search-dropdown">
-              {searchSuggestions.map((centro) => (
-                <div
-                  key={centro._id}
-                  className="mx-search-item"
-                  onClick={() => handleSelectSuggestion(centro)}
-                >
-                  <div className="search-item-main">{centro.code}</div>
-                  <div className="search-item-sub">{centro.proveedor}</div>
-                </div>
-              ))}
+            <button
+              className={`mx-toggle-btn ${concessionFilter === 'harvest' ? 'active' : ''}`}
+              onClick={() => setConcessionFilter('harvest')}
+            >
+              En Cosecha
+              {harvestCount > 0 && <span className="map-harvest-badge">{harvestCount}</span>}
+            </button>
+          </div>
+
+          {!loading && selectedTenantDb && (
+            <div className="map-count-inline">
+              <span className="map-count-num">{mapCentros.length.toLocaleString('es-CL')}</span>
+              <span className="map-count-of">de {allowedCentros.length.toLocaleString('es-CL')} centros</span>
             </div>
           )}
         </div>
 
-        <div className="mx-toggle-group">
-          <button
-            className={`mx-toggle-btn ${concessionFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setConcessionFilter('all')}
-          >
-            Todas
-          </button>
-          <button
-            className={`mx-toggle-btn ${concessionFilter === 'harvest' ? 'active' : ''}`}
-            onClick={() => setConcessionFilter('harvest')}
-          >
-            En Cosecha
-          </button>
-        </div>
+        <div className="map-toolbar-right">
+          <div className="map-density-group">
+            <span className="map-density-label">Etiquetas</span>
+            <div className="mx-toggle-group">
+              {Object.entries(LABEL_CONFIG).map(([id, cfg]) => (
+                <button
+                  key={id}
+                  className={`mx-toggle-btn ${labelLevel === id ? 'active' : ''}`}
+                  onClick={() => setLabelLevel(id)}
+                  title={`Etiquetas ${cfg.label.toLowerCase()}`}
+                >
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <div className="map-toolbar-spacer" />
-
-        <div className="mx-toggle-group label-toggle" aria-label="Nivel de etiquetas">
-          {Object.entries(LABEL_CONFIG).map(([id, cfg]) => (
+          <div className="map-action-group">
             <button
-              key={id}
-              className={`mx-toggle-btn ${labelLevel === id ? 'active' : ''}`}
-              onClick={() => setLabelLevel(id)}
-              title={`Etiquetas ${cfg.label.toLowerCase()}`}
+              className={`mx-btn-icon ${isMeasuring ? 'map-btn-active' : ''}`}
+              onClick={handleToggleMeasure}
+              title="Medir distancia"
             >
-              {cfg.label}
+              <Ruler size={16} />
             </button>
-          ))}
+            {measurePoints.length > 0 && (
+              <button
+                className="mx-btn-icon"
+                onClick={() => setMeasurePoints([])}
+                title="Limpiar medición"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+            <button
+              className="mx-btn-icon"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            >
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            </button>
+          </div>
         </div>
-
-        <button
-          className={`mx-btn mx-btn-outline map-icon-btn ${isMeasuring ? 'active' : ''}`}
-          onClick={handleToggleMeasure}
-          title="Medir distancia"
-        >
-          <Ruler size={18} />
-        </button>
-
-        {measurePoints.length > 0 && (
-          <button
-            className="mx-btn mx-btn-outline map-icon-btn"
-            onClick={() => setMeasurePoints([])}
-            title="Limpiar medicion"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-
-        <button className="mx-btn mx-btn-outline map-fullscreen-btn" onClick={() => setIsFullscreen(!isFullscreen)}>
-          {isFullscreen ? <X size={18} /> : <Maximize size={18} />}
-          {isFullscreen ? 'Salir' : 'Pantalla completa'}
-        </button>
       </div>
+
+      {isMeasuring && (
+        <div className="map-measure-banner">
+          <Ruler size={13} />
+          <span>Modo medición — haz clic en el mapa para trazar puntos</span>
+          {measurePoints.length > 1 && (
+            <strong className="map-measure-total">{formatMeters(measuredDistance)}</strong>
+          )}
+          <button type="button" className="map-measure-exit" onClick={handleToggleMeasure}>
+            <X size={13} /> Salir
+          </button>
+        </div>
+      )}
 
       <div className="map-frame">
         {!selectedTenantDb ? (
@@ -510,7 +539,7 @@ export default function CentrosMap() {
         ) : loading ? (
           <div className="mx-loading-placeholder">
             <div className="mx-spinner"></div>
-            <p>Preparando cartografia...</p>
+            <p>Preparando cartografía...</p>
           </div>
         ) : (
           <MapContainer
@@ -554,100 +583,110 @@ export default function CentrosMap() {
           </MapContainer>
         )}
 
-        {isMeasuring && (
-          <div className="map-measure-panel">
-            <strong>Medicion activa</strong>
-            <span>Haz clic en el mapa para trazar puntos.</span>
-            <b>{formatMeters(measuredDistance)}</b>
-          </div>
-        )}
-
-        {!loading && selectedTenantDb && (
-          <div className="map-count-chip">
-            {mapCentros.length.toLocaleString('es-CL')} visibles de {allowedCentros.length.toLocaleString('es-CL')}
-          </div>
-        )}
+        <div className="map-legend">
+          <span className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: CONCESSION_COLOR }}></span>
+            Concesión
+          </span>
+          <span className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: HARVEST_COLOR }}></span>
+            En cosecha
+          </span>
+          {focusedCentroCode && (
+            <span className="map-legend-item">
+              <span className="map-legend-dot" style={{ background: '#38bdf8' }}></span>
+              Seleccionado
+            </span>
+          )}
+        </div>
       </div>
 
       {selectedCentro && (
-        <div className="mx-modal-overlay" style={{ zIndex: 100000 }}>
-          <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-header">
-              <div>
-                <h2>{selectedCentro.proveedor}</h2>
-                <p className="mx-modal-sub" style={{ margin: 0, color: 'var(--color-text-muted)' }}>Centro de Cultivo {selectedCentro.code}</p>
+        <>
+          <div className="map-panel-backdrop" onClick={() => setSelectedCentro(null)} />
+          <div className="map-detail-panel">
+            <div className="map-panel-header">
+              <div className="map-panel-title">
+                <div className="map-panel-code">{selectedCentro.code}</div>
+                <div className="map-panel-provider">{selectedCentro.proveedor}</div>
               </div>
-              <button type="button" className="mx-btn-icon" onClick={() => setSelectedCentro(null)}><X size={20} /></button>
-            </div>
-            <div className="mx-modal-body">
-              <div className="centros-detail-grid">
-                <div className="detail-item">
-                  <label>Codigo centro</label>
-                  <span>{selectedCentro.code || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Proveedor</label>
-                  <span>{selectedCentro.proveedor || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Comuna</label>
-                  <span>{selectedCentro.comuna || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Region</label>
-                  <span>{selectedCentro.region || 'X Region'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Hectareas</label>
-                  <span>{selectedCentro.hectareas != null ? `${selectedCentro.hectareas} ha` : 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Tons max</label>
-                  <span>{selectedCentro.tonsMax != null ? `${selectedCentro.tonsMax} t` : 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Estado Sernapesca</label>
-                  <span className={`mx-badge ${selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'mx-badge-success' : 'mx-badge-muted'}`}>
-                    {selectedCentro.estadoAreaSernapesca || 'N/A'}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <label>Area PSMB</label>
-                  <span>{selectedCentro.areaPSMB || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Codigo area</label>
-                  <span>{selectedCentro.codigoArea || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Grupo especie</label>
-                  <span>{selectedCentro.grupoEspecie || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Nro permiso</label>
-                  <span>{selectedCentro.nroPermiso || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <label>RUT</label>
-                  <span>{selectedCentro.rut || 'N/A'}</span>
-                </div>
-                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
-                  <label>Especies Autorizadas</label>
-                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
-                    {(selectedCentro.especies || [selectedCentro.grupoEspecie]).map((especie) => (
-                      <span key={especie} className="mx-badge mx-badge-info">{especie}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mx-modal-footer">
-              <button type="button" className="mx-btn mx-btn-primary" style={{ width: '100%' }} onClick={() => setSelectedCentro(null)}>
-                Cerrar Detalles
+              <button type="button" className="mx-btn-icon" onClick={() => setSelectedCentro(null)}>
+                <X size={18} />
               </button>
             </div>
+            <div className="map-panel-body">
+              <div className="map-panel-section">
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Código</span>
+                  <span className="map-panel-value"><code className="ct-code">{selectedCentro.code || '—'}</code></span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Proveedor</span>
+                  <span className="map-panel-value">{selectedCentro.proveedor || '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Comuna</span>
+                  <span className="map-panel-value">{selectedCentro.comuna || '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Región</span>
+                  <span className="map-panel-value">{selectedCentro.region || '—'}</span>
+                </div>
+              </div>
+              <div className="map-panel-divider" />
+              <div className="map-panel-section">
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Área PSMB</span>
+                  <span className="map-panel-value">{selectedCentro.areaPSMB || '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Código área</span>
+                  <span className="map-panel-value">{selectedCentro.codigoArea || '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Estado Sernapesca</span>
+                  <span className={`mx-badge mx-badge-${selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' : 'muted'}`}>
+                    {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
+                  </span>
+                </div>
+              </div>
+              <div className="map-panel-divider" />
+              <div className="map-panel-section">
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Hectáreas</span>
+                  <span className="map-panel-value">{selectedCentro.hectareas != null ? `${selectedCentro.hectareas} ha` : '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Tons máx</span>
+                  <span className="map-panel-value">{selectedCentro.tonsMax != null ? `${selectedCentro.tonsMax} t` : '—'}</span>
+                </div>
+                <div className="map-panel-row">
+                  <span className="map-panel-label">Grupo especie</span>
+                  <span className="map-panel-value">{selectedCentro.grupoEspecie || '—'}</span>
+                </div>
+                {selectedCentro.nroPermiso && (
+                  <div className="map-panel-row">
+                    <span className="map-panel-label">Nro permiso</span>
+                    <span className="map-panel-value">{selectedCentro.nroPermiso}</span>
+                  </div>
+                )}
+              </div>
+              {(selectedCentro.especies?.length > 0 || selectedCentro.grupoEspecie) && (
+                <>
+                  <div className="map-panel-divider" />
+                  <div className="map-panel-section">
+                    <div className="map-panel-label" style={{ marginBottom: '6px' }}>Especies autorizadas</div>
+                    <div className="map-panel-badges">
+                      {(selectedCentro.especies || [selectedCentro.grupoEspecie]).filter(Boolean).map((especie) => (
+                        <span key={especie} className="mx-badge mx-badge-info">{especie}</span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
