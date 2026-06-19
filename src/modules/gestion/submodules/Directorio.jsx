@@ -37,6 +37,7 @@ import {
   useMuestreos
 } from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
+import ProviderMapModal from './ProviderMapModal';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
 import './directorio.css';
 
@@ -311,6 +312,7 @@ export default function Directorio() {
   }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw, deletedProviders, deletedContacts]);
 
   const [detailModal, setDetailModal] = useState({ open: false, provider: null });
+  const [mapModal, setMapModal] = useState({ open: false, provider: null });
 
   useEffect(() => {
     if (!queryFromUrl) return;
@@ -1373,8 +1375,8 @@ export default function Directorio() {
                     <History size={16} /> Historial
                   </button>
                 )}
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => openProviderCenters(detailModal.provider)}>
-                  <ExternalLink size={16} /> Centros
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setMapModal({ open: true, provider: detailModal.provider })}>
+                  <MapPin size={16} /> Mapa
                 </button>
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => { setDetailModal({ open: false, provider: null }); openEditModal(detailModal.provider); }}>
                   <Edit size={16} /> Editar
@@ -1549,6 +1551,13 @@ export default function Directorio() {
             </div>
           </div>
         </div>
+      )}
+
+      {mapModal.open && mapModal.provider && (
+        <ProviderMapModal
+          provider={mapModal.provider}
+          onClose={() => setMapModal({ open: false, provider: null })}
+        />
       )}
 
      </div>
