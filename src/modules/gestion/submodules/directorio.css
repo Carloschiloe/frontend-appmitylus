@@ -192,12 +192,11 @@
 .mx-page > .mx-toolbar:has(.dir-toolbar-search) {
   align-items: center;
   padding: 2px 0 4px;
-  margin-bottom: 0;
 }
 
-/* Aplasta el gap de 18px de gestion y los am-mt-16 sueltos */
+/* Gap del flex column y am-mt-16 sueltos */
 .gestion-content-frame .mx-submodule-body > .mx-page.am-p-0 {
-  gap: 6px;
+  gap: 4px;
 }
 
 .mx-page.am-p-0 > .mx-toolbar.am-mt-16,
@@ -815,7 +814,6 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  margin-top: 8px;
 }
 
 .dir-status-item {
