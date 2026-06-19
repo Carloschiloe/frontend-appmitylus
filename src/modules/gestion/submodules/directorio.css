@@ -842,12 +842,14 @@ button.dir-status-item:hover {
   background: var(--color-bg-alt);
 }
 
-button.dir-status-item.is-active {
-  background: rgba(10, 92, 255, 0.05);
-}
+button.dir-status-item.is-active { outline: none; }
+button.dir-status-item.is-success.is-active { background: rgba(16, 185, 129, 0.08); box-shadow: inset 0 -2px 0 #10b981; }
+button.dir-status-item.is-warning.is-active { background: rgba(217, 119, 6, 0.08);  box-shadow: inset 0 -2px 0 var(--color-warning); }
+button.dir-status-item.is-primary.is-active { background: rgba(10, 92, 255, 0.08);  box-shadow: inset 0 -2px 0 var(--color-primary); }
+button.dir-status-item.is-muted.is-active   { background: rgba(100, 116, 139, 0.08); box-shadow: inset 0 -2px 0 #64748b; }
 
 button.dir-status-item.is-active .dir-status-label {
-  color: var(--color-primary);
+  font-weight: 800;
 }
 
 .dir-status-icon {

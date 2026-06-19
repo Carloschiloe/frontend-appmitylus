@@ -266,6 +266,7 @@ export default function Directorio() {
   const [deletedContacts, setDeletedContacts] = useState(new Set());
   const [contactFilter, setContactFilter] = useState('todos');
   const [sortBy, setSortBy] = useState('az');
+  const [filterEstado, setFilterEstado] = useState('todos');
   const [filterUsuario, setFilterUsuario] = useState('');
   const [providerRegistered, setProviderRegistered] = useState(null);
   const [openMenuKey, setOpenMenuKey] = useState(null);
@@ -351,6 +352,11 @@ export default function Directorio() {
   const filteredItems = useMemo(() => {
     if (tab === 'proveedores') {
       let list = data.proveedores || [];
+      if (filterEstado !== 'todos') {
+        list = filterEstado === 'none'
+          ? list.filter((item) => !item.seguimientoEstado)
+          : list.filter((item) => item.seguimientoEstado === filterEstado);
+      }
       if (searchTerm.trim()) {
         const q = searchTerm.toLowerCase();
         list = list.filter((item) =>
@@ -380,7 +386,7 @@ export default function Directorio() {
       return [item.nombre, item.contactoNombre, item.proveedorNombre, item.email, item.contactoEmail, item.telefono, item.contactoTelefono, item.proveedorKey]
         .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [tab, data, searchTerm, contactFilter, sortBy]);
+  }, [tab, data, searchTerm, contactFilter, sortBy, filterEstado]);
 
   const providerOptions = useMemo(() => {
     const providersMap = new Map();
@@ -752,7 +758,7 @@ export default function Directorio() {
     <div className="mx-page am-p-0">
       <div className="mx-toolbar am-mt-16">
         <div className="mx-toggle-group">
-          <button className={`mx-toggle-btn ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => { setTab('proveedores'); setContactFilter('todos'); }}>
+          <button className={`mx-toggle-btn ${tab === 'proveedores' ? 'active' : ''}`} onClick={() => { setTab('proveedores'); setContactFilter('todos'); setFilterEstado('todos'); }}>
             <Building2 size={14} /> Proveedores
           </button>
           <button className={`mx-toggle-btn ${tab === 'contactos' ? 'active' : ''}`} onClick={() => { setTab('contactos'); setContactFilter('todos'); }}>
@@ -788,16 +794,16 @@ export default function Directorio() {
       {tab === 'proveedores' && (
         <div className="dir-status-strip">
           {[
-            { label: 'Activos',          value: providerStats.activos,         Icon: Activity,     cls: 'is-success' },
-            { label: 'Pausados',         value: providerStats.pausados,         Icon: PauseCircle,  cls: 'is-warning' },
-            { label: 'Acordados',        value: providerStats.acordados,        Icon: CheckCircle2, cls: 'is-primary' },
-            { label: 'Sin seguimiento',  value: providerStats.sinSeguimiento,   Icon: Clock3,       cls: 'is-muted'   },
-          ].map(({ label, value, Icon, cls }) => (
-            <div key={label} className={`dir-status-item ${cls}`}>
+            { label: 'Activos',          value: providerStats.activos,         Icon: Activity,     cls: 'is-success', filter: 'activo'   },
+            { label: 'Pausados',         value: providerStats.pausados,         Icon: PauseCircle,  cls: 'is-warning', filter: 'pausado'  },
+            { label: 'Acordados',        value: providerStats.acordados,        Icon: CheckCircle2, cls: 'is-primary', filter: 'acordado' },
+            { label: 'Sin seguimiento',  value: providerStats.sinSeguimiento,   Icon: Clock3,       cls: 'is-muted',   filter: 'none'    },
+          ].map(({ label, value, Icon, cls, filter }) => (
+            <button key={filter} type="button" className={`dir-status-item ${cls}${filterEstado === filter ? ' is-active' : ''}`} onClick={() => setFilterEstado(prev => prev === filter ? 'todos' : filter)}>
               <Icon size={16} className="dir-status-icon" />
               <span className="dir-status-num">{value}</span>
               <span className="dir-status-label">{label}</span>
-            </div>
+            </button>
           ))}
           <div className="dir-strip-right">
             <span className="dir-sort-label">Ordenar:</span>
