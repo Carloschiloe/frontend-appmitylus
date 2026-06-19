@@ -786,56 +786,41 @@ export default function Directorio() {
       </div>
 
       {tab === 'proveedores' && (
-        <>
-          <div className="mx-kpi-grid am-mt-16">
-            {[
-              { label: 'Activos', value: providerStats.activos, tone: 'success' },
-              { label: 'Pausados', value: providerStats.pausados, tone: 'warning' },
-              { label: 'Acordados', value: providerStats.acordados, tone: 'primary' },
-              { label: 'Sin seguimiento', value: providerStats.sinSeguimiento, tone: 'muted' },
-            ].map((stat) => (
-              <div key={stat.label} className="mx-kpi-card">
-                <p className="mx-eyebrow">{stat.label}</p>
-                <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
-              </div>
-            ))}
-          </div>
-          <div className="dir-sort-bar">
+        <div className="dir-status-strip">
+          {[
+            { label: 'Activos',          value: providerStats.activos,         Icon: Activity,     cls: 'is-success' },
+            { label: 'Pausados',         value: providerStats.pausados,         Icon: PauseCircle,  cls: 'is-warning' },
+            { label: 'Acordados',        value: providerStats.acordados,        Icon: CheckCircle2, cls: 'is-primary' },
+            { label: 'Sin seguimiento',  value: providerStats.sinSeguimiento,   Icon: Clock3,       cls: 'is-muted'   },
+          ].map(({ label, value, Icon, cls }) => (
+            <div key={label} className={`dir-status-item ${cls}`}>
+              <Icon size={16} className="dir-status-icon" />
+              <span className="dir-status-num">{value}</span>
+              <span className="dir-status-label">{label}</span>
+            </div>
+          ))}
+          <div className="dir-strip-right">
             <span className="dir-sort-label">Ordenar:</span>
             <div className="mx-toggle-group">
-              <button
-                className={`mx-toggle-btn ${sortBy === 'az' ? 'active' : ''}`}
-                onClick={() => setSortBy('az')}
-              >
-                A–Z
-              </button>
-              <button
-                className={`mx-toggle-btn ${sortBy === 'recientes' ? 'active' : ''}`}
-                onClick={() => setSortBy('recientes')}
-              >
-                Más recientes
-              </button>
+              <button className={`mx-toggle-btn${sortBy === 'az' ? ' active' : ''}`} onClick={() => setSortBy('az')}>A–Z</button>
+              <button className={`mx-toggle-btn${sortBy === 'recientes' ? ' active' : ''}`} onClick={() => setSortBy('recientes')}>Recientes</button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {tab === 'contactos' && (
-        <div className="mx-kpi-grid am-mt-16">
+        <div className="dir-status-strip">
           {[
-            { label: 'Total', value: contactStats.total, tone: 'muted', filter: 'todos' },
-            { label: 'Sin empresa', value: contactStats.sinEmpresa, tone: 'error', filter: 'sin-empresa' },
-            { label: 'Sin centro', value: contactStats.sinCentro, tone: 'warning', filter: 'sin-centro' },
-            { label: 'Completos', value: contactStats.completos, tone: 'success', filter: 'completos' },
-          ].map((stat) => (
-            <button
-              key={stat.label}
-              type="button"
-              className={`mx-kpi-card dir-contact-kpi-btn ${contactFilter === stat.filter ? 'active' : ''}`}
-              onClick={() => setContactFilter(stat.filter)}
-            >
-              <p className="mx-eyebrow">{stat.label}</p>
-              <h2 className={`mx-kpi-value dir-kpi-value is-${stat.tone}`}>{stat.value}</h2>
+            { label: 'Total',       value: contactStats.total,       Icon: User,         cls: 'is-muted',   filter: 'todos'       },
+            { label: 'Sin empresa', value: contactStats.sinEmpresa,  Icon: Building2,    cls: 'is-danger',  filter: 'sin-empresa' },
+            { label: 'Sin centro',  value: contactStats.sinCentro,   Icon: MapPin,       cls: 'is-warning', filter: 'sin-centro'  },
+            { label: 'Completos',   value: contactStats.completos,   Icon: CheckCircle2, cls: 'is-success', filter: 'completos'   },
+          ].map(({ label, value, Icon, cls, filter }) => (
+            <button key={filter} type="button" className={`dir-status-item ${cls}${contactFilter === filter ? ' is-active' : ''}`} onClick={() => setContactFilter(filter)}>
+              <Icon size={16} className="dir-status-icon" />
+              <span className="dir-status-num">{value}</span>
+              <span className="dir-status-label">{label}</span>
             </button>
           ))}
         </div>
@@ -889,8 +874,8 @@ export default function Directorio() {
                     <tr key={provider.providerKey}>
                       <td>
                         <div className="dir-provider-cell">
-                          <div className="mx-btn-icon sm dir-provider-icon">
-                            <Building2 size={16} />
+                          <div className="dir-provider-avatar">
+                            {provider.nombre.charAt(0).toUpperCase()}
                           </div>
                           <div className="dir-provider-text">
                             <div className="dir-primary-text dir-name-truncate" title={provider.nombre}>{provider.nombre}</div>

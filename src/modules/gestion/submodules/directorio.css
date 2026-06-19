@@ -799,6 +799,108 @@
   margin-top: 8px;
 }
 
+/* ── Status strip (proveedores + contactos) ── */
+
+.dir-status-strip {
+  display: flex;
+  align-items: stretch;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin-top: 8px;
+}
+
+.dir-status-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-right: 1px solid var(--color-border);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  background: none;
+  text-align: left;
+  cursor: default;
+  transition: background 0.12s;
+}
+
+button.dir-status-item {
+  cursor: pointer;
+}
+
+button.dir-status-item:hover {
+  background: var(--color-bg-alt);
+}
+
+button.dir-status-item.is-active {
+  background: rgba(10, 92, 255, 0.05);
+}
+
+button.dir-status-item.is-active .dir-status-label {
+  color: var(--color-primary);
+}
+
+.dir-status-icon {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.dir-status-num {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.dir-status-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  line-height: 1.2;
+}
+
+.dir-status-item.is-success .dir-status-num,
+.dir-status-item.is-success .dir-status-icon { color: var(--color-success); }
+.dir-status-item.is-warning .dir-status-num,
+.dir-status-item.is-warning .dir-status-icon { color: var(--color-warning); }
+.dir-status-item.is-primary .dir-status-num,
+.dir-status-item.is-primary .dir-status-icon { color: var(--color-primary); }
+.dir-status-item.is-muted   .dir-status-num,
+.dir-status-item.is-muted   .dir-status-icon { color: var(--color-text-subtle); }
+.dir-status-item.is-danger  .dir-status-num,
+.dir-status-item.is-danger  .dir-status-icon { color: var(--color-error, #dc2626); }
+
+.dir-strip-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--color-border);
+}
+
+/* ── Provider avatar ── */
+
+.dir-provider-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-primary-bg, rgba(10, 92, 255, 0.08));
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.84rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
 @media (max-width: 760px) {
   .dir-form-row,
   .dir-detail-summary-grid {
