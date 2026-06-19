@@ -237,7 +237,7 @@ export default function CentrosMap() {
   const [concessionFilter, setConcessionFilter] = useState('all');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [labelLevel, setLabelLevel] = useState('media');
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measurePoints, setMeasurePoints] = useState([]);
   const [selectedCentro, setSelectedCentro] = useState(null);
@@ -277,22 +277,30 @@ export default function CentrosMap() {
     }, 0);
   }, [measurePoints]);
 
-  useEffect(() => {
-    if (isFullscreen) {
-      document.body.style.overflow = 'hidden';
-      const sidebar = document.querySelector('.mx-sidebar');
-      if (sidebar) sidebar.style.display = 'none';
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
     } else {
-      document.body.style.overflow = 'auto';
-      const sidebar = document.querySelector('.mx-sidebar');
-      if (sidebar) sidebar.style.display = 'flex';
+      document.exitFullscreen().catch(() => {});
     }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      const active = Boolean(document.fullscreenElement);
+      setIsFullscreen(active);
+      const sidebar = document.querySelector('.mx-sidebar');
+      if (sidebar) sidebar.style.display = active ? 'none' : 'flex';
+      document.body.style.overflow = active ? 'hidden' : '';
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
     return () => {
-      document.body.style.overflow = 'auto';
+      document.removeEventListener('fullscreenchange', onFsChange);
       const sidebar = document.querySelector('.mx-sidebar');
       if (sidebar) sidebar.style.display = 'flex';
+      document.body.style.overflow = '';
     };
-  }, [isFullscreen]);
+  }, []);
 
   const allowedCentros = useMemo(() => {
     return data.map((centro) => {
@@ -509,7 +517,7 @@ export default function CentrosMap() {
             )}
             <button
               className="mx-btn-icon"
-              onClick={() => setIsFullscreen(!isFullscreen)}
+              onClick={handleToggleFullscreen}
               title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
             >
               {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
@@ -548,9 +556,9 @@ export default function CentrosMap() {
             preferCanvas
             scrollWheelZoom
             style={{
-              height: isFullscreen ? 'calc(100vh - 100px)' : '650px',
+              height: isFullscreen ? '100vh' : '650px',
               width: '100%',
-              borderRadius: '12px',
+              borderRadius: isFullscreen ? '0' : '12px',
               background: '#0f172a',
             }}
             ref={setMapInstance}
