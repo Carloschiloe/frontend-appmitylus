@@ -135,6 +135,7 @@ export default function TratosTable({
             <thead>
               <tr>
                 <th className="tratos-col-provider">Proveedor</th>
+                <th className="tratos-col-centro">Centro</th>
                 <th className="tratos-col-tons">Tons</th>
                 <th className="tratos-col-price">Precio Pactado</th>
                 <th>Fechas estimadas</th>
@@ -146,7 +147,7 @@ export default function TratosTable({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7">
+                  <td colSpan="8">
                     <div className="mx-state-placeholder">
                       <div className="mx-spinner"></div>
                     </div>
@@ -154,7 +155,7 @@ export default function TratosTable({
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan="7">
+                  <td colSpan="8">
                     <div className="mx-empty-state">
                       <Handshake size={36} />
                       <p className="mx-empty-state__title">Sin tratos para mostrar</p>
@@ -182,11 +183,6 @@ export default function TratosTable({
                     <tr key={item._id} className="tratos-row">
                       <td>
                         <div className="tratos-provider-name">{item.proveedorNombre}</div>
-                        {item.centroCodigo && (
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-subtle)', marginBottom: 4 }}>
-                            {item.centroCodigo}
-                          </div>
-                        )}
                         {(item.contactoNombre || item.contactoTelefono) && (
                           <div className="tratos-chip-row">
                             {item.contactoNombre && (
@@ -197,6 +193,11 @@ export default function TratosTable({
                             )}
                           </div>
                         )}
+                      </td>
+                      <td className="tratos-col-centro">
+                        {item.centroCodigo
+                          ? <code className="tratos-centro-code">{item.centroCodigo}</code>
+                          : <span className="tratos-centro-empty">—</span>}
                       </td>
                       <td className="tratos-metric-cell">
                         <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>
