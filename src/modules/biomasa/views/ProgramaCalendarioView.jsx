@@ -10,7 +10,9 @@ import {
   Info,
   AlertTriangle,
   SlidersHorizontal,
+  MapPin,
 } from 'lucide-react';
+import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
 
 const CAL_VIEW_LABELS = { month: 'Mes', week: 'Semana' };
 import {
@@ -66,6 +68,7 @@ export default function ProgramaCalendarioView({
   const { addToast } = useToast();
   const [truckPopover, setTruckPopover] = useState(null);
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
+  const [mapProvider, setMapProvider] = useState(null);
   const calViewDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -442,7 +445,19 @@ export default function ProgramaCalendarioView({
                       <div className="cal-detail-card-top">
                         <div className="cal-detail-card-info">
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
-                          <div className="cal-detail-card-center">{it.centroNombre || it.centroCodigo || 'Sin centro'}</div>
+                          <div className="cal-detail-card-center">
+                            {it.centroNombre || it.centroCodigo || 'Sin centro'}
+                            {it.proveedorKey && (
+                              <button
+                                type="button"
+                                className="cal-detail-map-btn"
+                                title="Ver centro en mapa"
+                                onClick={() => setMapProvider({ key: it.proveedorKey, nombre: it.proveedorNombre })}
+                              >
+                                <MapPin size={12} />
+                              </button>
+                            )}
+                          </div>
                           {Array.isArray(it.desgloseDia) && it.desgloseDia.length > 0 && (
                             <div className="cal-detail-card-transporte">
                               {it.desgloseDia.map((l, i) => (
@@ -796,6 +811,12 @@ export default function ProgramaCalendarioView({
             </div>
           )}
         </aside>
+      )}
+      {mapProvider && (
+        <ProviderMapModal
+          provider={mapProvider}
+          onClose={() => setMapProvider(null)}
+        />
       )}
     </div>
   );
