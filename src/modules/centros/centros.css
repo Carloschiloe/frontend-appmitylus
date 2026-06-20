@@ -819,8 +819,86 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  margin-right: 3px;
   flex-shrink: 0;
+}
+
+/* ── Barra de filtros de estado área ── */
+.map-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0 6px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  flex-wrap: wrap;
+}
+
+.map-filter-bar-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.map-estado-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-2, #f8fafc);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.map-estado-chip:hover {
+  border-color: var(--color-primary, #0d9488);
+  color: var(--color-text-primary);
+}
+
+.map-estado-chip.active {
+  font-weight: 600;
+}
+
+.map-chip-count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 5px;
+  height: 15px;
+  min-width: 18px;
+  border-radius: 8px;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px dashed var(--color-border, #e2e8f0);
+  background: none;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  margin-left: 2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.map-filter-clear:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-muted);
 }
 
 .map-harvest-badge {

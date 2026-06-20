@@ -514,40 +514,6 @@ export default function CentrosMap() {
             </button>
           </div>
 
-          <div className="map-toolbar-sep" />
-
-          <div className="mx-toggle-group">
-            <button
-              className={`mx-toggle-btn ${estadoFilter === 'abierta' ? 'active' : ''}`}
-              onClick={() => setEstadoFilter(estadoFilter === 'abierta' ? 'all' : 'abierta')}
-              title="Mostrar solo áreas Abiertas"
-            >
-              <span className="map-estado-dot" style={{ background: CONCESSION_COLOR }} />
-              Abiertas
-              {estadoFilter === 'abierta' && <span className="map-harvest-badge" style={{ background: '#22c55e' }}>{estadoCounts.abierta.toLocaleString('es-CL')}</span>}
-            </button>
-            <button
-              className={`mx-toggle-btn ${estadoFilter === 'inactiva' ? 'active' : ''}`}
-              onClick={() => setEstadoFilter(estadoFilter === 'inactiva' ? 'all' : 'inactiva')}
-              title="Mostrar solo áreas Inactivas"
-            >
-              <span className="map-estado-dot" style={{ background: CLOSED_COLOR }} />
-              Inactivas
-              {estadoCounts.inactiva > 0 && <span className="map-harvest-badge" style={{ background: '#ef4444' }}>{estadoCounts.inactiva}</span>}
-            </button>
-            {estadoCounts.eliminada > 0 && (
-              <button
-                className={`mx-toggle-btn ${estadoFilter === 'eliminada' ? 'active' : ''}`}
-                onClick={() => setEstadoFilter(estadoFilter === 'eliminada' ? 'all' : 'eliminada')}
-                title="Mostrar solo áreas Eliminadas"
-              >
-                <span className="map-estado-dot" style={{ background: CLOSED_COLOR }} />
-                Eliminadas
-                <span className="map-harvest-badge" style={{ background: '#ef4444' }}>{estadoCounts.eliminada}</span>
-              </button>
-            )}
-          </div>
-
           {!loading && selectedTenantDb && (
             <div className="map-count-inline">
               <span className="map-count-num">{mapCentros.length.toLocaleString('es-CL')}</span>
@@ -600,6 +566,34 @@ export default function CentrosMap() {
           </div>
         </div>
       </div>
+
+      {!loading && selectedTenantDb && (
+        <div className="map-filter-bar">
+          <span className="map-filter-bar-label">Estado área</span>
+          {[
+            { key: 'abierta',   label: 'Abierta',   color: CONCESSION_COLOR, count: estadoCounts.abierta },
+            { key: 'inactiva',  label: 'Inactiva',  color: CLOSED_COLOR,     count: estadoCounts.inactiva },
+            { key: 'eliminada', label: 'Eliminada', color: CLOSED_COLOR,     count: estadoCounts.eliminada },
+          ].filter(e => e.count > 0).map(({ key, label, color, count }) => (
+            <button
+              key={key}
+              className={`map-estado-chip ${estadoFilter === key ? 'active' : ''}`}
+              style={estadoFilter === key ? { borderColor: color, background: `${color}18`, color: 'var(--color-text-primary)' } : {}}
+              onClick={() => setEstadoFilter(estadoFilter === key ? 'all' : key)}
+              title={`Filtrar: solo áreas ${label}s`}
+            >
+              <span className="map-estado-dot" style={{ background: color }} />
+              {label}
+              <span className="map-chip-count" style={{ background: color }}>{count.toLocaleString('es-CL')}</span>
+            </button>
+          ))}
+          {estadoFilter !== 'all' && (
+            <button className="map-filter-clear" onClick={() => setEstadoFilter('all')} title="Quitar filtro de estado">
+              <X size={11} /> Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {isMeasuring && (
         <div className="map-measure-banner">
