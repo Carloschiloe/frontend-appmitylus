@@ -24,7 +24,7 @@ const SUSPENDED_COLOR = '#f97316';
 function getPolygonColor(centro, isHarvestActive) {
   if (isHarvestActive) return HARVEST_COLOR;
   const estado = String(centro.estadoAreaSernapesca || '').toLowerCase();
-  if (estado === 'cerrada') return CLOSED_COLOR;
+  if (estado === 'inactiva' || estado === 'eliminada') return CLOSED_COLOR;
   if (estado === 'suspendida') return SUSPENDED_COLOR;
   return CONCESSION_COLOR;
 }
@@ -626,12 +626,8 @@ export default function CentrosMap() {
             En cosecha
           </span>
           <span className="map-legend-item">
-            <span className="map-legend-dot" style={{ background: SUSPENDED_COLOR }}></span>
-            Suspendida
-          </span>
-          <span className="map-legend-item">
             <span className="map-legend-dot" style={{ background: CLOSED_COLOR }}></span>
-            Cerrada
+            Inactiva / Eliminada
           </span>
           {focusedCentroCode && (
             <span className="map-legend-item">
@@ -652,7 +648,7 @@ export default function CentrosMap() {
                 <div className="map-panel-provider">{selectedCentro.proveedor}</div>
                 <span className={`mx-badge mx-badge-${
                   selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                  selectedCentro.estadoAreaSernapesca === 'Cerrada' ? 'error' : 'muted'
+                  (selectedCentro.estadoAreaSernapesca === 'Inactiva' || selectedCentro.estadoAreaSernapesca === 'Eliminada') ? 'error' : 'muted'
                 }`} style={{ marginTop: '4px', display: 'inline-flex' }}>
                   {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
                 </span>
@@ -692,7 +688,10 @@ export default function CentrosMap() {
                 </div>
                 <div className="map-panel-row">
                   <span className="map-panel-label">Estado Sernapesca</span>
-                  <span className={`mx-badge mx-badge-${selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' : 'muted'}`}>
+                  <span className={`mx-badge mx-badge-${
+                    selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' :
+                    (selectedCentro.estadoAreaSernapesca === 'Inactiva' || selectedCentro.estadoAreaSernapesca === 'Eliminada') ? 'error' : 'muted'
+                  }`}>
                     {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
                   </span>
                 </div>

@@ -51,3 +51,7 @@ export async function exportCentros(filters = {}) {
 export async function syncSubpesca() {
   return apiClient.post(`${BASE}/sync-subpesca`);
 }
+
+export async function syncSernapescaAreas() {
+  return apiClient.post(`${BASE}/sync-sernapesca`);
+}

@@ -1,11 +1,15 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
-import { 
-  Map as MapIcon, 
-  Plus, 
-  FileUp, 
-  TableProperties
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  Map as MapIcon,
+  Plus,
+  FileUp,
+  TableProperties,
+  RefreshCw,
 } from 'lucide-react';
+import { syncSernapescaAreas } from '../../api/api-centros';
+import { useToast } from '../../context/ToastContext';
 
 // Lazy loading con preload para que el cambio entre pestanas sea fluido.
 const loadCentrosTable = () => import('./components/CentrosTable');
@@ -51,6 +55,9 @@ export default function Centros() {
   const location = useLocation();
   const isSanitarioView = location.pathname.startsWith('/centros/sanitario');
   const pageMeta = getPageMeta(location.pathname);
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
 
   const notifyCreateCentro = () => {
     window.dispatchEvent(new CustomEvent('centros:open-create'));
@@ -58,6 +65,20 @@ export default function Centros() {
 
   const notifyImportCentros = () => {
     window.dispatchEvent(new CustomEvent('centros:open-import'));
+  };
+
+  const handleSyncSernapesca = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await syncSernapescaAreas();
+      addToast({ title: 'Áreas SERNAPESCA actualizadas', message: `Se sincronizaron ${result?.areas || 0} áreas.`, type: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['centros'] });
+    } catch (err) {
+      addToast({ title: 'Error al sincronizar', message: err?.data?.error || err?.message || 'No se pudo conectar con SERNAPESCA.', type: 'error' });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -88,6 +109,15 @@ export default function Centros() {
             </div>
             {pageMeta.showActions && (
               <div className="centros-tab-actions">
+                <button
+                  className="mx-btn mx-btn-outline centros-import-btn"
+                  onClick={handleSyncSernapesca}
+                  disabled={syncing}
+                  title="Descargar estado actualizado de áreas desde SERNAPESCA"
+                >
+                  <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
+                  {syncing ? 'Actualizando...' : 'Actualizar SERNAPESCA'}
+                </button>
                 <button
                   className="mx-btn mx-btn-outline centros-import-btn"
                   onClick={notifyImportCentros}

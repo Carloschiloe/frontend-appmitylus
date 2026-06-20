@@ -391,8 +391,8 @@ export default function CentrosTable() {
           <select className="mx-input ct-select" value={areaFilter} onChange={(e) => { setAreaFilter(e.target.value); syncUrl({ area: e.target.value }); }}>
             <option value="">Estado área</option>
             <option value="Abierta">Abierta</option>
-            <option value="Cerrada">Cerrada</option>
-            <option value="Suspendida">Suspendida</option>
+            <option value="Inactiva">Inactiva</option>
+            <option value="Eliminada">Eliminada</option>
             <option value="sin_area">Sin área PSMB</option>
           </select>
           {hasActiveFilters && (
@@ -449,7 +449,7 @@ export default function CentrosTable() {
                     <td>
                       <span className={`mx-badge ct-estado-badge mx-badge-${
                         centro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                        centro.estadoAreaSernapesca === 'Cerrada' ? 'error' :
+                        (centro.estadoAreaSernapesca === 'Inactiva' || centro.estadoAreaSernapesca === 'Eliminada') ? 'error' :
                         centro.estadoAreaSernapesca === 'Suspendida' ? 'warning' : 'muted'
                       }`}>
                         {centro.estadoAreaSernapesca || '—'}
@@ -572,8 +572,8 @@ export default function CentrosTable() {
                       <select className="mx-select" name="estadoAreaSernapesca" defaultValue={modalState.item?.estadoAreaSernapesca || ''}>
                         <option value="">Seleccionar</option>
                         <option value="Abierta">Abierta</option>
-                        <option value="Cerrada">Cerrada</option>
-                        <option value="Suspendida">Suspendida</option>
+                        <option value="Inactiva">Inactiva</option>
+                        <option value="Eliminada">Eliminada</option>
                       </select>
                     </div>
                   </div>
