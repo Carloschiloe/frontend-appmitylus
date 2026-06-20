@@ -806,6 +806,23 @@
   color: var(--color-text-muted);
 }
 
+.map-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border, #e2e8f0);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.map-estado-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 3px;
+  flex-shrink: 0;
+}
+
 .map-harvest-badge {
   display: inline-flex;
   align-items: center;

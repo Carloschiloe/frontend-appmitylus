@@ -259,6 +259,7 @@ export default function CentrosMap() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [concessionFilter, setConcessionFilter] = useState('all');
+  const [estadoFilter, setEstadoFilter] = useState('all');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [labelLevel, setLabelLevel] = useState('media');
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
@@ -405,6 +406,17 @@ export default function CentrosMap() {
     }
   }, [allowedCentros, mapInstance, selectedCentroCode, setSearchParams]);
 
+  const estadoCounts = useMemo(() => {
+    const counts = { inactiva: 0, eliminada: 0, abierta: 0 };
+    for (const c of allowedCentros) {
+      const e = String(c.estadoAreaSernapesca || '').toLowerCase();
+      if (e === 'inactiva') counts.inactiva++;
+      else if (e === 'eliminada') counts.eliminada++;
+      else counts.abierta++;
+    }
+    return counts;
+  }, [allowedCentros]);
+
   const mapCentros = useMemo(() => {
     const query = deferredSearchTerm.trim().toLowerCase();
     const effectiveQuery = query.length >= 2 ? query : '';
@@ -416,6 +428,11 @@ export default function CentrosMap() {
       const inHarvest = harvestKeys.codes.has(centro.codeNorm)
         || harvestKeys.providers.has(centro.proveedorNorm);
       const matchesHarvest = concessionFilter === 'all' || inHarvest;
+
+      const estadoVal = String(centro.estadoAreaSernapesca || '').toLowerCase();
+      const matchesEstado = estadoFilter === 'all' ||
+        (estadoFilter === 'abierta' ? (!estadoVal || estadoVal === 'abierta') : estadoVal === estadoFilter);
+
       const inViewport = effectiveQuery || !viewportBounds || (
         centro.centerLat >= viewportBounds.south &&
         centro.centerLat <= viewportBounds.north &&
@@ -423,9 +440,9 @@ export default function CentrosMap() {
         centro.centerLng <= viewportBounds.east
       );
 
-      return matchesSearch && matchesHarvest && inViewport;
+      return matchesSearch && matchesHarvest && matchesEstado && inViewport;
     });
-  }, [allowedCentros, deferredSearchTerm, concessionFilter, harvestKeys, viewportBounds]);
+  }, [allowedCentros, deferredSearchTerm, concessionFilter, estadoFilter, harvestKeys, viewportBounds]);
 
   const centerPosition = [-42.5, -73.5];
 
@@ -495,6 +512,40 @@ export default function CentrosMap() {
               En Cosecha
               {harvestCount > 0 && <span className="map-harvest-badge">{harvestCount}</span>}
             </button>
+          </div>
+
+          <div className="map-toolbar-sep" />
+
+          <div className="mx-toggle-group">
+            <button
+              className={`mx-toggle-btn ${estadoFilter === 'abierta' ? 'active' : ''}`}
+              onClick={() => setEstadoFilter(estadoFilter === 'abierta' ? 'all' : 'abierta')}
+              title="Mostrar solo áreas Abiertas"
+            >
+              <span className="map-estado-dot" style={{ background: CONCESSION_COLOR }} />
+              Abiertas
+              {estadoFilter === 'abierta' && <span className="map-harvest-badge" style={{ background: '#22c55e' }}>{estadoCounts.abierta.toLocaleString('es-CL')}</span>}
+            </button>
+            <button
+              className={`mx-toggle-btn ${estadoFilter === 'inactiva' ? 'active' : ''}`}
+              onClick={() => setEstadoFilter(estadoFilter === 'inactiva' ? 'all' : 'inactiva')}
+              title="Mostrar solo áreas Inactivas"
+            >
+              <span className="map-estado-dot" style={{ background: CLOSED_COLOR }} />
+              Inactivas
+              {estadoCounts.inactiva > 0 && <span className="map-harvest-badge" style={{ background: '#ef4444' }}>{estadoCounts.inactiva}</span>}
+            </button>
+            {estadoCounts.eliminada > 0 && (
+              <button
+                className={`mx-toggle-btn ${estadoFilter === 'eliminada' ? 'active' : ''}`}
+                onClick={() => setEstadoFilter(estadoFilter === 'eliminada' ? 'all' : 'eliminada')}
+                title="Mostrar solo áreas Eliminadas"
+              >
+                <span className="map-estado-dot" style={{ background: CLOSED_COLOR }} />
+                Eliminadas
+                <span className="map-harvest-badge" style={{ background: '#ef4444' }}>{estadoCounts.eliminada}</span>
+              </button>
+            )}
           </div>
 
           {!loading && selectedTenantDb && (
