@@ -264,7 +264,6 @@ export default function Tratos() {
             valor: c.valor === '' ? null : c.valor,
           })),
           transportes: form.transporteTrato ? [form.transporteTrato] : [],
-          centroCodigo: form.centroCodigo || '',
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -335,7 +334,6 @@ export default function Tratos() {
               valor: condicion.valor === '' ? null : condicion.valor,
             })),
             transportes: form.transporteTrato ? [form.transporteTrato] : [],
-            centroCodigo: form.centroCodigo || '',
           });
 
           // 3. Si todas las condiciones quedaron acordadas, el trato pasa a Acordado
