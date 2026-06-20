@@ -1151,10 +1151,33 @@
   border-radius: 10px;
 }
 
-/* Table tweaks */
-.ct-table th, .ct-table td { vertical-align: middle; }
-.ct-col-right { text-align: right; width: 100px; }
-.ct-col-actions { width: 44px; padding: 0 8px; text-align: center; }
+/* Table — fixed layout so columns never exceed container width */
+.ct-table {
+  table-layout: fixed;
+  width: 100%;
+}
+.ct-table th, .ct-table td {
+  vertical-align: middle;
+  overflow: hidden;
+}
+/* Column widths (must sum to 100%) */
+.ct-table th:nth-child(1), .ct-table td:nth-child(1) { width: 32%; }  /* Proveedor */
+.ct-table th:nth-child(2), .ct-table td:nth-child(2) { width: 11%; }  /* Código */
+.ct-table th:nth-child(3), .ct-table td:nth-child(3) { width: 22%; }  /* Área PSMB */
+.ct-table th:nth-child(4), .ct-table td:nth-child(4) { width: 16%; }  /* Estado área */
+.ct-table th:nth-child(5), .ct-table td:nth-child(5) { width: 13%; }  /* Hectáreas */
+.ct-table th:nth-child(6), .ct-table td:nth-child(6) { width: 6%;  }  /* Actions */
+
+.ct-col-right { text-align: right; }
+.ct-col-actions { padding: 0 8px; text-align: center; }
+
+/* Text truncation for fixed layout */
+.ct-cell-name, .centros-cell-sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ct-code {
   font-family: 'SF Mono', 'Fira Mono', monospace;
   font-size: 12px;
@@ -1169,6 +1192,7 @@
   font-size: 13px;
   color: var(--color-text-primary);
   display: block;
+  max-width: 100%;
 }
 .ct-table-state {
   padding: 48px 24px;
