@@ -4,9 +4,13 @@
 }
 
 
-.centros-content-frame {
+/* Two-class selector (0-2-0) beats enterprise-polish .mx-content-frame padding-right:0 (0-1-0).
+   Needs 20px right padding because html+body have overflow-x:hidden and Windows scrollbar
+   takes ~17px from the right viewport edge, making content within 17px invisible. */
+.mx-content-frame.centros-content-frame {
   margin-top: 0;
   padding-top: 20px;
+  padding-right: 20px;
   gap: 10px;
 }
 
