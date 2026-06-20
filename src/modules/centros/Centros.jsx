@@ -116,7 +116,7 @@ export default function Centros() {
                   title="Descargar estado actualizado de áreas desde SERNAPESCA"
                 >
                   <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
-                  {syncing ? 'Actualizando...' : 'Actualizar SERNAPESCA'}
+                  {syncing ? 'Actualizando...' : 'Actualizar Est. Áreas'}
                 </button>
                 <button
                   className="mx-btn mx-btn-outline centros-import-btn"
