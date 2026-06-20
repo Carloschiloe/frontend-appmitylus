@@ -1151,8 +1151,8 @@
   border-radius: 10px;
 }
 
-/* Table — fixed layout so columns never exceed container width */
-.ct-table {
+/* Table — fixed layout beats enterprise-polish .mx-table{table-layout:auto} via higher specificity (0-2-0 vs 0-1-0) */
+.mx-table.ct-table {
   table-layout: fixed;
   width: 100%;
 }
@@ -1161,12 +1161,12 @@
   overflow: hidden;
 }
 /* Column widths (must sum to 100%) */
-.ct-table th:nth-child(1), .ct-table td:nth-child(1) { width: 32%; }  /* Proveedor */
-.ct-table th:nth-child(2), .ct-table td:nth-child(2) { width: 11%; }  /* Código */
+.ct-table th:nth-child(1), .ct-table td:nth-child(1) { width: 31%; }  /* Proveedor */
+.ct-table th:nth-child(2), .ct-table td:nth-child(2) { width: 10%; }  /* Código */
 .ct-table th:nth-child(3), .ct-table td:nth-child(3) { width: 22%; }  /* Área PSMB */
 .ct-table th:nth-child(4), .ct-table td:nth-child(4) { width: 16%; }  /* Estado área */
 .ct-table th:nth-child(5), .ct-table td:nth-child(5) { width: 13%; }  /* Hectáreas */
-.ct-table th:nth-child(6), .ct-table td:nth-child(6) { width: 6%;  }  /* Actions */
+.ct-table th:nth-child(6), .ct-table td:nth-child(6) { width: 8%;  min-width: 52px; }  /* Actions */
 
 .ct-col-right { text-align: right; }
 .ct-col-actions { padding: 0 8px; text-align: center; }
