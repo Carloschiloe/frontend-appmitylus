@@ -166,7 +166,7 @@ export default function Tratos() {
   });
 
   const isCreatingTrato = isModalOpen && !editingId;
-  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isCreatingTrato });
+  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isModalOpen });
   const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isCreatingTrato });
 
   const providers = useMemo(() => {
@@ -176,7 +176,14 @@ export default function Tratos() {
     return buildProviderDirectory(centros, contactos);
   }, [isCreatingTrato, centrosRaw, contactosRaw]);
 
-  const loadingProviders = loadingCentros || loadingContactos;
+  const loadingProviders = loadingContactos;
+
+  const centrosProveedor = useMemo(() => {
+    const provKey = selectedProvider?.proveedorKey || '';
+    if (!provKey) return [];
+    const all = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    return all.filter(c => c.proveedorKey === provKey);
+  }, [centrosRaw, selectedProvider]);
 
   const filteredProviders = useMemo(() => {
     const query = providerSearch.trim().toLowerCase();
@@ -257,6 +264,7 @@ export default function Tratos() {
             valor: c.valor === '' ? null : c.valor,
           })),
           transportes: form.transporteTrato ? [form.transporteTrato] : [],
+          centroCodigo: form.centroCodigo || '',
         };
 
         await apiClient.patch(`/oportunidades/${editingId}/trato`, tratoPayload);
@@ -327,6 +335,7 @@ export default function Tratos() {
               valor: condicion.valor === '' ? null : condicion.valor,
             })),
             transportes: form.transporteTrato ? [form.transporteTrato] : [],
+            centroCodigo: form.centroCodigo || '',
           });
 
           // 3. Si todas las condiciones quedaron acordadas, el trato pasa a Acordado
@@ -434,6 +443,7 @@ export default function Tratos() {
       notas: item.notasTrato || item.notas || '',
       condiciones: buildInitialConditions(maestrosCondiciones, item.condiciones || []),
       transporteTrato: item.transportes?.[0] || null,
+      centroCodigo: item.centroCodigo || '',
     });
     setIsModalOpen(true);
   };
@@ -624,6 +634,8 @@ export default function Tratos() {
         loadingProviders={loadingProviders}
         filteredProviders={filteredProviders}
         tiposTransporte={tiposTransporte}
+        centrosProveedor={centrosProveedor}
+        loadingCentros={loadingCentros}
         onClose={closeModal}
         onSubmit={handleSave}
         onFormChange={setForm}

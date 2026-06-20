@@ -72,6 +72,7 @@ export function createEmptyForm(condiciones = []) {
     motivoCierre: '',
     notas: '',
     condiciones,
+    centroCodigo: '',
   };
 }
 
