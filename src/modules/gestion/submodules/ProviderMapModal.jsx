@@ -5,6 +5,7 @@ import { X, MapPin } from 'lucide-react';
 import { getCentrosMapa } from '../../../api/api-centros';
 import { useAuth } from '../../../context/AuthContext';
 import 'leaflet/dist/leaflet.css';
+import './directorio.css';
 
 const SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
