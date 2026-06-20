@@ -447,12 +447,12 @@ export default function ProgramaCalendarioView({
                           <div className="cal-detail-card-name">{it.proveedorNombre}</div>
                           <div className="cal-detail-card-center">
                             {it.centroNombre || it.centroCodigo || 'Sin centro'}
-                            {it.proveedorKey && (
+                            {it.centroCodigo && (
                               <button
                                 type="button"
                                 className="cal-detail-map-btn"
                                 title="Ver centro en mapa"
-                                onClick={() => setMapProvider({ key: it.proveedorKey, nombre: it.proveedorNombre })}
+                                onClick={() => setMapProvider({ centroCodigo: it.centroCodigo, nombre: it.proveedorNombre })}
                               >
                                 <MapPin size={12} />
                               </button>

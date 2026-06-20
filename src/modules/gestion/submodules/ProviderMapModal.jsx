@@ -29,12 +29,15 @@ export default function ProviderMapModal({ provider, onClose }) {
   });
 
   const providerKey = String(provider.key || provider.providerKey || '').trim().toLowerCase();
+  const centroCodigo = String(provider.centroCodigo || '').trim().toLowerCase();
 
   const centros = useMemo(() => {
     return data
       .filter((c) => {
+        if (!Array.isArray(c.coords) || c.coords.length < 3) return false;
+        if (centroCodigo) return String(c.code || '').trim().toLowerCase() === centroCodigo;
         const key = String(c.proveedorKey || '').trim().toLowerCase();
-        return key === providerKey && Array.isArray(c.coords) && c.coords.length >= 3;
+        return key === providerKey;
       })
       .map((c) => ({
         ...c,
