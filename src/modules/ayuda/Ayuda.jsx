@@ -11,6 +11,7 @@ import {
   Clock3,
   FileText,
   FlaskConical,
+  HelpCircle,
   Search,
   Sparkles,
   Zap,
@@ -38,6 +39,14 @@ const ICON_MAP = {
   bug:       AlertCircle,
 };
 
+const ACTION_COLORS = {
+  handshake: { color: '#0A5CFF', bg: 'rgba(10,92,255,0.09)' },
+  flask:     { color: '#7c3aed', bg: 'rgba(124,58,237,0.09)' },
+  calendar:  { color: '#16a34a', bg: 'rgba(22,163,74,0.09)' },
+  history:   { color: '#0891b2', bg: 'rgba(8,145,178,0.09)' },
+  bug:       { color: '#dc2626', bg: 'rgba(220,38,38,0.09)' },
+};
+
 const TOUR_META = {
   tratos:    { icon: FileText,     color: '#0A5CFF', bg: 'rgba(10,92,255,0.10)' },
   muestreos: { icon: FlaskConical, color: '#7c3aed', bg: 'rgba(124,58,237,0.10)' },
@@ -51,6 +60,7 @@ const TOUR_META = {
 function QuickActionCard({ action }) {
   const navigate = useNavigate();
   const Icon = ICON_MAP[action.icon] || Zap;
+  const palette = ACTION_COLORS[action.icon] || ACTION_COLORS.handshake;
 
   const handleClick = () => {
     if (action.route) {
@@ -62,7 +72,7 @@ function QuickActionCard({ action }) {
 
   return (
     <button type="button" className="ayuda-qa-card" onClick={handleClick}>
-      <div className="ayuda-qa-icon">
+      <div className="ayuda-qa-icon" style={{ background: palette.bg, color: palette.color }}>
         <Icon size={18} />
       </div>
       <div className="ayuda-qa-copy">
@@ -76,16 +86,23 @@ function QuickActionCard({ action }) {
 
 function GuidedFlowCard({ flow, isOpen, onToggle }) {
   const Icon = ICON_MAP[flow.icon] || BookOpen;
+  const palette = ACTION_COLORS[flow.icon] || ACTION_COLORS.handshake;
+
+  const handleAction = () => {
+    if (flow.action === 'support-report') {
+      window.dispatchEvent(new CustomEvent('mitynex:open-support-report'));
+    }
+  };
 
   return (
     <div className={`ayuda-flow-card ${isOpen ? 'is-open' : ''}`}>
       <button type="button" className="ayuda-flow-card-header" onClick={onToggle}>
-        <div className="ayuda-flow-card-icon">
+        <div className="ayuda-flow-card-icon" style={{ background: palette.bg, color: palette.color }}>
           <Icon size={18} />
         </div>
         <div className="ayuda-flow-card-copy">
           <strong>{flow.title}</strong>
-          <span>{flow.steps.length} pasos · {flow.description}</span>
+          <span>{flow.description}</span>
         </div>
         <span className="ayuda-flow-card-steps-badge">{flow.steps.length}</span>
         <ChevronDown size={16} className="ayuda-flow-card-chevron" />
@@ -108,6 +125,10 @@ function GuidedFlowCard({ flow, isOpen, onToggle }) {
             <Link to={flow.route} className="ayuda-flow-card-cta">
               Ir al módulo <ArrowRight size={13} />
             </Link>
+          ) : flow.action ? (
+            <button type="button" className="ayuda-flow-card-cta" onClick={handleAction}>
+              {flow.actionLabel || 'Abrir'} <ArrowRight size={13} />
+            </button>
           ) : null}
         </div>
       )}
@@ -171,7 +192,7 @@ export default function Ayuda() {
           <Search size={19} />
           <span className="sr-only">{helpPageContent.searchLabel}</span>
           <input
-            type="search"
+            type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={helpPageContent.searchPlaceholder}
@@ -248,7 +269,7 @@ export default function Ayuda() {
                     const meta = TOUR_META[tour.id] || TOUR_META.tratos;
                     const Icon = meta.icon;
                     return (
-                      <article key={tour.id} className="ayuda-tour-card" style={{ '--tour-color': meta.color, '--tour-bg': meta.bg }}>
+                      <Link key={tour.id} to={tour.route} className="ayuda-tour-card" style={{ '--tour-color': meta.color, '--tour-bg': meta.bg }}>
                         <div className="ayuda-tour-card-icon" style={{ background: meta.bg, color: meta.color }}>
                           <Icon size={20} />
                         </div>
@@ -256,10 +277,10 @@ export default function Ayuda() {
                           <h3>{tour.title}</h3>
                           <p>{tour.summary}</p>
                         </div>
-                        <Link to={tour.route} className="ayuda-tour-card-link" style={{ background: meta.color }}>
+                        <span className="ayuda-tour-card-link" style={{ background: meta.color }}>
                           {toursPageContent.goToModuleLabel} <ArrowRight size={13} />
-                        </Link>
-                      </article>
+                        </span>
+                      </Link>
                     );
                   })}
                 </div>
@@ -270,7 +291,7 @@ export default function Ayuda() {
             {faqs.length > 0 && (
               <section>
                 <div className="ayuda-heading">
-                  <h2>{helpPageContent.faqTitle}</h2>
+                  <h2><HelpCircle size={16} /> {helpPageContent.faqTitle}</h2>
                 </div>
                 <div className="ayuda-faq-list">
                   {faqs.map((faq) => (
