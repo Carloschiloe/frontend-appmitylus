@@ -187,6 +187,35 @@
   margin-left: auto;
 }
 
+.mx-sidebar-report {
+  padding: 10px 14px 14px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.mx-sidebar-report-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 14px;
+  background: rgba(220, 38, 38, 0.10);
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  border-radius: 9px;
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background .18s, border-color .18s, color .18s;
+}
+
+.mx-sidebar-report-btn:hover {
+  background: rgba(220, 38, 38, 0.22);
+  border-color: rgba(220, 38, 38, 0.5);
+  color: #fecaca;
+}
+
 .mx-sidebar-foot {
   padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);

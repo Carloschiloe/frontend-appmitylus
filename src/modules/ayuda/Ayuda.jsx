@@ -292,15 +292,19 @@ export default function Ayuda() {
 
   const flows = useMemo(() =>
     guidedFlows.filter((f) =>
-      !normalizedSearch ||
-      normalize(`${f.title} ${f.description} ${f.keywords?.join(' ') || ''}`).includes(normalizedSearch)
+      f.id !== 'reportar-problema' && (
+        !normalizedSearch ||
+        normalize(`${f.title} ${f.description} ${f.keywords?.join(' ') || ''}`).includes(normalizedSearch)
+      )
     ),
     [normalizedSearch]
   );
 
   const actions = useMemo(() =>
     quickActions.filter((a) =>
-      !normalizedSearch || normalize(`${a.title} ${a.description}`).includes(normalizedSearch)
+      a.id !== 'reportar-problema' && (
+        !normalizedSearch || normalize(`${a.title} ${a.description}`).includes(normalizedSearch)
+      )
     ),
     [normalizedSearch]
   );
@@ -346,6 +350,24 @@ export default function Ayuda() {
       </header>
 
       <div className="mx-content-frame ayuda-content">
+        {/* ── Reportar problema — siempre visible, separado ── */}
+        <div className="ayuda-report-zone">
+          <div className="ayuda-report-icon">
+            <AlertCircle size={22} />
+          </div>
+          <div className="ayuda-report-copy">
+            <strong>¿Encontraste un problema?</strong>
+            <p>Envíanos el contexto y lo revisamos. El sistema adjunta información técnica automáticamente.</p>
+          </div>
+          <button
+            type="button"
+            className="ayuda-report-cta"
+            onClick={() => window.dispatchEvent(new CustomEvent('mitynex:open-support-report'))}
+          >
+            Reportar problema
+          </button>
+        </div>
+
         {!hasResults ? (
           <section className="ayuda-empty">
             <Search size={28} />

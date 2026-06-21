@@ -461,6 +461,67 @@
   text-transform: capitalize;
 }
 
+/* ── Reportar problema zone ───────────────────────────────────────────────── */
+.ayuda-report-zone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  border: 1px solid rgba(220, 38, 38, .22);
+  border-left: 4px solid #dc2626;
+  border-radius: 14px;
+  background: rgba(220, 38, 38, .04);
+  flex-shrink: 0;
+}
+
+.ayuda-report-icon {
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  border-radius: 11px;
+  background: rgba(220, 38, 38, .10);
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.ayuda-report-copy { flex: 1; min-width: 0; }
+.ayuda-report-copy strong {
+  display: block;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 3px;
+}
+.ayuda-report-copy p {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.ayuda-report-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 9px;
+  border: 0;
+  background: #dc2626;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.ayuda-report-cta:hover { background: #b91c1c; }
+
+@media (max-width: 640px) {
+  .ayuda-report-zone { flex-direction: column; align-items: flex-start; }
+  .ayuda-report-cta  { width: 100%; justify-content: center; }
+}
+
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 .ayuda-empty {
   display: grid;

@@ -69,11 +69,6 @@ const MENU_STRUCTURE = [
     icon: CircleHelp,
     links: [
       { label: 'Ayuda', to: '/ayuda', icon: CircleHelp },
-      {
-        label: 'Reportar problema',
-        icon: Bug,
-        onClick: () => window.dispatchEvent(new CustomEvent('mitynex:open-support-report')),
-      },
     ],
   },
   {
@@ -244,6 +239,18 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
+
+      {/* ── Reportar problema — botón standalone al fondo del sidebar ── */}
+      <div className="mx-sidebar-report">
+        <button
+          type="button"
+          className="mx-sidebar-report-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('mitynex:open-support-report'))}
+        >
+          <Bug size={15} />
+          <span>Reportar problema</span>
+        </button>
+      </div>
 
     </aside>
   );
