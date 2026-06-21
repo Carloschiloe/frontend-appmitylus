@@ -116,7 +116,17 @@ async function sendReport(payload) {
       body: JSON.stringify(sanitizeSnapshot(payload)),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (data.errorCode) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('mitynex_my_reports') || '[]');
+        if (!stored.includes(data.errorCode)) {
+          stored.push(data.errorCode);
+          localStorage.setItem('mitynex_my_reports', JSON.stringify(stored.slice(-10)));
+        }
+      } catch { /* localStorage no disponible */ }
+    }
+    return data;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn('[Mitynex error reporter] No se pudo enviar reporte', err);

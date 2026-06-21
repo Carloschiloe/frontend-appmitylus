@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import { ToastProvider } from './context/ToastContext.jsx';
+import { ToastProvider, useToast } from './context/ToastContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import SupportReportModal from './components/SupportReportModal.jsx';
 import { installGlobalErrorCapture } from './utils/errorReporter.js';
 import { installActionTrail, recordAction } from './utils/actionTrail.js';
+import { apiClient } from './api/apiClient.js';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'))
 
 const MainLayout = ({ children }) => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
   const [supportModal, setSupportModal] = React.useState({ open: false, initialData: {} });
   const location = useLocation();
@@ -55,6 +57,41 @@ const MainLayout = ({ children }) => {
     window.addEventListener('mitynex:open-support-report', openSupport);
     return () => window.removeEventListener('mitynex:open-support-report', openSupport);
   }, []);
+
+  React.useEffect(() => {
+    if (!user) return;
+    if (sessionStorage.getItem('mitynex_reports_checked')) return;
+    sessionStorage.setItem('mitynex_reports_checked', '1');
+
+    let stored;
+    try {
+      stored = JSON.parse(localStorage.getItem('mitynex_my_reports') || '[]');
+    } catch { stored = []; }
+    if (!stored.length) return;
+
+    apiClient.get(`/support/error-reports/my-status?codes=${stored.join(',')}`)
+      .then((data) => {
+        if (!data?.results?.length) return;
+        const resolved = data.results.filter((r) => r.status === 'fixed' || r.status === 'released');
+        if (!resolved.length) return;
+
+        const resolvedCodes = resolved.map((r) => r.errorCode);
+        addToast({
+          type: 'success',
+          title: resolved.length === 1
+            ? `Reporte ${resolvedCodes[0]} resuelto`
+            : `${resolved.length} reportes tuyos fueron resueltos`,
+          message: 'El equipo de soporte solucionó el problema que reportaste.',
+          duration: 12000,
+        });
+
+        try {
+          const remaining = stored.filter((c) => !resolvedCodes.includes(c));
+          localStorage.setItem('mitynex_my_reports', JSON.stringify(remaining));
+        } catch { /* ignore */ }
+      })
+      .catch(() => {});
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Rutas públicas: nunca mostrar sidebar, sin importar si hay sesión activa
   const isPublicRoute = ['/login', '/activar-cuenta'].includes(location.pathname);
