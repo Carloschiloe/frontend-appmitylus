@@ -398,11 +398,12 @@ export default function Maestros() {
                       )}
                       {tipo === 'regla_calidad' && (
                         <td>
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          <div className="maestros-params-grid">
                             {item.parametros?.map((p, i) => (
-                              <span key={i} className="mx-badge" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
-                                <strong>{p.nombre}</strong>: {p.min ?? '∞'}–{p.max ?? '∞'}
-                              </span>
+                              <div key={i} className="maestros-param-chip">
+                                <span className="maestros-param-chip-name">{p.nombre}</span>
+                                <span className="maestros-param-chip-range">{p.min ?? '∞'} – {p.max ?? '∞'}</span>
+                              </div>
                             ))}
                           </div>
                         </td>
