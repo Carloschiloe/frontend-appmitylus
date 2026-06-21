@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useDeferredValue, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -7,12 +7,9 @@ import {
   RefreshCw,
   Search,
   X,
-  Building2,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
-
-const PAGE_SIZE = 100;
 
 const STATUS_CONFIG = {
   rojo:     { label: 'Bloqueadas',  color: '#ef4444', bg: '#fef2f2' },
@@ -43,69 +40,66 @@ function SernapescaBadge({ value }) {
   );
 }
 
+// Cache en módulo para evitar re-cargas entre navegaciones
 const sanitarioViewCache = {
   tenantDb: '',
   areas: [],
   resumen: null,
   tiposAnalisis: [],
-  totalAreas: 0,
-  page: 1,
 };
 
 export default function SanitarioDashboard() {
   const { addToast } = useToast();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
-  const hasCachedView = sanitarioViewCache.tenantDb === selectedTenantDb && sanitarioViewCache.areas.length > 0;
-  const [areas, setAreas] = useState(() => hasCachedView ? sanitarioViewCache.areas : []);
-  const [loading, setLoading] = useState(() => !hasCachedView);
-  const [syncing, setSyncing] = useState(false);
-  const [resumen, setResumen] = useState(() => hasCachedView ? sanitarioViewCache.resumen : null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const deferredSearchTerm = useDeferredValue(searchTerm);
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [sernapescaFilter, setSernapescaFilter] = useState('');
-  const [tipoFilter, setTipoFilter] = useState('');
+
+  const hasCachedView =
+    sanitarioViewCache.tenantDb === selectedTenantDb &&
+    sanitarioViewCache.areas.length > 0;
+
+  // Estado base — áreas SIN filtrar (se filtran client-side)
+  const [allAreas, setAllAreas] = useState(() => hasCachedView ? sanitarioViewCache.areas : []);
+  const [loading, setLoading]   = useState(() => !hasCachedView);
+  const [syncing, setSyncing]   = useState(false);
+  const [resumen, setResumen]   = useState(() => hasCachedView ? sanitarioViewCache.resumen : null);
   const [tiposAnalisis, setTiposAnalisis] = useState(() =>
     sanitarioViewCache.tenantDb === selectedTenantDb ? sanitarioViewCache.tiposAnalisis : []
   );
-  const [page, setPage] = useState(() => hasCachedView ? sanitarioViewCache.page : 1);
-  const [totalAreas, setTotalAreas] = useState(() => hasCachedView ? sanitarioViewCache.totalAreas : 0);
-  const [historyModal, setHistoryModal] = useState({ open: false, area: null, loading: false, items: [] });
-  const [centersModal, setCentersModal] = useState({ open: false, area: null, items: [] });
 
+  // Filtros — todos client-side excepto tipoAnalisis (que cambia el dataset)
+  const [searchTerm,      setSearchTerm]      = useState('');
+  const [estadoFilter,    setEstadoFilter]    = useState('');
+  const [sernapescaFilter,setSernapescaFilter] = useState('');
+  const [tipoFilter,      setTipoFilter]      = useState('');
+
+  // Modales
+  const [historyModal,  setHistoryModal]  = useState({ open: false, area: null, loading: false, items: [] });
+  const [centersModal,  setCentersModal]  = useState({ open: false, area: null, items: [] });
+
+  // ── Helpers de formato ─────────────────────────────────────────
   const formatDate = useCallback((value) => {
     if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('es-CL');
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-CL');
   }, []);
 
   const formatDateTime = useCallback((value) => {
     if (!value) return 'Nunca';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Nunca';
-    return date.toLocaleString('es-CL');
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? 'Nunca' : d.toLocaleString('es-CL');
   }, []);
 
-  const loadData = useCallback(async (signal, nextPage = 1, append = false) => {
+  // ── Carga de datos — sin filtros de búsqueda (carga TODO) ──────
+  const loadData = useCallback(async (signal) => {
     if (!selectedTenantDb) {
-      setAreas([]);
+      setAllAreas([]);
       setResumen(null);
-      setTotalAreas(0);
       setLoading(false);
       return;
     }
-
-    const hasUsableCache = sanitarioViewCache.tenantDb === selectedTenantDb && sanitarioViewCache.areas.length > 0;
-    if (!append && !hasUsableCache) {
-      setAreas([]);
-      setLoading(true);
-    }
-
+    setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(nextPage), limit: String(PAGE_SIZE) });
-      if (deferredSearchTerm.trim()) params.set('q', deferredSearchTerm.trim());
-      if (estadoFilter) params.set('estado', estadoFilter);
+      // limit=200 para traer todas las áreas en una sola llamada
+      const params = new URLSearchParams({ page: '1', limit: '200' });
       if (tipoFilter) params.set('tipoAnalisis', tipoFilter);
 
       const [resAreas, resResumen] = await Promise.all([
@@ -113,62 +107,74 @@ export default function SanitarioDashboard() {
         apiClient.get('/sanitario/resumen', { signal }),
       ]);
 
-      const cachedAreas = sanitarioViewCache.tenantDb === selectedTenantDb ? sanitarioViewCache.areas : [];
-      const nextAreas = append ? [...cachedAreas, ...(resAreas.items || [])] : (resAreas.items || []);
-      const nextTotalAreas = Number(resAreas.total) || 0;
-      const resolvedPage = Number(resAreas.page) || nextPage;
-
-      setAreas(nextAreas);
-      setTotalAreas(nextTotalAreas);
-      setPage(resolvedPage);
+      const items = resAreas.items || [];
+      setAllAreas(items);
       setResumen(resResumen);
       sanitarioViewCache.tenantDb = selectedTenantDb;
-      sanitarioViewCache.areas = nextAreas;
-      sanitarioViewCache.resumen = resResumen;
-      sanitarioViewCache.totalAreas = nextTotalAreas;
-      sanitarioViewCache.page = resolvedPage;
+      sanitarioViewCache.areas    = items;
+      sanitarioViewCache.resumen  = resResumen;
     } catch (err) {
       if (err.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [addToast, deferredSearchTerm, estadoFilter, selectedTenantDb, tipoFilter]);
+  }, [addToast, selectedTenantDb, tipoFilter]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal, 1, false);
-    return () => controller.abort();
+    const ctrl = new AbortController();
+    loadData(ctrl.signal);
+    return () => ctrl.abort();
   }, [loadData]);
 
+  // Tipos de análisis disponibles
   useEffect(() => {
     if (!selectedTenantDb) { setTiposAnalisis([]); return undefined; }
-    const controller = new AbortController();
-    apiClient.get('/sanitario/tipos-analisis', { signal: controller.signal })
+    const ctrl = new AbortController();
+    apiClient.get('/sanitario/tipos-analisis', { signal: ctrl.signal })
       .then((res) => {
         const items = res.items || [];
         setTiposAnalisis(items);
-        sanitarioViewCache.tenantDb = selectedTenantDb;
         sanitarioViewCache.tiposAnalisis = items;
       })
       .catch((err) => { if (err.name !== 'AbortError') setTiposAnalisis([]); });
-    return () => controller.abort();
+    return () => ctrl.abort();
   }, [selectedTenantDb]);
 
-  // Filtro cliente por estado SERNAPESCA (complementa filtros de servidor)
-  const displayedAreas = sernapescaFilter
-    ? areas.filter((a) => a.estadoSernapesca === sernapescaFilter)
-    : areas;
+  // ── Filtrado client-side — INSTANTÁNEO ────────────────────────
+  const displayedAreas = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return allAreas.filter((area) => {
+      if (q) {
+        const matchesQ =
+          (area.areaPSMB  || '').toLowerCase().includes(q) ||
+          String(area.codigoArea || '').toLowerCase().includes(q);
+        if (!matchesQ) return false;
+      }
+      if (estadoFilter && area.estado !== estadoFilter) return false;
+      if (sernapescaFilter && area.estadoSernapesca !== sernapescaFilter) return false;
+      return true;
+    });
+  }, [allAreas, searchTerm, estadoFilter, sernapescaFilter]);
 
-  const hasMoreAreas = areas.length < totalAreas;
-
+  // ── Handlers ──────────────────────────────────────────────────
   const handleKpiClick = useCallback((estado) => {
     setEstadoFilter((prev) => (prev === estado ? '' : estado));
   }, []);
 
-  const handleLoadMore = useCallback(() => {
-    loadData(undefined, page + 1, true);
-  }, [loadData, page]);
+  const handleSyncMrSat = useCallback(async () => {
+    if (!selectedTenantDb || syncing) return;
+    setSyncing(true);
+    try {
+      await apiClient.post('/sanitario/sync/mrsat', {});
+      await loadData(undefined);
+      addToast({ title: 'Datos actualizados', message: 'Estado sanitario sincronizado desde mrSAT.', type: 'success' });
+    } catch (err) {
+      addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo completar la sincronización.', type: 'error' });
+    } finally {
+      setSyncing(false);
+    }
+  }, [addToast, loadData, selectedTenantDb, syncing]);
 
   const handleOpenHistory = useCallback(async (area) => {
     if (!area?.areaPSMB) return;
@@ -196,27 +202,14 @@ export default function SanitarioDashboard() {
     setCentersModal({ open: false, area: null, items: [] });
   }, []);
 
-  const handleSyncMrSat = useCallback(async () => {
-    if (!selectedTenantDb || syncing) return;
-    setSyncing(true);
-    try {
-      await apiClient.post('/sanitario/sync/mrsat', {});
-      await loadData(undefined, 1, false);
-      addToast({ title: 'Datos actualizados', message: 'Estado sanitario sincronizado desde mrSAT.', type: 'success' });
-    } catch (err) {
-      addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo completar la sincronización.', type: 'error' });
-    } finally {
-      setSyncing(false);
-    }
-  }, [addToast, loadData, selectedTenantDb, syncing]);
-
+  // ── Render ────────────────────────────────────────────────────
   return (
     <div className="sanitario-dashboard">
       {!selectedTenantDb && (
         <div className="mx-table-card" style={{ padding: '24px', marginBottom: '16px' }}>
           <strong style={{ display: 'block', marginBottom: '6px' }}>Selecciona una empresa</strong>
           <span style={{ color: 'var(--color-text-subtle)' }}>
-            Debes elegir una empresa para consultar el estado sanitario y sincronizar mrSAT.
+            Debes elegir una empresa para consultar el estado sanitario.
           </span>
         </div>
       )}
@@ -243,7 +236,9 @@ export default function SanitarioDashboard() {
               title={`Filtrar por: ${label}`}
             >
               <header className="centros-kpi-label">
-                {key === 'verde' ? <CheckCircle2 size={16} color={color} /> : <AlertTriangle size={16} color={color} />}
+                {key === 'verde'
+                  ? <CheckCircle2 size={16} color={color} />
+                  : <AlertTriangle size={16} color={color} />}
                 {label}
                 {isActive && <X size={12} style={{ marginLeft: 'auto', opacity: 0.5 }} />}
               </header>
@@ -255,23 +250,34 @@ export default function SanitarioDashboard() {
 
       {/* Filtros */}
       <div className="centros-filters">
-        <div className="centros-search-wrap" style={{ maxWidth: '360px' }}>
+        {/* Búsqueda — client-side, respuesta instantánea */}
+        <div className="centros-search-wrap" style={{ maxWidth: '340px' }}>
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar área PSMB o código..."
+            placeholder="Buscar área o código..."
             className="centros-search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
           />
           {searchTerm && (
-            <button type="button" onClick={() => setSearchTerm('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)' }}>
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)' }}
+            >
               <X size={13} />
             </button>
           )}
         </div>
 
-        <select className="mx-input" style={{ width: 'auto' }} value={estadoFilter} onChange={(e) => setEstadoFilter(e.target.value)}>
+        <select
+          className="mx-input"
+          style={{ width: 'auto' }}
+          value={estadoFilter}
+          onChange={(e) => setEstadoFilter(e.target.value)}
+        >
           <option value="">Todos los estados</option>
           <option value="rojo">Bloqueadas</option>
           <option value="naranja">Alerta</option>
@@ -280,14 +286,24 @@ export default function SanitarioDashboard() {
           <option value="gris">Sin datos</option>
         </select>
 
-        <select className="mx-input" style={{ width: 'auto' }} value={sernapescaFilter} onChange={(e) => setSernapescaFilter(e.target.value)}>
+        <select
+          className="mx-input"
+          style={{ width: 'auto' }}
+          value={sernapescaFilter}
+          onChange={(e) => setSernapescaFilter(e.target.value)}
+        >
           <option value="">Estado SERNAPESCA</option>
           <option value="Abierta">Abierta</option>
           <option value="Inactiva">Inactiva</option>
           <option value="Eliminada">Eliminada</option>
         </select>
 
-        <select className="mx-input" style={{ width: 'auto', minWidth: '200px' }} value={tipoFilter} onChange={(e) => setTipoFilter(e.target.value)}>
+        <select
+          className="mx-input"
+          style={{ width: 'auto', minWidth: '190px' }}
+          value={tipoFilter}
+          onChange={(e) => setTipoFilter(e.target.value)}
+        >
           <option value="">Todos los análisis</option>
           {tiposAnalisis.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
         </select>
@@ -330,7 +346,18 @@ export default function SanitarioDashboard() {
               ) : displayedAreas.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
-                    <p>No se encontraron áreas sanitarias con los filtros actuales.</p>
+                    <p style={{ color: 'var(--color-text-muted)' }}>
+                      No se encontraron áreas con los filtros actuales.
+                    </p>
+                    {(searchTerm || estadoFilter || sernapescaFilter) && (
+                      <button
+                        className="mx-btn mx-btn-outline"
+                        style={{ marginTop: '10px' }}
+                        onClick={() => { setSearchTerm(''); setEstadoFilter(''); setSernapescaFilter(''); }}
+                      >
+                        Limpiar filtros
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -384,15 +411,14 @@ export default function SanitarioDashboard() {
         </div>
       </div>
 
-      {!loading && totalAreas > 0 && (
+      {/* Contador de resultados */}
+      {!loading && allAreas.length > 0 && (
         <div className="centros-pagination-footer">
           <span>
-            Mostrando {displayedAreas.length} de {sernapescaFilter ? areas.length : totalAreas} áreas sanitarias
-            {sernapescaFilter && ` (filtradas por SERNAPESCA: ${sernapescaFilter})`}
+            {displayedAreas.length === allAreas.length
+              ? `${allAreas.length} áreas sanitarias`
+              : `${displayedAreas.length} de ${allAreas.length} áreas`}
           </span>
-          {hasMoreAreas && !sernapescaFilter && (
-            <button className="mx-btn mx-btn-outline" onClick={handleLoadMore}>Ver más</button>
-          )}
         </div>
       )}
 
