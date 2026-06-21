@@ -272,14 +272,15 @@ export default function Maestros() {
 
           {/* ── Nav lateral de categorías ── */}
           <nav className="maestros-sidenav">
+            <p className="maestros-sidenav-label">Categorías</p>
             {TIPOS.map((t) => (
               <button
                 key={t.id}
                 className={`maestros-sidenav-btn ${tipo === t.id ? 'active' : ''}`}
                 onClick={() => { setTipo(t.id); setTipoFilter(''); setSearchTerm(''); }}
               >
-                <t.icon size={15} />
-                <span>{t.label}</span>
+                <t.icon size={14} />
+                <span>{t.short}</span>
                 {tabCounts[t.id] > 0 && (
                   <span className="maestros-sidenav-count">{tabCounts[t.id]}</span>
                 )}
@@ -290,30 +291,35 @@ export default function Maestros() {
           {/* ── Contenido principal ── */}
           <div className="maestros-main">
             <div className="maestros-topbar">
-              {tipo === 'categoria-muestreo' && (
-                <select
-                  className="mx-select maestros-tipo-filter"
-                  value={tipoFilter}
-                  onChange={(e) => setTipoFilter(e.target.value)}
-                >
-                  <option value="">Todos los tipos</option>
-                  <option value="procesable">Procesable</option>
-                  <option value="rechazo">Rechazo</option>
-                  <option value="defecto">Defecto</option>
-                </select>
-              )}
-              <div className="mx-search-box maestros-search-box">
-                <Search size={18} />
-                <input
-                  type="text"
-                  placeholder="Filtrar registros..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              <div className="maestros-topbar-title">
+                {(() => { const t = TIPOS.find((t) => t.id === tipo); return t ? <><t.icon size={16} />{t.label}</> : null; })()}
               </div>
-              <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
-                <Plus size={18} /> Nuevo Registro
-              </button>
+              <div className="maestros-topbar-actions">
+                {tipo === 'categoria-muestreo' && (
+                  <select
+                    className="mx-select maestros-tipo-filter"
+                    value={tipoFilter}
+                    onChange={(e) => setTipoFilter(e.target.value)}
+                  >
+                    <option value="">Todos los tipos</option>
+                    <option value="procesable">Procesable</option>
+                    <option value="rechazo">Rechazo</option>
+                    <option value="defecto">Defecto</option>
+                  </select>
+                )}
+                <div className="mx-search-box maestros-search-box">
+                  <Search size={16} />
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
+                  <Plus size={16} /> Nuevo
+                </button>
+              </div>
             </div>
 
         <div className="maestros-table-inner">
