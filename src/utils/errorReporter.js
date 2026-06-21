@@ -97,13 +97,22 @@ export function getClientContext(extra = {}) {
   };
 }
 
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 async function sendReport(payload) {
   if (shouldThrottle(payload)) return { throttled: true };
   try {
+    const csrfToken = getCsrfToken();
     const response = await fetch(REPORT_ENDPOINT, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+      },
       body: JSON.stringify(sanitizeSnapshot(payload)),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
