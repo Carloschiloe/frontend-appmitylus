@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import './Dashboard.css';
 import {
@@ -7,9 +7,11 @@ import {
   ShieldAlert,
   RotateCcw,
   TrendingUp,
+  TrendingDown,
   Users,
   ChevronRight,
   ArrowUpRight,
+  ArrowDownRight,
   Handshake,
   AlertTriangle,
   ClipboardList,
@@ -20,65 +22,73 @@ import {
 import { apiClient } from '../../api/apiClient';
 
 const QUICK_LINKS = [
-  { label: 'Resumen Operativo', to: '/gestion/bandeja', icon: ClipboardList },
-  { label: 'Agenda',            to: '/gestion/agenda',   icon: Calendar },
-  { label: 'Tratos',            to: '/biomasa/tratos',   icon: Handshake },
-  { label: 'Prog. de Cosecha',  to: '/biomasa/programa', icon: Droplet },
-  { label: 'Muestreos',         to: '/biomasa/muestreos',icon: TestTube2 },
+  { label: 'Resumen Operativo', to: '/gestion/bandeja',   icon: ClipboardList },
+  { label: 'Agenda',            to: '/gestion/agenda',     icon: Calendar },
+  { label: 'Tratos',            to: '/biomasa/tratos',     icon: Handshake },
+  { label: 'Prog. de Cosecha',  to: '/biomasa/programa',   icon: Droplet },
+  { label: 'Muestreos',         to: '/biomasa/muestreos',  icon: TestTube2 },
 ];
+
+const ESTADO_CONFIG = {
+  acordado:         { label: 'Acordado',        color: '#0A5CFF', bg: '#eff4ff' },
+  negociando:       { label: 'Negociando',       color: '#f59e0b', bg: '#fffbeb' },
+  compra_efectuada: { label: 'Compra efectuada', color: '#10b981', bg: '#f0fdf4' },
+  caido:            { label: 'Caído',            color: '#ef4444', bg: '#fef2f2' },
+  prospecto:        { label: 'Prospecto',        color: '#6366f1', bg: '#eef2ff' },
+  disponible:       { label: 'Disponible',       color: '#10b981', bg: '#f0fdf4' },
+};
+
+const RANK_COLORS = ['#f59e0b', '#94a3b8', '#b45309', '#64748b', '#64748b'];
 
 const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
-const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
-  <div className="mx-kpi-card-new">
-    <div className="mx-kpi-card-header">
-      <p className="mx-kpi-card-title">{title}</p>
-      <div className="mx-kpi-card-icon" style={{ backgroundColor: `${color}15`, color }}>
-        <Icon size={18} />
-      </div>
-    </div>
-    <div className="mx-kpi-card-body">
-      <h4 className="mx-kpi-card-value">{value ?? '—'}</h4>
-      <div className="mx-kpi-card-footer">
-        {trend != null && (
-          <span className={`mx-kpi-trend ${trend >= 0 ? 'positive' : 'negative'}`}>
-            <ArrowUpRight size={12} /> {Math.abs(trend)}%
-          </span>
-        )}
-        {sub && <p className="mx-kpi-card-sub">{sub}</p>}
-      </div>
-    </div>
-  </div>
-);
+function getEstado(descripcion) {
+  return descripcion?.replace('Estado actual: ', '').trim() || '';
+}
 
 function formatTons(n) {
   if (n == null) return '—';
   if (n >= 1000) return `${(n / 1000).toFixed(1)} kt`;
-  return `${n} t`;
+  return `${n.toLocaleString('es-CL')} t`;
 }
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora mismo';
   if (mins < 60) return `Hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs} h`;
+  if (hrs < 24) return `Hace ${hrs}h`;
   return `Hace ${Math.floor(hrs / 24)} días`;
 }
 
-const ESTADO_COLOR = {
-  acordado: '#0A5CFF',
-  negociando: '#3b82f6',
-  compra_efectuada: '#10b981',
-  caido: '#ef4444',
-  prospecto: '#6366f1',
-};
+const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
+  <div className="dsh-kpi-card" style={{ '--accent': color }}>
+    <div className="dsh-kpi-accent" />
+    <div className="dsh-kpi-header">
+      <p className="dsh-kpi-title">{title}</p>
+      <div className="dsh-kpi-icon" style={{ background: `${color}18`, color }}>
+        <Icon size={17} />
+      </div>
+    </div>
+    <h4 className="dsh-kpi-value">{value ?? '—'}</h4>
+    <div className="dsh-kpi-footer">
+      {trend != null && (
+        <span className={`dsh-kpi-trend ${trend >= 0 ? 'up' : 'down'}`}>
+          {trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+          {Math.abs(trend)}%
+        </span>
+      )}
+      {sub && <span className="dsh-kpi-sub">{sub}</span>}
+    </div>
+  </div>
+);
 
 export default function Dashboard() {
-  const [data, setData] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   async function loadData(signal) {
     setLoading(true);
@@ -95,32 +105,34 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal);
-    return () => controller.abort();
+    const ctrl = new AbortController();
+    loadData(ctrl.signal);
+    return () => ctrl.abort();
   }, []);
 
-  const speciesData = {
+  const speciesData = useMemo(() => ({
     labels: ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
-    datasets: [
-      {
-        data: [
-          data?.biomasa?.disponible || 0,
-          data?.biomasa?.semi_cerrado || 0,
-          data?.biomasa?.cerrado || 0,
-          data?.biomasa?.descartado || 0,
-          data?.biomasa?.perdido || 0
-        ],
-        backgroundColor: ['#10b981', '#f59e0b', '#dc2626', '#94a3b8', '#1e293b'],
-        borderWidth: 0,
-      },
-    ],
-  };
+    datasets: [{
+      data: [
+        data?.biomasa?.disponible    || 0,
+        data?.biomasa?.semi_cerrado  || 0,
+        data?.biomasa?.cerrado       || 0,
+        data?.biomasa?.descartado    || 0,
+        data?.biomasa?.perdido       || 0,
+      ],
+      backgroundColor: ['#10b981', '#f59e0b', '#dc2626', '#94a3b8', '#334155'],
+      borderWidth: 0,
+    }],
+  }), [data]);
+
+  const mesActual  = data?.acordadoMes     || 0;
+  const mesProximo = data?.acordadoProxMes || 0;
+  const deltaMes   = mesActual > 0 ? Math.round(((mesProximo - mesActual) / mesActual) * 100) : null;
 
   if (loading) {
     return (
       <div className="mx-loading-screen">
-        <div className="mx-spinner"></div>
+        <div className="mx-spinner" />
         <p>Sincronizando métricas...</p>
       </div>
     );
@@ -128,22 +140,22 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="mx-page dsh-premium">
-        <div className="mx-content-frame" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-          <div style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            <AlertTriangle size={48} style={{ marginBottom: '16px', color: '#ef4444' }} />
-            <h3 style={{ marginBottom: '8px' }}>{error}</h3>
-            <button className="mx-btn mx-btn-primary" onClick={() => loadData()} style={{ marginTop: '16px' }}>
-              <RotateCcw size={16} /> Reintentar
-            </button>
-          </div>
+      <div className="mx-page dsh-root">
+        <div className="mx-content-frame dsh-error-frame">
+          <AlertTriangle size={44} style={{ color: '#ef4444', marginBottom: 16 }} />
+          <h3>{error}</h3>
+          <button className="mx-btn mx-btn-primary" onClick={() => loadData()} style={{ marginTop: 16 }}>
+            <RotateCcw size={15} /> Reintentar
+          </button>
         </div>
       </div>
     );
   }
 
+  const hasAlerts = (data?.alertas || 0) > 0;
+
   return (
-    <div className="mx-page dsh-premium">
+    <div className="mx-page dsh-root">
       <header className="mx-hero mx-hero--with-desc">
         <div className="mx-hero-content">
           <p className="mx-eyebrow">Inicio · Panel Ejecutivo</p>
@@ -155,27 +167,22 @@ export default function Dashboard() {
       <div className="mx-content-frame">
         <div className="mx-page-stack">
 
-          {/* Accesos rápidos + Actualizar */}
-          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {/* ── Barra de navegación rápida ─────────────────────────────── */}
+          <section className="dsh-nav-bar">
+            <div className="dsh-nav-links">
               {QUICK_LINKS.map(({ label, to, icon: Icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className="mx-btn mx-btn-outline"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', fontWeight: 600 }}
-                >
-                  <Icon size={15} />
+                <Link key={to} to={to} className="dsh-nav-link">
+                  <Icon size={13} />
                   {label}
                 </Link>
               ))}
             </div>
-            <button className="mx-btn mx-btn-outline" onClick={() => loadData()}>
-              <RotateCcw size={16} /> Actualizar
+            <button className="mx-btn mx-btn-outline dsh-refresh-btn" onClick={() => loadData()}>
+              <RotateCcw size={13} /> Actualizar
             </button>
           </section>
 
-          {/* KPIs reales de la API */}
+          {/* ── KPIs ───────────────────────────────────────────────────── */}
           <section className="dsh-kpi-grid">
             <KpiCard
               title="Tons Acordadas (mes)"
@@ -190,6 +197,7 @@ export default function Dashboard() {
               sub="Proyección siguiente mes"
               icon={TrendingUp}
               color="#3b82f6"
+              trend={deltaMes}
             />
             <KpiCard
               title="En Negociación"
@@ -203,60 +211,83 @@ export default function Dashboard() {
               value={data?.alertas ?? '—'}
               sub="Áreas naranja/rojo activas"
               icon={ShieldAlert}
-              color="#ef4444"
+              color={hasAlerts ? '#ef4444' : '#10b981'}
             />
           </section>
 
+          {/* ── Actividad + Top Proveedores ────────────────────────────── */}
           <div className="dsh-main-grid">
 
-            {/* Feed de actividad real */}
-            <article className="dsh-card activity-feed">
+            <article className="dsh-card">
               <div className="dsh-card-header">
                 <h3 className="dsh-card-title">Actividad Reciente</h3>
+                <Link to="/biomasa/tratos" className="dsh-link-all">
+                  Ver todos <ChevronRight size={12} />
+                </Link>
               </div>
-              <div className="dsh-activity-list">
+              <div className="dsh-feed">
                 {!data?.actividad?.length ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
-                    <Activity size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
-                    <p style={{ fontSize: '13px' }}>Sin actividad reciente</p>
+                  <div className="dsh-empty">
+                    <Activity size={26} />
+                    <p>Sin actividad reciente</p>
                   </div>
-                ) : data.actividad.map(item => (
-                  <div key={item.id} className="dsh-activity-item">
-                    <div className="activity-icon" style={{ color: ESTADO_COLOR[item.tipo] || '#64748b' }}>
-                      <Activity size={16} />
-                    </div>
-                    <div className="activity-content">
-                      <p className="activity-text">{item.titulo}</p>
-                      <span className="activity-time">{item.descripcion} · {timeAgo(item.fecha)}</span>
-                    </div>
-                    <ChevronRight size={14} className="activity-arrow" />
-                  </div>
-                ))}
+                ) : data.actividad.map((item) => {
+                  const estado = getEstado(item.descripcion);
+                  const cfg = ESTADO_CONFIG[estado] || {};
+                  return (
+                    <Link key={item.id} to="/biomasa/tratos" className="dsh-feed-item">
+                      <div className="dsh-feed-icon" style={{ background: `${cfg.color || '#64748b'}18`, color: cfg.color || '#64748b' }}>
+                        <Handshake size={14} />
+                      </div>
+                      <div className="dsh-feed-body">
+                        <p className="dsh-feed-title">{item.titulo}</p>
+                        <span className="dsh-feed-time">{timeAgo(item.fecha)}</span>
+                      </div>
+                      {estado && cfg.label && (
+                        <span className="dsh-estado-pill" style={{ color: cfg.color, background: cfg.bg }}>
+                          {cfg.label}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </article>
 
-            {/* Top proveedores reales */}
             <article className="dsh-card">
               <div className="dsh-card-header">
                 <h3 className="dsh-card-title">Top Proveedores</h3>
+                <Link to="/centros" className="dsh-link-all">
+                  Ver directorio <ChevronRight size={12} />
+                </Link>
               </div>
               {!data?.topProveedores?.length ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
-                  <Users size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
-                  <p style={{ fontSize: '13px' }}>Sin datos de proveedores</p>
+                <div className="dsh-empty">
+                  <Users size={26} />
+                  <p>Sin datos de proveedores</p>
                 </div>
               ) : (
-                <div className="dsh-area-stats" style={{ marginTop: '16px' }}>
+                <div className="dsh-providers">
                   {data.topProveedores.map((p, i) => {
                     const max = data.topProveedores[0]?.tons || 1;
                     const pct = max > 0 ? Math.round((p.tons / max) * 100) : 0;
                     return (
-                      <div key={i} className="area-stat-row">
-                        <span style={{ fontSize: '12px', flex: '0 0 120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
-                        <div className="area-bar-wrap">
-                          <div className="area-bar" style={{ width: `${pct}%`, background: '#0A5CFF' }}></div>
+                      <div key={i} className="dsh-provider-row">
+                        <span className="dsh-provider-rank" style={{ color: RANK_COLORS[i] }}>
+                          {i + 1}
+                        </span>
+                        <div className="dsh-provider-info">
+                          <span className="dsh-provider-name">{p.nombre}</span>
+                          <div className="dsh-bar-track">
+                            <div
+                              className="dsh-bar-fill"
+                              style={{ '--w': `${pct}%`, background: i === 0 ? RANK_COLORS[0] : '#0A5CFF' }}
+                            />
+                          </div>
                         </div>
-                        <span className="area-val">{p.tons ?? 0} t</span>
+                        <span className="dsh-provider-tons">
+                          {(p.tons ?? 0).toLocaleString('es-CL')} t
+                        </span>
                       </div>
                     );
                   })}
@@ -265,47 +296,76 @@ export default function Dashboard() {
             </article>
           </div>
 
+          {/* ── Fila inferior ──────────────────────────────────────────── */}
           <div className="dsh-secondary-grid">
+
+            {/* Donut de estados */}
             <article className="dsh-card">
-              <h3 className="dsh-card-title sm">Estado de Biomasa</h3>
-              <div style={{ height: '200px', marginTop: '16px' }}>
+              <h3 className="dsh-section-label">Estado de Biomasa</h3>
+              <div className="dsh-donut-wrap">
                 <Suspense fallback={<div className="mx-skeleton dsh-chart-skeleton" />}>
                   <DashboardBiomasaChart data={speciesData} />
                 </Suspense>
               </div>
             </article>
 
-            <article className="dsh-card bg-primary-gradient">
-              <h3 className="dsh-card-title sm text-white">Resumen Mensual</h3>
-              <div className="dsh-white-box">
-                <div className="white-box-kpi">
-                  <span className="label">Acordado Mes</span>
-                  <span className="value">{formatTons(data?.acordadoMes)}</span>
+            {/* Proyección mensual */}
+            <article className="dsh-card dsh-card-dark">
+              <h3 className="dsh-section-label" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                Proyección Mensual
+              </h3>
+              <div className="dsh-projection">
+                <div className="dsh-proj-month">
+                  <span className="dsh-proj-label">Este mes</span>
+                  <span className="dsh-proj-value">{formatTons(data?.acordadoMes)}</span>
                 </div>
-                <div className="white-box-divider"></div>
-                <div className="white-box-kpi">
-                  <span className="label">En negociación</span>
-                  <span className="value">{data?.enNegociacion ?? '—'}</span>
+                <div className="dsh-proj-arrow">
+                  {deltaMes != null ? (
+                    <>
+                      {deltaMes >= 0
+                        ? <TrendingUp size={18} style={{ color: '#4ade80' }} />
+                        : <TrendingDown size={18} style={{ color: '#fca5a5' }} />}
+                      <span className={`dsh-proj-delta ${deltaMes >= 0 ? 'up' : 'down'}`}>
+                        {deltaMes >= 0 ? '+' : ''}{deltaMes}%
+                      </span>
+                    </>
+                  ) : (
+                    <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.25)' }} />
+                  )}
                 </div>
+                <div className="dsh-proj-month">
+                  <span className="dsh-proj-label">Próximo mes</span>
+                  <span className="dsh-proj-value">{formatTons(data?.acordadoProxMes)}</span>
+                </div>
+              </div>
+              <div className="dsh-proj-divider" />
+              <div className="dsh-proj-stat">
+                <span className="dsh-proj-stat-label">En negociación</span>
+                <span className="dsh-proj-stat-val">{data?.enNegociacion ?? 0} tratos</span>
               </div>
             </article>
 
-            <article className="dsh-card">
-              <div className="dsh-card-header">
-                <h3 className="dsh-card-title sm">Áreas Sanitarias</h3>
+            {/* Áreas sanitarias */}
+            <article className="dsh-card dsh-sanitario-card">
+              <h3 className="dsh-section-label">Áreas Sanitarias</h3>
+              <div className="dsh-sanitario-body">
+                {!hasAlerts ? (
+                  <>
+                    <div className="dsh-sanitario-icon ok"><CheckCircle size={26} /></div>
+                    <p className="dsh-sanitario-label ok">Sin alertas activas</p>
+                    <p className="dsh-sanitario-sub">Todas las áreas en estado normal</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="dsh-sanitario-icon alert"><ShieldAlert size={26} /></div>
+                    <p className="dsh-sanitario-count">{data.alertas}</p>
+                    <p className="dsh-sanitario-label alert">áreas en estado crítico</p>
+                    <Link to="/centros" className="dsh-sanitario-link">
+                      Ver áreas <ChevronRight size={11} />
+                    </Link>
+                  </>
+                )}
               </div>
-              {data?.alertas === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#10b981' }}>
-                  <CheckCircle size={32} style={{ marginBottom: '8px' }} />
-                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Sin alertas activas</p>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#ef4444' }}>
-                  <ShieldAlert size={32} style={{ marginBottom: '8px' }} />
-                  <p style={{ fontSize: '24px', fontWeight: 700 }}>{data?.alertas ?? '—'}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>áreas en estado crítico</p>
-                </div>
-              )}
             </article>
           </div>
 
