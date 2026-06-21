@@ -1329,3 +1329,40 @@
 .ct-dropdown-item:hover { background: var(--color-surface-hover, #f1f5f9); }
 .ct-dropdown-danger { color: var(--color-error, #ef4444); }
 .ct-dropdown-danger:hover { background: #fef2f2; }
+
+/* ── KPI clickable (Estado Sanitario) ────────────────────────── */
+.centros-kpi[role="button"] { cursor: pointer; user-select: none; }
+
+/* ── Centros count button en tabla sanitaria ─────────────────── */
+.sanitario-centros-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.sanitario-centros-count:hover {
+  background: var(--color-primary-50, #eff6ff);
+  border-color: var(--color-primary-200, #bfdbfe);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* ── Modal centros (más estrecho) ────────────────────────────── */
+.sanitario-centers-modal {
+  width: min(700px, calc(100vw - 32px));
+}
+.sanitario-centers-table td code {
+  font-size: 12px;
+  background: var(--color-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
