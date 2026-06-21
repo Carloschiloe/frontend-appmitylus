@@ -61,7 +61,7 @@ export const mitynexTours = {
   },
 };
 
-export const primaryTourIds = ['tratos', 'muestreos', 'biomasa'];
+export const primaryTourIds = ['tratos', 'muestreos', 'biomasa', 'historial'];
 
 export const toursPageContent = {
   eyebrow: 'Ayuda contextual',
