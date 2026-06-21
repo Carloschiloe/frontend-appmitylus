@@ -164,7 +164,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="mx-content-frame">
+      <div className="mx-content-frame dsh-content-frame">
         <div className="mx-page-stack">
 
           {/* ── Barra de navegación rápida ─────────────────────────────── */}

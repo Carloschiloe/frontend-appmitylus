@@ -4,9 +4,10 @@
   padding-bottom: 40px;
 }
 
-.dsh-root .mx-content-frame {
-  margin-top: 0;
-  padding-top: 20px;
+.dsh-content-frame {
+  padding: 20px var(--page-padding, 24px) 40px !important;
+  margin-top: 0 !important;
+  overflow-x: hidden;
 }
 
 .dsh-error-frame {
@@ -164,6 +165,13 @@
 }
 
 /* ── Layout grids ────────────────────────────────────────────────────── */
+
+.dsh-kpi-grid,
+.dsh-main-grid,
+.dsh-secondary-grid {
+  min-width: 0;
+  width: 100%;
+}
 
 .dsh-main-grid {
   display: grid;
