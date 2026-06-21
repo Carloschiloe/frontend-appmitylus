@@ -11,7 +11,6 @@ import {
   FlaskConical,
   LayoutGrid,
   LayoutList,
-  MapPin,
   MessageSquare,
   PauseCircle,
   Phone,
@@ -19,102 +18,114 @@ import {
   User,
   Users,
   XCircle,
+  MapPin,
+  CalendarDays,
+  ChevronRight,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import './historial.css';
 
 const EVENT_META = {
-  contacto: { label: 'Contacto', color: '#6366f1', icon: User },
-  visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
-  interaccion: { label: 'Gestión', color: '#06b6d4', icon: MessageSquare },
-  llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
-  whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
-  reunion: { label: 'Reunión', color: '#d97706', icon: Users },
-  muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
-  seguimiento: { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
+  contacto:     { label: 'Contacto',    color: '#6366f1', icon: User },
+  visita:       { label: 'Visita',      color: '#f59e0b', icon: MapPin },
+  interaccion:  { label: 'Gestión',     color: '#06b6d4', icon: MessageSquare },
+  llamada:      { label: 'Llamada',     color: '#2563eb', icon: Phone },
+  whatsapp:     { label: 'WhatsApp',    color: '#16a34a', icon: MessageSquare },
+  reunion:      { label: 'Reunión',     color: '#d97706', icon: Users },
+  muestreo:     { label: 'Muestreo',    color: '#7c3aed', icon: FlaskConical },
+  seguimiento:  { label: 'Seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
 const TEAM_ACTIVITY_META = {
-  llamada: { label: 'Llamada', color: '#2563eb', icon: Phone },
-  whatsapp: { label: 'WhatsApp', color: '#16a34a', icon: MessageSquare },
-  reunion: { label: 'Reunión', color: '#d97706', icon: Users },
-  interaccion: { label: 'Gestión', color: '#0891b2', icon: MessageSquare },
-  visita: { label: 'Visita', color: '#f59e0b', icon: MapPin },
-  muestreo: { label: 'Muestreo', color: '#7c3aed', icon: FlaskConical },
-  seguimiento: { label: 'Cambio de seguimiento', color: '#0A5CFF', icon: Clock3 },
+  llamada:     { label: 'Llamada',            color: '#2563eb', icon: Phone },
+  whatsapp:    { label: 'WhatsApp',           color: '#16a34a', icon: MessageSquare },
+  reunion:     { label: 'Reunión',            color: '#d97706', icon: Users },
+  interaccion: { label: 'Gestión',            color: '#0891b2', icon: MessageSquare },
+  visita:      { label: 'Visita',             color: '#f59e0b', icon: MapPin },
+  muestreo:    { label: 'Muestreo',           color: '#7c3aed', icon: FlaskConical },
+  seguimiento: { label: 'Cambio seguimiento', color: '#0A5CFF', icon: Clock3 },
 };
 
 const STATUS_META = {
-  activo: { label: 'Activo', color: '#0A5CFF', bg: 'rgba(10, 92, 255, 0.12)', icon: Clock3 },
-  pausado: { label: 'Pausado', color: '#d97706', bg: 'rgba(217, 119, 6, 0.12)', icon: PauseCircle },
-  cerrado: { label: 'Cerrado', color: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', icon: XCircle },
-  acordado: { label: 'Acordado', color: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)', icon: CheckCircle2 },
-  none: { label: 'Sin seguimiento', color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)', icon: Clock3 },
+  activo:   { label: 'Activo',           color: '#0A5CFF', bg: 'rgba(10,92,255,0.10)',  icon: Clock3 },
+  pausado:  { label: 'Pausado',          color: '#d97706', bg: 'rgba(217,119,6,0.10)',  icon: PauseCircle },
+  cerrado:  { label: 'Cerrado',          color: '#dc2626', bg: 'rgba(220,38,38,0.08)',  icon: XCircle },
+  acordado: { label: 'Acordado',         color: '#0891b2', bg: 'rgba(8,145,178,0.10)', icon: CheckCircle2 },
+  none:     { label: 'Sin seguimiento',  color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', icon: Clock3 },
 };
+
+const AVATAR_PALETTE = [
+  '#6366f1','#0891b2','#16a34a','#d97706','#7c3aed',
+  '#be185d','#0A5CFF','#059669','#b45309','#0e7490',
+];
+
+function getAvatarColor(name) {
+  let hash = 0;
+  const s = String(name || '').toLowerCase();
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+function getInitials(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 function normalizeKey(value) {
   return String(value || '').trim().toLowerCase();
 }
 
 function firstNonEmpty(...values) {
-  return values.find((value) => String(value || '').trim()) || '';
+  return values.find((v) => String(v || '').trim()) || '';
 }
 
 function toDate(value) {
   if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function formatDate(value) {
-  const date = toDate(value);
-  if (!date) return '—';
-  return new Intl.DateTimeFormat('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
+  const d = toDate(value);
+  if (!d) return '—';
+  return new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
 }
 
 function formatDateTime(value) {
-  const date = toDate(value);
-  if (!date) return '—';
-  return new Intl.DateTimeFormat('es-CL', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  const d = toDate(value);
+  if (!d) return '—';
+  return new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
 }
 
 function relativeText(value) {
-  const date = toDate(value);
-  if (!date) return '';
-
-  const msPerDay = 1000 * 60 * 60 * 24;
+  const d = toDate(value);
+  if (!d) return '';
+  const msPerDay = 86400000;
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const startOfTarget = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.round((startOfToday - startOfTarget) / msPerDay);
-
-  if (diffDays < 0) return `En ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
+  if (diffDays < 0)  return `En ${Math.abs(diffDays)} día${Math.abs(diffDays) === 1 ? '' : 's'}`;
   if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Ayer';
   if (diffDays < 30) return `Hace ${diffDays} días`;
-  return `Hace ${Math.floor(diffDays / 30)} meses`;
+  return `Hace ${Math.floor(diffDays / 30)} mes${Math.floor(diffDays / 30) === 1 ? '' : 'es'}`;
 }
 
 function normalizeTeamActivityType(value) {
-  const normalized = normalizeKey(value);
-  if (normalized.includes('llamad')) return 'llamada';
-  if (normalized.includes('whatsapp') || normalized.includes('wasap') || normalized.includes('wsp')) return 'whatsapp';
-  if (normalized.includes('reuni')) return 'reunion';
-  if (normalized.includes('visit')) return 'visita';
-  if (normalized.includes('muestre')) return 'muestreo';
-  return normalized || 'interaccion';
+  const n = normalizeKey(value);
+  if (n.includes('llamad'))  return 'llamada';
+  if (n.includes('whatsapp') || n.includes('wasap') || n.includes('wsp')) return 'whatsapp';
+  if (n.includes('reuni'))   return 'reunion';
+  if (n.includes('visit'))   return 'visita';
+  if (n.includes('muestre')) return 'muestreo';
+  return n || 'interaccion';
 }
+
+// ── Builder helpers ────────────────────────────────────────────────────────────
 
 function buildProviderHistory({ contactos = [], visitas = [], interacciones = [], oportunidades = [], muestreos = [] }) {
   const providers = new Map();
@@ -122,23 +133,12 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
   function ensureProvider(key, baseName) {
     if (!providers.has(key)) {
       providers.set(key, {
-        key,
-        name: baseName || 'Proveedor sin nombre',
-        status: '',
-        estadoComercial: '',
-        proximaAccion: '',
-        fechaProximaAccion: '',
-        motivoCierre: '',
-        motivoPausa: '',
-        totalContactos: 0,
-        totalEventos: 0,
-        contactoPrincipal: '',
-        contactoTelefono: '',
-        contactoEmail: '',
-        lastActivity: null,
-        lastInteraction: '',
-        lastResponsable: '',
-        events: [],
+        key, name: baseName || 'Proveedor sin nombre',
+        status: '', estadoComercial: '', proximaAccion: '', fechaProximaAccion: '',
+        motivoCierre: '', motivoPausa: '',
+        totalContactos: 0, totalEventos: 0,
+        contactoPrincipal: '', contactoTelefono: '', contactoEmail: '',
+        lastActivity: null, lastInteraction: '', lastResponsable: '', events: [],
       });
     }
     return providers.get(key);
@@ -148,25 +148,21 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     const providerName = firstNonEmpty(item.proveedorNombre, item.proveedor, item.nombre, 'Proveedor sin nombre');
     const key = normalizeKey(item.proveedorKey || providerName);
     if (!key) return;
-
     const provider = ensureProvider(key, providerName);
     const eventDate = item.createdAt || item.updatedAt || item.fecha;
     provider.totalContactos += 1;
     provider.contactoPrincipal = provider.contactoPrincipal || firstNonEmpty(item.contactoNombre, item.nombre);
-    provider.contactoTelefono = provider.contactoTelefono || firstNonEmpty(item.contactoTelefono, item.telefono);
-    provider.contactoEmail = provider.contactoEmail || firstNonEmpty(item.contactoEmail, item.email);
-
+    provider.contactoTelefono  = provider.contactoTelefono  || firstNonEmpty(item.contactoTelefono, item.telefono);
+    provider.contactoEmail     = provider.contactoEmail     || firstNonEmpty(item.contactoEmail, item.email);
     provider.events.push({
       id: `contacto-${item._id || `${key}-${provider.totalContactos}`}`,
-      type: 'contacto',
-      date: toDate(eventDate),
+      type: 'contacto', date: toDate(eventDate),
       title: firstNonEmpty(item.contactoNombre, item.nombre, 'Contacto agregado'),
       summary: firstNonEmpty(item.cargo, 'Contacto registrado en el directorio'),
-      note: firstNonEmpty(item.notas),
-      actor: '',
+      note: firstNonEmpty(item.notas), actor: '',
       extra: [
         provider.contactoTelefono ? `Teléfono: ${provider.contactoTelefono}` : '',
-        provider.contactoEmail ? `Correo: ${provider.contactoEmail}` : '',
+        provider.contactoEmail    ? `Correo: ${provider.contactoEmail}` : '',
       ].filter(Boolean),
     });
   });
@@ -175,12 +171,10 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     const providerName = firstNonEmpty(item.proveedorNombre, item.proveedor, 'Proveedor sin nombre');
     const key = normalizeKey(item.proveedorKey || providerName);
     if (!key) return;
-
     const provider = ensureProvider(key, providerName);
     provider.events.push({
       id: `visita-${item._id || `${key}-${provider.events.length}`}`,
-      type: 'visita',
-      date: toDate(item.fecha || item.createdAt || item.updatedAt),
+      type: 'visita', date: toDate(item.fecha || item.createdAt || item.updatedAt),
       title: firstNonEmpty(item.titulo, item.tipo, 'Visita registrada'),
       summary: firstNonEmpty(item.observaciones, item.resumen, item.descripcion, 'Sin detalle adicional.'),
       note: firstNonEmpty(item.proximoPaso),
@@ -196,14 +190,12 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     const providerName = firstNonEmpty(item.proveedorNombre, item.proveedor, 'Proveedor sin nombre');
     const key = normalizeKey(item.proveedorKey || providerName);
     if (!key) return;
-
     const provider = ensureProvider(key, providerName);
-    const rawType = normalizeTeamActivityType(item.tipo || item.canal || item.tipoGestion || '');
+    const rawType  = normalizeTeamActivityType(item.tipo || item.canal || item.tipoGestion || '');
     const eventType = EVENT_META[rawType] ? rawType : 'interaccion';
     const event = {
       id: `interaccion-${item._id || `${key}-${provider.events.length}`}`,
-      type: eventType,
-      date: toDate(item.fecha || item.createdAt || item.updatedAt),
+      type: eventType, date: toDate(item.fecha || item.createdAt || item.updatedAt),
       title: firstNonEmpty(item.resumen, item.tipo, 'Gestión registrada'),
       summary: firstNonEmpty(item.resultado, item.notas, 'Sin resumen adicional.'),
       note: firstNonEmpty(item.proximoPaso),
@@ -213,7 +205,6 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
         item.fechaProximo || item.fechaProx ? `Próxima fecha: ${formatDate(item.fechaProximo || item.fechaProx)}` : '',
       ].filter(Boolean),
     };
-
     provider.events.push(event);
     provider.lastInteraction = provider.lastInteraction || event.title;
     provider.lastResponsable = provider.lastResponsable || event.actor;
@@ -223,39 +214,33 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
     const providerName = firstNonEmpty(item.proveedorNombre, item.proveedor, 'Proveedor sin nombre');
     const key = normalizeKey(item.proveedorKey || providerName);
     if (!key) return;
-
     const provider = ensureProvider(key, providerName);
-    provider.status = item.seguimientoEstado || provider.status;
-    provider.estadoComercial = item.estado || provider.estadoComercial;
-    provider.proximaAccion = item.proximaAccion || provider.proximaAccion;
-    provider.fechaProximaAccion = item.fechaProximaAccion || item.fechaRevision || provider.fechaProximaAccion;
-    provider.motivoCierre = item.motivoCierre || provider.motivoCierre;
-    provider.motivoPausa = item.motivoPausa || provider.motivoPausa;
-
+    provider.status              = item.seguimientoEstado  || provider.status;
+    provider.estadoComercial     = item.estado             || provider.estadoComercial;
+    provider.proximaAccion       = item.proximaAccion      || provider.proximaAccion;
+    provider.fechaProximaAccion  = item.fechaProximaAccion || item.fechaRevision || provider.fechaProximaAccion;
+    provider.motivoCierre        = item.motivoCierre       || provider.motivoCierre;
+    provider.motivoPausa         = item.motivoPausa        || provider.motivoPausa;
     provider.events.push({
       id: `seguimiento-${item._id || `${key}-${provider.events.length}`}`,
-      type: 'seguimiento',
-      date: toDate(item.ultimaActividadAt || item.updatedAt || item.createdAt || item.fechaInicio),
+      type: 'seguimiento', date: toDate(item.ultimaActividadAt || item.updatedAt || item.createdAt || item.fechaInicio),
       title: `Seguimiento ${(STATUS_META[item.seguimientoEstado || 'none']?.label || 'actualizado').toLowerCase()}`,
       summary: firstNonEmpty(
         item.proximaAccion ? `Próxima acción: ${item.proximaAccion}` : '',
-        item.motivoPausa ? `Motivo de pausa: ${item.motivoPausa}` : '',
-        item.motivoCierre ? `Cierre: ${item.motivoCierre}` : '',
-        item.estado ? `Estado comercial: ${item.estado}` : '',
+        item.motivoPausa   ? `Motivo de pausa: ${item.motivoPausa}` : '',
+        item.motivoCierre  ? `Cierre: ${item.motivoCierre}` : '',
+        item.estado        ? `Estado comercial: ${item.estado}` : '',
         'Sin detalle adicional.'
       ),
-      note: '',
-      actor: firstNonEmpty(item.responsableNombre),
+      note: '', actor: firstNonEmpty(item.responsableNombre),
       extra: [
         item.fechaProximaAccion ? `Fecha objetivo: ${formatDate(item.fechaProximaAccion)}` : '',
-        item.fechaRevision ? `Revisión: ${formatDate(item.fechaRevision)}` : '',
-        item.estado ? `Estado comercial: ${item.estado}` : '',
+        item.fechaRevision      ? `Revisión: ${formatDate(item.fechaRevision)}` : '',
+        item.estado             ? `Estado comercial: ${item.estado}` : '',
       ].filter(Boolean),
     });
   });
 
-  // 5th fallback: contact-name → company proveedorKey
-  // Handles historical muestreos registered under a person's name instead of the company.
   const contactNameToProvKey = new Map();
   contactos.forEach((c) => {
     const companyKey = normalizeKey(c.proveedorKey);
@@ -268,8 +253,7 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
 
   muestreos.forEach((item) => {
     const keyByProvKey = normalizeKey(item.proveedorKey);
-    const keyByName = normalizeKey(item.proveedorNombre || item.proveedor);
-
+    const keyByName    = normalizeKey(item.proveedorNombre || item.proveedor);
     const provider =
       (keyByProvKey && providers.get(keyByProvKey)) ||
       (keyByName && (
@@ -278,70 +262,45 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
         Array.from(providers.values()).find((p) => p.contactoPrincipal && normalizeKey(p.contactoPrincipal) === keyByName) ||
         providers.get(contactNameToProvKey.get(keyByName))
       ));
-
     if (!provider) return;
 
-    const lineaLabel = item.linea ? item.linea.trim().replace(/^l[ií]nea\s+/i, '') : null;
+    const lineaLabel   = item.linea ? item.linea.trim().replace(/^l[ií]nea\s+/i, '') : null;
     const calificacion = item.clasificaciones?.[0]?.nombre || 'S/C';
-    const rendStr = item.rendimiento != null ? `Rend: ${Number(item.rendimiento).toFixed(1)}%` : null;
-    const uxkgStr = item.uxkg > 0 ? `U/Kg: ${item.uxkg}` : null;
-    const procStr = item.total > 0 ? `Procesable: ${(item.procesable / item.total * 100).toFixed(1)}%` : null;
-    const rechStr = item.total > 0 ? `Rechazo: ${(item.rechazos / item.total * 100).toFixed(1)}%` : null;
-
-    const summaryParts = [
-      !item.centroCodigo ? 'Sin centro' : null,
-      calificacion,
-      rendStr,
-      uxkgStr,
-      procStr,
-      rechStr,
-    ].filter(Boolean);
-
-    const extraParts = [];
+    const rendStr  = item.rendimiento != null ? `Rend: ${Number(item.rendimiento).toFixed(1)}%` : null;
+    const uxkgStr  = item.uxkg > 0 ? `U/Kg: ${item.uxkg}` : null;
+    const procStr  = item.total > 0 ? `Procesable: ${(item.procesable / item.total * 100).toFixed(1)}%` : null;
+    const rechStr  = item.total > 0 ? `Rechazo: ${(item.rechazos / item.total * 100).toFixed(1)}%` : null;
+    const summaryParts = [!item.centroCodigo ? 'Sin centro' : null, calificacion, rendStr, uxkgStr, procStr, rechStr].filter(Boolean);
     const fotosCount = Array.isArray(item.fotos) ? item.fotos.length : (item.fotosCount || 0);
-    if (fotosCount > 0) extraParts.push(`${fotosCount} foto${fotosCount === 1 ? '' : 's'}`);
-
     provider.events.push({
       id: `muestreo-${item._id || `${provider.key}-${provider.events.length}`}`,
-      type: 'muestreo',
-      date: toDate(item.fecha || item.createdAt || item.updatedAt),
+      type: 'muestreo', date: toDate(item.fecha || item.createdAt || item.updatedAt),
       title: lineaLabel ? `Muestreo Línea ${lineaLabel}` : item.centroCodigo ? `Muestreo centro ${item.centroCodigo}` : 'Muestreo registrado',
       summary: summaryParts.join(' · ') || firstNonEmpty(item.observaciones, item.notas, 'Sin métricas registradas.'),
       note: firstNonEmpty(item.comentarios, item.observaciones),
       actor: firstNonEmpty(item.responsable, item.usuarioNombre),
-      extra: extraParts,
+      extra: fotosCount > 0 ? [`${fotosCount} foto${fotosCount === 1 ? '' : 's'}`] : [],
     });
   });
 
   return Array.from(providers.values())
     .map((provider) => {
-      const sortedEvents = [...provider.events].sort((a, b) => {
-        const dateA = a.date ? a.date.getTime() : 0;
-        const dateB = b.date ? b.date.getTime() : 0;
-        return dateB - dateA;
-      });
-      const lastActivity = sortedEvents[0]?.date || null;
-      const lastInteractionEvent = sortedEvents.find((event) => event.type === 'interaccion' || event.type === 'llamada' || event.type === 'whatsapp' || event.type === 'reunion') || null;
-
+      const sortedEvents = [...provider.events].sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+      const lastInteractionEvent = sortedEvents.find((e) => ['interaccion','llamada','whatsapp','reunion'].includes(e.type)) || null;
       return {
         ...provider,
         events: sortedEvents,
         totalEventos: sortedEvents.length,
-        lastActivity,
+        lastActivity: sortedEvents[0]?.date || null,
         lastInteraction: provider.lastInteraction || lastInteractionEvent?.title || '',
         lastResponsable: provider.lastResponsable || lastInteractionEvent?.actor || '',
       };
     })
-    .sort((a, b) => {
-      const dateA = a.lastActivity ? a.lastActivity.getTime() : 0;
-      const dateB = b.lastActivity ? b.lastActivity.getTime() : 0;
-      return dateB - dateA;
-    });
+    .sort((a, b) => (b.lastActivity?.getTime() || 0) - (a.lastActivity?.getTime() || 0));
 }
 
 function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], oportunidades = [] }) {
   const activities = [];
-
   interacciones.forEach((item) => {
     activities.push({
       id: `team-int-${item._id || activities.length}`,
@@ -357,7 +316,6 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       seguimientoEstado: '',
     });
   });
-
   visitas.forEach((item) => {
     activities.push({
       id: `team-vis-${item._id || activities.length}`,
@@ -373,7 +331,6 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       seguimientoEstado: '',
     });
   });
-
   muestreos.forEach((item) => {
     activities.push({
       id: `team-mue-${item._id || activities.length}`,
@@ -384,12 +341,9 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       type: 'muestreo',
       summary: firstNonEmpty(item.observaciones, 'Muestreo registrado'),
       result: firstNonEmpty(item.clasificaciones?.[0]?.nombre, item.estado, 'Sin clasificación'),
-      nextAction: '',
-      nextDate: null,
-      seguimientoEstado: '',
+      nextAction: '', nextDate: null, seguimientoEstado: '',
     });
   });
-
   oportunidades.forEach((item) => {
     const activityDate = toDate(item.ultimaActividadAt || item.updatedAt || item.createdAt || item.fechaInicio);
     if (!activityDate) return;
@@ -402,8 +356,8 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       type: 'seguimiento',
       summary: firstNonEmpty(
         item.proximaAccion ? `Seguimiento: ${item.proximaAccion}` : '',
-        item.motivoPausa ? `Pausa: ${item.motivoPausa}` : '',
-        item.motivoCierre ? `Cierre: ${item.motivoCierre}` : '',
+        item.motivoPausa   ? `Pausa: ${item.motivoPausa}` : '',
+        item.motivoCierre  ? `Cierre: ${item.motivoCierre}` : '',
         'Seguimiento actualizado'
       ),
       result: firstNonEmpty(item.estado, item.motivoCierre, item.motivoPausa, 'Sin resultado'),
@@ -412,11 +366,10 @@ function buildTeamActivity({ interacciones = [], visitas = [], muestreos = [], o
       seguimientoEstado: item.seguimientoEstado || '',
     });
   });
-
-  return activities
-    .filter((item) => item.date)
-    .sort((a, b) => b.date - a.date);
+  return activities.filter((i) => i.date).sort((a, b) => b.date - a.date);
 }
+
+// ── TeamActivityView ───────────────────────────────────────────────────────────
 
 function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, setTeamTypeFilter, teamUserFilter, setTeamUserFilter, teamUsers, muestreosTruncated }) {
   const filteredActivities = useMemo(() => {
@@ -425,14 +378,8 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
       if (teamTypeFilter !== 'todos' && item.type !== teamTypeFilter) return false;
       if (teamUserFilter !== 'todos' && item.user !== teamUserFilter) return false;
       if (!q) return true;
-      return [
-        item.user,
-        item.provider,
-        item.center,
-        item.summary,
-        item.result,
-        item.nextAction,
-      ].some((value) => String(value || '').toLowerCase().includes(q));
+      return [item.user, item.provider, item.center, item.summary, item.result, item.nextAction]
+        .some((v) => String(v || '').toLowerCase().includes(q));
     });
   }, [activities, searchTerm, teamTypeFilter, teamUserFilter]);
 
@@ -440,125 +387,107 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
     const today = new Date();
     const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     return {
-      llamadas: filteredActivities.filter((item) => item.type === 'llamada').length,
-      visitas: filteredActivities.filter((item) => item.type === 'visita').length,
-      muestreos: filteredActivities.filter((item) => item.type === 'muestreo').length,
-      gestionesHoy: filteredActivities.filter((item) => item.date >= startToday).length,
-      usuariosActivos: new Set(filteredActivities.map((item) => item.user).filter(Boolean)).size,
+      llamadas:       filteredActivities.filter((i) => i.type === 'llamada').length,
+      visitas:        filteredActivities.filter((i) => i.type === 'visita').length,
+      muestreos:      filteredActivities.filter((i) => i.type === 'muestreo').length,
+      gestionesHoy:   filteredActivities.filter((i) => i.date >= startToday).length,
+      usuariosActivos: new Set(filteredActivities.map((i) => i.user).filter(Boolean)).size,
     };
   }, [filteredActivities]);
 
+  const KPI_ITEMS = [
+    { label: 'Llamadas',        value: kpis.llamadas,        color: '#2563eb' },
+    { label: 'Visitas',         value: kpis.visitas,         color: '#f59e0b' },
+    { label: 'Muestreos',       value: kpis.muestreos,       color: '#7c3aed' },
+    { label: 'Gestiones del día', value: kpis.gestionesHoy,  color: '#16a34a' },
+    { label: 'Usuarios activos', value: kpis.usuariosActivos, color: '#0891b2' },
+  ];
+
   return (
     <>
-      <div className="mx-kpi-grid historial-kpi-grid">
-        {[
-          { label: 'Llamadas', value: kpis.llamadas },
-          { label: 'Visitas', value: kpis.visitas },
-          { label: 'Muestreos', value: kpis.muestreos },
-          { label: 'Gestiones del día', value: kpis.gestionesHoy },
-          { label: 'Usuarios activos', value: kpis.usuariosActivos },
-        ].map((stat) => (
-          <div key={stat.label} className="mx-kpi-card">
-            <div className="mx-kpi-label">{stat.label}</div>
-            <div className="mx-kpi-value">{stat.value}</div>
+      <div className="historial-kpi-row">
+        {KPI_ITEMS.map(({ label, value, color }) => (
+          <div key={label} className="hkpi-card">
+            <div className="hkpi-value" style={{ color }}>{value}</div>
+            <div className="hkpi-label">{label}</div>
           </div>
         ))}
       </div>
 
-      <div className="mx-toolbar" style={{ marginTop: '18px' }}>
+      <div className="historial-filter-bar">
         <div className="mx-toggle-group">
           {[
-            { value: 'todos', label: 'Todos' },
-            { value: 'llamada', label: 'Llamadas' },
-            { value: 'whatsapp', label: 'WhatsApp' },
-            { value: 'reunion', label: 'Reuniones' },
-            { value: 'visita', label: 'Visitas' },
-            { value: 'muestreo', label: 'Muestreos' },
+            { value: 'todos',       label: 'Todos' },
+            { value: 'llamada',     label: 'Llamadas' },
+            { value: 'whatsapp',    label: 'WhatsApp' },
+            { value: 'reunion',     label: 'Reuniones' },
+            { value: 'visita',      label: 'Visitas' },
+            { value: 'muestreo',    label: 'Muestreos' },
             { value: 'seguimiento', label: 'Seguimiento' },
-          ].map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`mx-toggle-btn ${teamTypeFilter === option.value ? 'active' : ''}`}
-              onClick={() => setTeamTypeFilter(option.value)}
+          ].map((opt) => (
+            <button key={opt.value} type="button"
+              className={`mx-toggle-btn ${teamTypeFilter === opt.value ? 'active' : ''}`}
+              onClick={() => setTeamTypeFilter(opt.value)}
             >
-              <Filter size={14} /> {option.label}
+              {opt.label}
             </button>
           ))}
         </div>
-
-        <select
-          className="mx-input"
-          value={teamUserFilter}
-          onChange={(e) => setTeamUserFilter(e.target.value)}
-          style={{ maxWidth: '260px' }}
-        >
+        <select className="mx-input" value={teamUserFilter} onChange={(e) => setTeamUserFilter(e.target.value)} style={{ maxWidth: '220px' }}>
           <option value="todos">Todos los usuarios</option>
-          {teamUsers.map((user) => (
-            <option key={user} value={user}>{user}</option>
-          ))}
+          {teamUsers.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
+        <span className="historial-result-count">{filteredActivities.length} actividades</span>
       </div>
 
       {muestreosTruncated && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)', margin: '8px 0 4px', padding: '6px 10px', background: 'rgba(100,116,139,0.08)', borderRadius: 6 }}>
+        <div className="historial-truncated-note">
           Mostrando los últimos 200 muestreos. El historial completo puede tener más registros.
         </div>
       )}
 
       <div className="historial-card-section">
         {loading ? (
-          <div className="mx-state-placeholder">
-            <div className="mx-spinner"></div>
-            <p>Sincronizando actividad del equipo...</p>
-          </div>
+          <div className="mx-state-placeholder"><div className="mx-spinner" /><p>Sincronizando actividad del equipo...</p></div>
         ) : filteredActivities.length === 0 ? (
           <div className="mx-state-placeholder">
             <AlertCircle size={44} />
             <h3>Sin actividad para este filtro</h3>
-            <p>No encontramos llamadas, visitas, muestreos o cambios de seguimiento con ese criterio.</p>
+            <p>No encontramos registros con ese criterio.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 14 }}>
+          <div className="historial-team-list">
             {filteredActivities.map((item) => {
-              const meta = TEAM_ACTIVITY_META[item.type] || TEAM_ACTIVITY_META.interaccion;
-              const Icon = meta.icon;
+              const meta     = TEAM_ACTIVITY_META[item.type] || TEAM_ACTIVITY_META.interaccion;
+              const Icon     = meta.icon;
               const seguimiento = STATUS_META[item.seguimientoEstado || 'none'] || STATUS_META.none;
               return (
-                <div key={item.id} className="mx-card" style={{ padding: '18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <div className="mx-btn-icon sm" style={{ background: `${meta.color}15`, color: meta.color }}>
-                        <Icon size={18} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 'var(--weight-bold)' }}>{item.user}</div>
-                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
-                          {meta.label} · {formatDateTime(item.date)}
-                        </div>
-                      </div>
+                <div key={item.id} className="hteam-card">
+                  <div className="hteam-card-left">
+                    <div className="hteam-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
+                      <Icon size={17} />
                     </div>
-                    <span className="mx-badge" style={{ background: `${meta.color}15`, color: meta.color, border: 'none' }}>
-                      {meta.label}
-                    </span>
-                  </div>
-
-                  <div style={{ marginTop: '12px', display: 'grid', gap: '4px' }}>
-                    <div style={{ fontWeight: 'var(--weight-bold)', fontSize: '1rem' }}>{item.provider}</div>
-                    <div style={{ color: 'var(--color-text)' }}>{item.summary}</div>
-                    <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                      Resultado: {item.result || 'Sin resultado'}
+                    <div className="hteam-who">
+                      <span className="hteam-user">{item.user}</span>
+                      <span className="hteam-when">{meta.label} · {formatDateTime(item.date)}</span>
                     </div>
                   </div>
+                  <span className="hteam-type-badge" style={{ background: `${meta.color}15`, color: meta.color }}>
+                    {meta.label}
+                  </span>
 
-                  <div style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap', color: 'var(--color-text-subtle)', fontSize: '0.86rem', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+                  <div className="hteam-body">
+                    <div className="hteam-provider">{item.provider}</div>
+                    <div className="hteam-summary">{item.summary}</div>
+                    <div className="hteam-result">Resultado: {item.result || 'Sin resultado'}</div>
+                  </div>
+
+                  <div className="hteam-footer">
                     <span>{item.center || 'Sin centro'}</span>
                     {item.nextAction ? <span>Próxima: {item.nextAction}</span> : null}
-                    {item.nextDate ? <span>{formatDate(item.nextDate)}</span> : null}
+                    {item.nextDate   ? <span>{formatDate(item.nextDate)}</span> : null}
                     {item.seguimientoEstado ? (
-                      <span style={{ color: seguimiento.color, fontWeight: 'var(--weight-bold)' }}>
-                        {seguimiento.label}
-                      </span>
+                      <span style={{ color: seguimiento.color, fontWeight: 600 }}>{seguimiento.label}</span>
                     ) : null}
                   </div>
                 </div>
@@ -571,17 +500,29 @@ function TeamActivityView({ loading, activities, searchTerm, teamTypeFilter, set
   );
 }
 
+// ── ProviderCardsView ─────────────────────────────────────────────────────────
+
 const DATE_FILTERS = [
   { value: 'todos', label: 'Todos' },
-  { value: '7d',   label: 'Últimos 7 días' },
-  { value: '30d',  label: 'Últimos 30 días' },
-  { value: '90d',  label: 'Últimos 90 días' },
+  { value: '7d',    label: 'Últimos 7 días' },
+  { value: '30d',   label: 'Últimos 30 días' },
+  { value: '90d',   label: 'Últimos 90 días' },
+];
+
+const STATUS_FILTER_OPTS = [
+  { value: '',        label: 'Todos' },
+  { value: 'activo',  label: 'Activo' },
+  { value: 'acordado',label: 'Acordado' },
+  { value: 'pausado', label: 'Pausado' },
+  { value: 'cerrado', label: 'Cerrado' },
+  { value: 'none',    label: 'Sin seguimiento' },
 ];
 
 function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider }) {
-  const [viewMode, setViewMode] = useState('cards');
-  const [dateFilter, setDateFilter] = useState('todos');
-  const [responsableFilter, setResponsableFilter] = useState('todos');
+  const [viewMode,         setViewMode]         = useState('cards');
+  const [dateFilter,       setDateFilter]       = useState('todos');
+  const [statusFilter,     setStatusFilter]     = useState('');
+  const [responsableFilter,setResponsableFilter] = useState('todos');
 
   const responsableOptions = useMemo(() => {
     const seen = new Map();
@@ -594,53 +535,71 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
     return [...seen.values()].sort((a, b) => a.localeCompare(b, 'es'));
   }, [providers]);
 
+  const statusCounts = useMemo(() => {
+    const c = {};
+    providers.forEach((p) => {
+      const s = p.status || 'none';
+      c[s] = (c[s] || 0) + 1;
+    });
+    return c;
+  }, [providers]);
+
   const filteredProviders = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     const now = Date.now();
     const cutoffs = { '7d': 7, '30d': 30, '90d': 90 };
     const cutoffMs = cutoffs[dateFilter] ? now - cutoffs[dateFilter] * 86400000 : null;
 
-    return providers.filter((provider) => {
-      if (cutoffMs && (!provider.lastActivity || provider.lastActivity.getTime() < cutoffMs)) return false;
-      if (responsableFilter !== 'todos' && provider.lastResponsable !== responsableFilter) return false;
+    return providers.filter((p) => {
+      if (cutoffMs && (!p.lastActivity || p.lastActivity.getTime() < cutoffMs)) return false;
+      if (responsableFilter !== 'todos' && p.lastResponsable !== responsableFilter) return false;
+      if (statusFilter) {
+        const provStatus = p.status || 'none';
+        if (provStatus !== statusFilter) return false;
+      }
       if (!q) return true;
-      return [provider.name, provider.contactoPrincipal, provider.proximaAccion, provider.lastInteraction, provider.lastResponsable]
-        .some((value) => String(value || '').toLowerCase().includes(q));
+      return [p.name, p.contactoPrincipal, p.proximaAccion, p.lastInteraction, p.lastResponsable]
+        .some((v) => String(v || '').toLowerCase().includes(q));
     });
-  }, [providers, searchTerm, dateFilter, responsableFilter]);
+  }, [providers, searchTerm, dateFilter, responsableFilter, statusFilter]);
 
   const kpiStats = useMemo(() => {
-    const MS_24H = 24 * 60 * 60 * 1000;
+    const MS_24H = 86400000;
     const now = Date.now();
     return {
-      totalEventos: providers.reduce((sum, item) => sum + item.totalEventos, 0),
-      totalContactos: providers.reduce((sum, item) => sum + item.totalContactos, 0),
-      ultimas24h: providers.filter((item) => item.lastActivity && (now - item.lastActivity.getTime()) <= MS_24H).length,
+      totalEventos:   providers.reduce((s, p) => s + p.totalEventos, 0),
+      totalContactos: providers.reduce((s, p) => s + p.totalContactos, 0),
+      ultimas24h:     providers.filter((p) => p.lastActivity && (now - p.lastActivity.getTime()) <= MS_24H).length,
     };
   }, [providers]);
 
+  const KPI_ITEMS = [
+    { label: 'Proveedores con historial', value: providers.length,        icon: Building2,    color: '#0A5CFF' },
+    { label: 'Eventos registrados',       value: kpiStats.totalEventos,   icon: CalendarDays, color: '#7c3aed' },
+    { label: 'Contactos en directorio',   value: kpiStats.totalContactos, icon: Users,        color: '#0891b2' },
+    { label: 'Activos últimas 24h',       value: kpiStats.ultimas24h,     icon: Clock3,       color: '#16a34a' },
+  ];
+
   return (
     <>
-      <div className="mx-kpi-grid historial-kpi-grid">
-        {[
-          { label: 'Proveedores con historial', value: providers.length },
-          { label: 'Eventos registrados',       value: kpiStats.totalEventos },
-          { label: 'Contactos en directorio',   value: kpiStats.totalContactos },
-          { label: 'Últimas 24h',               value: kpiStats.ultimas24h },
-        ].map((stat) => (
-          <div key={stat.label} className="mx-kpi-card">
-            <div className="mx-kpi-label">{stat.label}</div>
-            <div className="mx-kpi-value">{stat.value}</div>
+      {/* KPIs */}
+      <div className="historial-kpi-row">
+        {KPI_ITEMS.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="hkpi-card">
+            <div className="hkpi-icon" style={{ background: `${color}12`, color }}><Icon size={18} /></div>
+            <div>
+              <div className="hkpi-value" style={{ color }}>{value}</div>
+              <div className="hkpi-label">{label}</div>
+            </div>
           </div>
         ))}
       </div>
 
+      {/* Barra filtros: fecha + responsable + vista */}
       <div className="historial-filter-bar">
         <div className="mx-toggle-group">
           {DATE_FILTERS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
+            <button key={opt.value} type="button"
               className={`mx-toggle-btn ${dateFilter === opt.value ? 'active' : ''}`}
               onClick={() => setDateFilter(opt.value)}
             >
@@ -650,53 +609,52 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
         </div>
 
         {responsableOptions.length > 0 && (
-          <select
-            className="mx-input"
-            style={{ width: 'auto' }}
-            value={responsableFilter}
-            onChange={(e) => setResponsableFilter(e.target.value)}
-          >
+          <select className="mx-input" style={{ width: 'auto' }} value={responsableFilter} onChange={(e) => setResponsableFilter(e.target.value)}>
             <option value="todos">Todos los responsables</option>
-            {responsableOptions.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
+            {responsableOptions.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         )}
 
+        <div style={{ flex: 1 }} />
+
+        <span className="historial-result-count">
+          {filteredProviders.length} de {providers.length} proveedores
+        </span>
+
         <div className="historial-view-toggle">
-          <button
-            type="button"
-            className={`mx-btn-icon ${viewMode === 'cards' ? 'historial-view-active' : ''}`}
-            title="Vista tarjetas"
-            onClick={() => setViewMode('cards')}
-          >
+          <button type="button" className={`mx-btn-icon ${viewMode === 'cards' ? 'historial-view-active' : ''}`} title="Vista tarjetas" onClick={() => setViewMode('cards')}>
             <LayoutGrid size={16} />
           </button>
-          <button
-            type="button"
-            className={`mx-btn-icon ${viewMode === 'lista' ? 'historial-view-active' : ''}`}
-            title="Vista lista"
-            onClick={() => setViewMode('lista')}
-          >
+          <button type="button" className={`mx-btn-icon ${viewMode === 'lista' ? 'historial-view-active' : ''}`} title="Vista lista" onClick={() => setViewMode('lista')}>
             <LayoutList size={16} />
           </button>
         </div>
       </div>
 
-      {filteredProviders.length > 0 && (
-        <p className="historial-result-count">
-          {filteredProviders.length} proveedor{filteredProviders.length !== 1 ? 'es' : ''}
-          {dateFilter !== 'todos' ? ` · ${DATE_FILTERS.find(f => f.value === dateFilter)?.label}` : ''}
-          {responsableFilter !== 'todos' ? ` · ${responsableFilter}` : ''}
-        </p>
-      )}
+      {/* Chips de estado de seguimiento */}
+      <div className="historial-status-chips">
+        {STATUS_FILTER_OPTS.map(({ value, label }) => {
+          const count = value ? (statusCounts[value] || 0) : providers.length;
+          const meta  = value ? STATUS_META[value] : null;
+          const isActive = statusFilter === value;
+          return (
+            <button key={value} type="button"
+              className={`historial-status-chip ${isActive ? 'is-active' : ''}`}
+              style={isActive && meta ? { borderColor: meta.color, color: meta.color, background: meta.bg } : {}}
+              onClick={() => setStatusFilter(isActive ? '' : value)}
+            >
+              {meta && <span className="hsc-dot" style={{ background: meta.color }} />}
+              {label}
+              <span className="hsc-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      <div className="am-mt-16">
+      {/* Contenido */}
+      <div className="historial-cards-body">
         {loading ? (
-          <div className="mx-state-placeholder">
-            <div className="mx-spinner"></div>
-            <p>Sincronizando historial...</p>
-          </div>
+          <div className="mx-state-placeholder"><div className="mx-spinner" /><p>Sincronizando historial...</p></div>
         ) : filteredProviders.length === 0 ? (
           <div className="mx-state-placeholder">
             <AlertCircle size={44} />
@@ -704,6 +662,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
             <p>Prueba con otro filtro o ajusta la búsqueda.</p>
           </div>
         ) : viewMode === 'lista' ? (
+          /* ── Vista Lista ── */
           <div className="mx-table-card">
             <div className="mx-table-wrap">
               <table className="mx-table">
@@ -715,19 +674,26 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                     <th>Última gestión</th>
                     <th>Responsable</th>
                     <th style={{ textAlign: 'center' }}>Eventos</th>
-                    <th></th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProviders.map((provider) => {
-                    const status = STATUS_META[provider.status || 'none'] || STATUS_META.none;
+                    const status     = STATUS_META[provider.status || 'none'] || STATUS_META.none;
                     const StatusIcon = status.icon;
                     return (
-                      <tr key={provider.key} className="historial-list-row">
+                      <tr key={provider.key} className="historial-list-row" style={{ borderLeft: `3px solid ${status.color}` }}>
                         <td>
-                          <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{provider.name}</div>
-                          <div style={{ fontSize: '0.76rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
-                            {provider.totalContactos} contacto{provider.totalContactos !== 1 ? 's' : ''}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div className="hpc-avatar-sm" style={{ background: getAvatarColor(provider.name) }}>
+                              {getInitials(provider.name)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{provider.name}</div>
+                              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
+                                {provider.totalContactos} contacto{provider.totalContactos !== 1 ? 's' : ''}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td>
@@ -751,17 +717,12 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                         <td style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                           {provider.lastResponsable || '—'}
                         </td>
-                        <td style={{ textAlign: 'center', fontSize: '0.85rem', fontWeight: 700 }}>
+                        <td style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
                           {provider.totalEventos}
                         </td>
                         <td>
-                          <button
-                            type="button"
-                            className="mx-btn mx-btn-outline"
-                            style={{ fontSize: '0.8rem', padding: '5px 12px', height: 'auto' }}
-                            onClick={() => onSelectProvider(provider.key)}
-                          >
-                            Expediente
+                          <button type="button" className="hpc-cta-btn" onClick={() => onSelectProvider(provider.key)}>
+                            Expediente <ChevronRight size={13} />
                           </button>
                         </td>
                       </tr>
@@ -772,41 +733,70 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
             </div>
           </div>
         ) : (
+          /* ── Vista Cards ── */
           <div className="historial-provider-grid">
             {filteredProviders.map((provider) => {
-              const status = STATUS_META[provider.status || 'none'] || STATUS_META.none;
-              const StatusIcon = status.icon;
+              const status      = STATUS_META[provider.status || 'none'] || STATUS_META.none;
+              const StatusIcon  = status.icon;
+              const avatarColor = getAvatarColor(provider.name);
+              const initials    = getInitials(provider.name);
+
               return (
                 <button
                   key={provider.key}
                   type="button"
-                  className="mx-card historial-provider-card"
+                  className="historial-provider-card"
+                  style={{ borderLeft: `4px solid ${status.color}` }}
                   onClick={() => onSelectProvider(provider.key)}
-                  style={{ textAlign: 'left', cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                    <div className="mx-btn-icon" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
-                      <Building2 size={20} />
+                  {/* Header */}
+                  <div className="hpc-header">
+                    <div className="hpc-avatar" style={{ background: avatarColor }}>
+                      {initials}
                     </div>
-                    <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
-                      <StatusIcon size={14} />
+                    <div className="hpc-name-block">
+                      <h3 className="hpc-name">{provider.name}</h3>
+                      <p className="hpc-meta">
+                        {provider.totalEventos} eventos · {provider.totalContactos} contacto{provider.totalContactos !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <span className="hpc-status-badge" style={{ color: status.color, background: status.bg }}>
+                      <StatusIcon size={12} />
                       {status.label}
                     </span>
                   </div>
 
-                  <h3 style={{ margin: '12px 0 5px', fontSize: '1.03rem' }}>{provider.name}</h3>
-                  <p style={{ margin: 0, color: 'var(--color-text-subtle)', fontSize: '0.86rem' }}>
-                    {provider.totalEventos} eventos · {provider.totalContactos} contacto{provider.totalContactos === 1 ? '' : 's'}
-                  </p>
-
-                  <div style={{ marginTop: '10px', display: 'grid', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.86rem' }}>
-                    <span className="am-line-clamp-1">{provider.lastInteraction || 'Sin gestiones registradas'}</span>
-                    <span>{provider.lastActivity ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}` : 'Sin actividad'}</span>
+                  {/* Body */}
+                  <div className="hpc-body">
+                    <p className="hpc-last-interaction am-line-clamp-2">
+                      {provider.lastInteraction || 'Sin gestiones registradas'}
+                    </p>
+                    {provider.proximaAccion && (
+                      <div className="hpc-next-action">
+                        <Clock3 size={12} />
+                        <span className="am-line-clamp-1">{provider.proximaAccion}</span>
+                        {provider.fechaProximaAccion && (
+                          <span className="hpc-next-date">{formatDate(provider.fechaProximaAccion)}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
-                    <span className="am-line-clamp-1">{provider.contactoPrincipal || 'Sin contacto'}</span>
-                    <span style={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}>Expediente</span>
+                  {/* Footer */}
+                  <div className="hpc-footer">
+                    <div className="hpc-footer-left">
+                      <span className="hpc-contact am-line-clamp-1">
+                        {provider.contactoPrincipal || 'Sin contacto'}
+                      </span>
+                      <span className="hpc-date">
+                        {provider.lastActivity
+                          ? `${formatDate(provider.lastActivity)} · ${relativeText(provider.lastActivity)}`
+                          : 'Sin actividad'}
+                      </span>
+                    </div>
+                    <span className="hpc-cta-btn">
+                      Expediente <ChevronRight size={13} />
+                    </span>
                   </div>
                 </button>
               );
@@ -818,97 +808,42 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
   );
 }
 
+// ── Root ──────────────────────────────────────────────────────────────────────
+
 export default function Historial() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Filtros de UI
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProviderKey, setSelectedProviderKey] = useState(() =>
-    String(searchParams.get('proveedor') || '').trim().toLowerCase()
-  );
-  const [typeFilter, setTypeFilter] = useState('todos');
-  const [historyView, setHistoryView] = useState(() => (
+  const [searchTerm,         setSearchTerm]         = useState('');
+  const [selectedProviderKey,setSelectedProviderKey] = useState(() => String(searchParams.get('proveedor') || '').trim().toLowerCase());
+  const [typeFilter,         setTypeFilter]         = useState('todos');
+  const [historyView,        setHistoryView]        = useState(() =>
     String(searchParams.get('view') || '').toLowerCase() === 'equipo' ? 'equipo' : 'expediente'
-  ));
+  );
   const [teamTypeFilter, setTeamTypeFilter] = useState('todos');
   const [teamUserFilter, setTeamUserFilter] = useState('todos');
 
-  // React Query: Carga Granular e Independiente
   const isExpediente = historyView === 'expediente';
-  const isEquipo = historyView === 'equipo';
+  const isEquipo     = historyView === 'equipo';
 
-  // 1. Contactos (Base para Expediente)
-  const { data: contactosRes, isLoading: loadingContactos } = useQuery({
-    queryKey: ['historial', 'contactos'],
-    queryFn: () => apiClient.get('/contactos'),
-    enabled: isExpediente,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: contactosRes,    isLoading: loadingContactos }    = useQuery({ queryKey: ['historial','contactos'], queryFn: () => apiClient.get('/contactos'), enabled: isExpediente, staleTime: 5*60*1000 });
+  const { data: interaccionesRes,isLoading: loadingInteracciones } = useQuery({ queryKey: ['historial','interacciones',selectedProviderKey,historyView], queryFn: () => apiClient.get(selectedProviderKey && isExpediente ? `/interacciones?proveedorKey=${encodeURIComponent(selectedProviderKey)}&limit=500` : '/interacciones?limit=500'), enabled: isEquipo || isExpediente, staleTime: 3*60*1000 });
+  const { data: visitasRes,      isLoading: loadingVisitas }      = useQuery({ queryKey: ['historial','visitas',selectedProviderKey,historyView], queryFn: () => apiClient.get(selectedProviderKey && isExpediente ? `/visitas?proveedorKey=${encodeURIComponent(selectedProviderKey)}` : '/visitas'), enabled: isEquipo || isExpediente, staleTime: 3*60*1000 });
+  const { data: oportunidadesRes,isLoading: loadingOportunidades } = useQuery({ queryKey: ['historial','oportunidades',selectedProviderKey,historyView], queryFn: () => apiClient.get(selectedProviderKey && isExpediente ? `/oportunidades?proveedorKey=${encodeURIComponent(selectedProviderKey)}` : '/oportunidades'), enabled: isEquipo || isExpediente, staleTime: 3*60*1000 });
+  const { data: muestreosRes,    isLoading: loadingMuestreos }    = useQuery({ queryKey: ['historial','muestreos',isEquipo ? 'equipo' : selectedProviderKey], queryFn: () => apiClient.get('/muestreos?limit=200&page=1'), enabled: isEquipo || (isExpediente && !!selectedProviderKey), staleTime: 5*60*1000 });
 
-  // 2. Interacciones
-  const { data: interaccionesRes, isLoading: loadingInteracciones } = useQuery({
-    queryKey: ['historial', 'interacciones', selectedProviderKey, historyView],
-    queryFn: () => {
-      let url = '/interacciones?limit=500';
-      if (selectedProviderKey && isExpediente) {
-        url = `/interacciones?proveedorKey=${encodeURIComponent(selectedProviderKey)}&limit=500`;
-      }
-      return apiClient.get(url);
-    },
-    enabled: isEquipo || isExpediente,
-    staleTime: 3 * 60 * 1000,
-  });
-
-  // 3. Visitas
-  const { data: visitasRes, isLoading: loadingVisitas } = useQuery({
-    queryKey: ['historial', 'visitas', selectedProviderKey, historyView],
-    queryFn: () => {
-      let url = '/visitas';
-      if (selectedProviderKey && isExpediente) {
-        url = `/visitas?proveedorKey=${encodeURIComponent(selectedProviderKey)}`;
-      }
-      return apiClient.get(url);
-    },
-    enabled: isEquipo || isExpediente,
-    staleTime: 3 * 60 * 1000,
-  });
-
-  // 4. Oportunidades
-  const { data: oportunidadesRes, isLoading: loadingOportunidades } = useQuery({
-    queryKey: ['historial', 'oportunidades', selectedProviderKey, historyView],
-    queryFn: () => {
-      let url = '/oportunidades';
-      if (selectedProviderKey && isExpediente) {
-        url = `/oportunidades?proveedorKey=${encodeURIComponent(selectedProviderKey)}`;
-      }
-      return apiClient.get(url);
-    },
-    enabled: isEquipo || isExpediente,
-    staleTime: 3 * 60 * 1000,
-  });
-
-  // 5. Muestreos (equipo siempre; expediente solo cuando hay proveedor seleccionado)
-  const { data: muestreosRes, isLoading: loadingMuestreos } = useQuery({
-    queryKey: ['historial', 'muestreos', isEquipo ? 'equipo' : selectedProviderKey],
-    queryFn: () => apiClient.get('/muestreos?limit=200&page=1'),
-    enabled: isEquipo || (isExpediente && !!selectedProviderKey),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Normalización de datos para los procesos de construcción
   const data = useMemo(() => {
-    const extractItems = (res) => (Array.isArray(res) ? res : res?.items || []);
+    const extract = (res) => (Array.isArray(res) ? res : res?.items || []);
     return {
-      contactos: extractItems(contactosRes),
-      visitas: extractItems(visitasRes),
-      interacciones: extractItems(interaccionesRes),
-      oportunidades: extractItems(oportunidadesRes),
-      muestreos: extractItems(muestreosRes),
+      contactos:     extract(contactosRes),
+      visitas:       extract(visitasRes),
+      interacciones: extract(interaccionesRes),
+      oportunidades: extract(oportunidadesRes),
+      muestreos:     extract(muestreosRes),
     };
   }, [contactosRes, visitasRes, interaccionesRes, oportunidadesRes, muestreosRes]);
 
-  const loading = loadingContactos || loadingVisitas || loadingInteracciones || loadingOportunidades || loadingMuestreos;
+  const loading          = loadingContactos || loadingVisitas || loadingInteracciones || loadingOportunidades || loadingMuestreos;
   const muestreosTruncated = data.muestreos.length >= 200;
 
   useEffect(() => {
@@ -916,50 +851,46 @@ export default function Historial() {
     setHistoryView(requestedView === 'equipo' ? 'equipo' : 'expediente');
   }, [searchParams]);
 
-  const providers = useMemo(() => buildProviderHistory(data), [data]);
-  const teamActivity = useMemo(() => buildTeamActivity(data), [data]);
-  const teamUsers = useMemo(
-    () => Array.from(new Set(teamActivity.map((item) => item.user).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+  const providers     = useMemo(() => buildProviderHistory(data), [data]);
+  const teamActivity  = useMemo(() => buildTeamActivity(data), [data]);
+  const teamUsers     = useMemo(() =>
+    Array.from(new Set(teamActivity.map((i) => i.user).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [teamActivity]
   );
 
   const selectedProvider = useMemo(
-    () => providers.find((provider) => provider.key === selectedProviderKey) || null,
+    () => providers.find((p) => p.key === selectedProviderKey) || null,
     [providers, selectedProviderKey]
   );
 
-  const INTERACTION_FAMILY = new Set(['interaccion', 'llamada', 'whatsapp', 'reunion']);
+  const INTERACTION_FAMILY = new Set(['interaccion','llamada','whatsapp','reunion']);
   const visibleEvents = useMemo(() => {
     if (!selectedProvider) return [];
-    return selectedProvider.events.filter((event) => {
+    return selectedProvider.events.filter((e) => {
       if (typeFilter === 'todos') return true;
-      if (typeFilter === 'interaccion') return INTERACTION_FAMILY.has(event.type);
-      return event.type === typeFilter;
+      if (typeFilter === 'interaccion') return INTERACTION_FAMILY.has(e.type);
+      return e.type === typeFilter;
     });
   }, [selectedProvider, typeFilter]);
 
   const setHistoryViewWithUrl = (nextView) => {
     setHistoryView(nextView);
-    const nextParams = new URLSearchParams(searchParams);
-    if (nextView === 'equipo') nextParams.set('view', 'equipo');
-    else nextParams.delete('view');
-    setSearchParams(nextParams, { replace: true });
+    const p = new URLSearchParams(searchParams);
+    if (nextView === 'equipo') p.set('view', 'equipo'); else p.delete('view');
+    setSearchParams(p, { replace: true });
   };
 
   const selectProvider = (key) => {
     setSelectedProviderKey(key);
     setTypeFilter('todos');
-    const nextParams = new URLSearchParams(searchParams);
-    if (key) {
-      nextParams.set('proveedor', key);
-    } else {
-      nextParams.delete('proveedor');
-    }
-    setSearchParams(nextParams);
+    const p = new URLSearchParams(searchParams);
+    if (key) p.set('proveedor', key); else p.delete('proveedor');
+    setSearchParams(p);
   };
 
+  // ── Vista Expediente individual ────────────────────────────────────────────
   if (selectedProvider) {
-    const status = STATUS_META[selectedProvider.status || 'none'] || STATUS_META.none;
+    const status     = STATUS_META[selectedProvider.status || 'none'] || STATUS_META.none;
     const StatusIcon = status.icon;
 
     return (
@@ -968,114 +899,28 @@ export default function Historial() {
           <div className="mx-hero-content">
             <p className="mx-eyebrow">Trazabilidad · Historial</p>
             <h1>{selectedProvider.name}</h1>
-            <p>
-              Aquí vive solo lo que ya pasó: interacciones, visitas, contactos y cambios de seguimiento.
-            </p>
+            <p>Aquí vive solo lo que ya pasó: interacciones, visitas, contactos y cambios de seguimiento.</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="mx-btn mx-btn-outline"
-              style={{
-                color: '#ffffff',
-                background: 'rgba(255,255,255,0.14)',
-                borderColor: 'rgba(255,255,255,0.28)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontWeight: 800,
-                boxShadow: 'none',
-              }}
-              onClick={() => {
-                setSelectedProviderKey('');
-                setTypeFilter('todos');
-                const nextParams = new URLSearchParams(searchParams);
-                nextParams.delete('proveedor');
-                setSearchParams(nextParams, { replace: true });
-              }}
+            <button type="button" className="mx-btn mx-btn-outline" style={{ color: '#fff', background: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.28)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, boxShadow: 'none' }}
+              onClick={() => { setSelectedProviderKey(''); setTypeFilter('todos'); const p = new URLSearchParams(searchParams); p.delete('proveedor'); setSearchParams(p, { replace: true }); }}
             >
               <ArrowLeft size={18} /> Volver
             </button>
-            <button
-              type="button"
-              className="mx-btn mx-btn-outline"
-              style={{
-                color: 'rgba(255,255,255,0.75)',
-                background: 'transparent',
-                borderColor: 'rgba(255,255,255,0.2)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontWeight: 600,
-                boxShadow: 'none',
-                fontSize: '0.88rem',
-              }}
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
-                  detail: {
-                    proveedorKey: selectedProvider.key,
-                    proveedorNombre: selectedProvider.name,
-                    contactoNombre: selectedProvider.contactoPrincipal || '',
-                    contactoTelefono: selectedProvider.contactoTelefono || '',
-                    contactoEmail: selectedProvider.contactoEmail || '',
-                    comuna: '',
-                    centros: 0,
-                    contactoId: '',
-                  },
-                }));
-              }}
+            <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
+              onClick={() => window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', { detail: { proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0, contactoId: '' } }))}
             >
               <MessageSquare size={15} /> Registrar gestión
             </button>
-            {selectedProvider.key ? (
-              <button
-                type="button"
-                className="mx-btn mx-btn-outline"
-                style={{
-                  color: 'rgba(255,255,255,0.75)',
-                  background: 'transparent',
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontWeight: 600,
-                  boxShadow: 'none',
-                  fontSize: '0.88rem',
-                }}
-                onClick={() => {
-                  sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({
-                    proveedorKey: selectedProvider.key,
-                    proveedorNombre: selectedProvider.name,
-                    contactoNombre: selectedProvider.contactoPrincipal || '',
-                    contactoTelefono: selectedProvider.contactoTelefono || '',
-                    contactoEmail: selectedProvider.contactoEmail || '',
-                    comuna: '',
-                    centros: 0,
-                  }));
-                  navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`);
-                }}
+            {selectedProvider.key && (
+              <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
+                onClick={() => { sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({ proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0 })); navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`); }}
               >
                 <FileText size={15} /> Nueva negociación
               </button>
-            ) : null}
-            <button
-              type="button"
-              className="mx-btn mx-btn-outline"
-              style={{
-                color: 'rgba(255,255,255,0.75)',
-                background: 'transparent',
-                borderColor: 'rgba(255,255,255,0.2)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontWeight: 600,
-                boxShadow: 'none',
-                fontSize: '0.88rem',
-              }}
-              onClick={() => {
-                const q = selectedProvider.name || selectedProvider.key;
-                navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores');
-              }}
+            )}
+            <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
+              onClick={() => { const q = selectedProvider.name || selectedProvider.key; navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores'); }}
             >
               <Building2 size={15} /> Ver en Directorio
             </button>
@@ -1088,18 +933,15 @@ export default function Historial() {
               <div className="mx-kpi-label">Seguimiento actual</div>
               <div style={{ marginTop: '10px' }}>
                 <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
-                  <StatusIcon size={14} />
-                  {status.label}
+                  <StatusIcon size={14} /> {status.label}
                 </span>
               </div>
             </div>
-
             <div className="mx-kpi-card">
               <div className="mx-kpi-label">Última actividad</div>
               <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{formatDate(selectedProvider.lastActivity)}</div>
               <div style={{ marginTop: '4px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>{relativeText(selectedProvider.lastActivity)}</div>
             </div>
-
             <div className="mx-kpi-card">
               <div className="mx-kpi-label">Próxima acción conocida</div>
               <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{selectedProvider.proximaAccion || 'Sin acción'}</div>
@@ -1107,7 +949,6 @@ export default function Historial() {
                 {selectedProvider.fechaProximaAccion ? formatDate(selectedProvider.fechaProximaAccion) : 'Sin fecha'}
               </div>
             </div>
-
             <div className="mx-kpi-card">
               <div className="mx-kpi-label">Contacto principal</div>
               <div className="mx-kpi-value" style={{ fontSize: '1.2rem' }}>{selectedProvider.contactoPrincipal || 'Sin contacto'}</div>
@@ -1120,27 +961,25 @@ export default function Historial() {
           <div className="mx-toolbar" style={{ marginTop: '24px' }}>
             <div className="mx-toggle-group">
               {[
-                { value: 'todos', label: 'Todos' },
+                { value: 'todos',       label: 'Todos' },
                 { value: 'interaccion', label: 'Gestiones' },
-                { value: 'visita', label: 'Visitas' },
-                { value: 'muestreo', label: 'Muestreos' },
+                { value: 'visita',      label: 'Visitas' },
+                { value: 'muestreo',    label: 'Muestreos' },
                 { value: 'seguimiento', label: 'Seguimiento' },
-                { value: 'contacto', label: 'Contactos' },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`mx-toggle-btn ${typeFilter === option.value ? 'active' : ''}`}
-                  onClick={() => setTypeFilter(option.value)}
+                { value: 'contacto',    label: 'Contactos' },
+              ].map((opt) => (
+                <button key={opt.value} type="button"
+                  className={`mx-toggle-btn ${typeFilter === opt.value ? 'active' : ''}`}
+                  onClick={() => setTypeFilter(opt.value)}
                 >
-                  <Filter size={14} /> {option.label}
+                  <Filter size={14} /> {opt.label}
                 </button>
               ))}
             </div>
           </div>
 
           {muestreosTruncated && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)', margin: '12px 0 0', padding: '6px 10px', background: 'rgba(100,116,139,0.08)', borderRadius: 6 }}>
+            <div className="historial-truncated-note" style={{ marginTop: 12 }}>
               Mostrando los últimos 200 muestreos. El historial completo puede tener más registros.
             </div>
           )}
@@ -1158,56 +997,34 @@ export default function Historial() {
                 const Icon = meta.icon;
                 return (
                   <div key={event.id || index} style={{ display: 'flex', gap: 18, position: 'relative', marginBottom: 28 }}>
-                    {index < visibleEvents.length - 1 ? (
+                    {index < visibleEvents.length - 1 && (
                       <div style={{ position: 'absolute', left: 18, top: 40, bottom: -28, width: 2, background: '#e2e8f0' }} />
-                    ) : null}
-
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: '50%',
-                        background: meta.color,
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        zIndex: 1,
-                      }}
-                    >
+                    )}
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: meta.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>
                       <Icon size={18} />
                     </div>
-
                     <div className="mx-table-card" style={{ flex: 1, margin: 0, padding: 18 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                         <span style={{ color: meta.color, fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           {meta.label}
                         </span>
                         <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
-                          {formatDateTime(event.date)} {event.date ? `· ${relativeText(event.date)}` : ''}
+                          {formatDateTime(event.date)}{event.date ? ` · ${relativeText(event.date)}` : ''}
                         </span>
                       </div>
-
                       <h3 style={{ margin: '10px 0 8px', fontSize: '1.05rem' }}>{event.title || 'Evento registrado'}</h3>
-                      <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: 1.55 }}>
-                        {event.summary || 'Sin detalle adicional.'}
-                      </p>
-
-                      {event.note ? (
-                        <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'rgba(15, 23, 42, 0.04)', color: 'var(--color-text)' }}>
+                      <p style={{ margin: 0, color: 'var(--color-text-muted)', lineHeight: 1.55 }}>{event.summary || 'Sin detalle adicional.'}</p>
+                      {event.note && (
+                        <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'rgba(15,23,42,0.04)', color: 'var(--color-text)' }}>
                           {event.note}
                         </div>
-                      ) : null}
-
-                      {(event.actor || event.extra?.length) ? (
+                      )}
+                      {(event.actor || event.extra?.length) && (
                         <div style={{ marginTop: 12, display: 'grid', gap: 4, color: 'var(--color-text-subtle)', fontSize: '0.84rem' }}>
-                          {event.actor ? <span>Responsable: {event.actor}</span> : null}
-                          {event.extra?.map((line, lineIndex) => (
-                            <span key={`${event.id}-extra-${lineIndex}`}>{line}</span>
-                          ))}
+                          {event.actor && <span>Responsable: {event.actor}</span>}
+                          {event.extra?.map((line, i) => <span key={`${event.id}-x-${i}`}>{line}</span>)}
                         </div>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 );
@@ -1219,120 +1036,67 @@ export default function Historial() {
     );
   }
 
+  // ── Vista principal (lista de proveedores / equipo) ────────────────────────
   return (
     <div className="mx-page">
       <header className="mx-hero mx-hero--with-desc historial-hero">
         <div className="mx-hero-content">
-          <p className="mx-eyebrow">{historyView === 'equipo' ? 'Trazabilidad · Actividad del equipo' : 'Trazabilidad · Historial'}</p>
-          <h1>{historyView === 'equipo' ? 'Actividad del equipo' : 'Historial operativo'}</h1>
-          <p>{historyView === 'equipo' ? 'Trazabilidad operativa de acciones, responsables y registros recientes.' : 'Aquí revisamos lo que ya pasó. La operación pendiente vive en Resumen, Agenda y Proveedores.'}</p>
+          <p className="mx-eyebrow">{isEquipo ? 'Trazabilidad · Actividad del equipo' : 'Trazabilidad · Historial'}</p>
+          <h1>{isEquipo ? 'Actividad del equipo' : 'Historial operativo'}</h1>
+          <p>{isEquipo ? 'Trazabilidad operativa de acciones, responsables y registros recientes.' : 'Aquí revisamos lo que ya pasó. La operación pendiente vive en Resumen, Agenda y Proveedores.'}</p>
         </div>
       </header>
 
       <div className="mx-content-frame historial-content-frame">
-        <div className="historial-search-row">
-          <div
-            className="mx-input-group"
-            style={{
-              flex: 1,
-              width: '100%',
-              background: '#ffffff',
-              border: '1px solid #d7e3f1',
-              borderRadius: 12,
-              padding: '0 12px',
-              boxShadow: '0 6px 14px rgba(15, 23, 42, 0.05)',
-            }}
-          >
-            <Search size={18} color="#64748b" />
+
+        {/* Barra superior: búsqueda + tabs de vista */}
+        <div className="historial-top-bar">
+          <div className="historial-search-box">
+            <Search size={17} color="#64748b" />
             <input
               type="text"
-              placeholder={historyView === 'equipo' ? 'Buscar por usuario, proveedor, centro o resultado...' : 'Buscar por proveedor, contacto o última acción...'}
+              placeholder={isEquipo ? 'Buscar por usuario, proveedor, centro o resultado...' : 'Buscar por proveedor, contacto o última acción...'}
               className="mx-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                boxShadow: 'none',
-                padding: 0,
-                color: '#0f172a',
-              }}
+              autoComplete="off"
             />
           </div>
-        </div>
-
-        <div className="centros-filters historial-view-switch">
           <div className="mx-toggle-group">
-            <button
-              type="button"
-              className={`mx-toggle-btn ${historyView === 'expediente' ? 'active' : ''}`}
-              onClick={() => setHistoryViewWithUrl('expediente')}
-            >
+            <button type="button" className={`mx-toggle-btn ${historyView === 'expediente' ? 'active' : ''}`} onClick={() => setHistoryViewWithUrl('expediente')}>
               <FileText size={14} /> Expediente
             </button>
-            <button
-              type="button"
-              className={`mx-toggle-btn ${historyView === 'equipo' ? 'active' : ''}`}
-              onClick={() => setHistoryViewWithUrl('equipo')}
-            >
+            <button type="button" className={`mx-toggle-btn ${historyView === 'equipo' ? 'active' : ''}`} onClick={() => setHistoryViewWithUrl('equipo')}>
               <Users size={14} /> Actividad del equipo
             </button>
           </div>
         </div>
 
-        {historyView === 'equipo' ? (
-          <div
-            className="mx-table-card"
-            style={{
-              marginTop: 8,
-              padding: 12,
-              border: '1px solid #d7e3f1',
-              background: 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(15,118,110,0.04))',
-            }}
-          >
-            <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.96rem' }}>Vista de supervisión del equipo</div>
-            <p style={{ margin: '6px 0 0', color: '#64748b', lineHeight: 1.5, fontSize: '0.88rem' }}>
-              Aquí la jefatura revisa llamadas, visitas, muestreos, responsables y próximas acciones del equipo de
-              abastecimiento. <strong style={{ color: '#0f172a' }}>Gestiones</strong> sigue existiendo como herramienta de
-              registro operativo, pero la lectura consolidada del trabajo del equipo vive en esta vista.
-            </p>
+        {isEquipo && (
+          <div className="historial-equipo-banner">
+            <strong>Vista de supervisión del equipo</strong>
+            <p>La jefatura revisa llamadas, visitas, muestreos, responsables y próximas acciones. <strong>Gestiones</strong> sigue existiendo como herramienta de registro; esta vista consolida el trabajo del equipo.</p>
           </div>
-        ) : null}
+        )}
 
-        {isExpediente && selectedProviderKey && !loading && !selectedProvider ? (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px', marginBottom: 8, borderRadius: 14, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)' }}>
-            <AlertCircle size={18} style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
+        {isExpediente && selectedProviderKey && !loading && !selectedProvider && (
+          <div className="historial-not-found">
+            <AlertCircle size={18} />
             <div>
-              <p style={{ margin: 0, color: '#dc2626', fontWeight: 600, fontSize: '0.95rem' }}>No encontramos el proveedor solicitado.</p>
-              <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '0.86rem' }}>
-                Puedes buscarlo manualmente o{' '}
-                <button type="button" onClick={() => navigate('/gestion/proveedores')} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>
-                  volver al Directorio
-                </button>.
+              <p>No encontramos el proveedor solicitado.</p>
+              <p>
+                <button type="button" onClick={() => navigate('/gestion/proveedores')} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  Volver al Directorio
+                </button>
               </p>
             </div>
           </div>
-        ) : null}
+        )}
 
-        {historyView === 'expediente' ? (
-          <ProviderCardsView
-            loading={loading}
-            providers={providers}
-            searchTerm={searchTerm}
-            onSelectProvider={selectProvider}
-          />
+        {isExpediente ? (
+          <ProviderCardsView loading={loading} providers={providers} searchTerm={searchTerm} onSelectProvider={selectProvider} />
         ) : (
-          <TeamActivityView
-            loading={loading}
-            activities={teamActivity}
-            searchTerm={searchTerm}
-            teamTypeFilter={teamTypeFilter}
-            setTeamTypeFilter={setTeamTypeFilter}
-            teamUserFilter={teamUserFilter}
-            setTeamUserFilter={setTeamUserFilter}
-            teamUsers={teamUsers}
-            muestreosTruncated={muestreosTruncated}
-          />
+          <TeamActivityView loading={loading} activities={teamActivity} searchTerm={searchTerm} teamTypeFilter={teamTypeFilter} setTeamTypeFilter={setTeamTypeFilter} teamUserFilter={teamUserFilter} setTeamUserFilter={setTeamUserFilter} teamUsers={teamUsers} muestreosTruncated={muestreosTruncated} />
         )}
       </div>
     </div>
