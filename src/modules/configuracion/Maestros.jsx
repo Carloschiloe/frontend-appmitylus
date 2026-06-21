@@ -32,7 +32,7 @@ const PARAMS_FIJOS = [
 
 const TIPOS = [
   { id: 'categoria-muestreo',  label: 'Categorías de Muestreo', short: 'Categorías',   icon: Table },
-  { id: 'regla_calidad',       label: 'Reglas de Calidad',       short: 'Calidad',      icon: Award },
+  { id: 'regla_calidad',       label: 'Reglas de Calidad',       short: 'Productos',    icon: Award },
   { id: 'proximo-paso',        label: 'Próximos Pasos',          short: 'Próx. Pasos',  icon: CheckSquare },
   { id: 'condicion_negociacion', label: 'Acuerdo de Tratos',     short: 'Tratos',       icon: ClipboardList },
   { id: 'responsable',         label: 'Responsables',            short: 'Responsables', icon: Users },

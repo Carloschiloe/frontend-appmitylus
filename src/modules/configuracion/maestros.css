@@ -18,7 +18,7 @@
   width: 200px;
   flex-shrink: 0;
   border-right: 1px solid var(--color-border);
-  padding: 16px 0 12px;
+  padding: 14px 0 12px;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
@@ -28,9 +28,9 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
-  padding: 0 16px 8px;
+  letter-spacing: 0.09em;
+  color: #b0bec5;
+  padding: 0 16px 10px;
   margin: 0;
 }
 
@@ -39,7 +39,7 @@
   align-items: center;
   gap: 9px;
   width: 100%;
-  padding: 9px 16px;
+  padding: 9px 14px 9px 13px;
   border: none;
   border-left: 3px solid transparent;
   background: none;
@@ -49,19 +49,32 @@
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
+  border-radius: 0 6px 6px 0;
+  margin-right: 8px;
   transition: background 0.13s, color 0.13s;
 }
 
 .maestros-sidenav-btn:hover {
-  background: #eef2f7;
+  background: #e9eef5;
   color: #1e293b;
 }
 
 .maestros-sidenav-btn.active {
-  background: #fff;
+  background: #e8effe;
   color: #0A5CFF;
   font-weight: 600;
   border-left-color: #0A5CFF;
+}
+
+/* El ícono hereda el color del botón */
+.maestros-sidenav-btn svg {
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.13s;
+}
+.maestros-sidenav-btn:hover svg,
+.maestros-sidenav-btn.active svg {
+  opacity: 1;
 }
 
 .maestros-sidenav-count {
@@ -69,14 +82,16 @@
   font-size: 11px;
   font-weight: 700;
   background: rgba(0, 0, 0, 0.07);
-  border-radius: 10px;
-  padding: 1px 7px;
+  border-radius: 8px;
+  padding: 1px 6px;
   flex-shrink: 0;
-  color: #64748b;
+  color: #94a3b8;
+  min-width: 20px;
+  text-align: center;
 }
 
 .maestros-sidenav-btn.active .maestros-sidenav-count {
-  background: rgba(10, 92, 255, 0.10);
+  background: rgba(10, 92, 255, 0.12);
   color: #0A5CFF;
 }
 
@@ -93,8 +108,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 13px 20px;
+  border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
   background: #fff;
 }
@@ -103,11 +118,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  color: #1e293b;
-  flex-shrink: 0;
   color: #0f172a;
+  flex-shrink: 0;
+}
+
+.maestros-topbar-title svg {
+  color: #0A5CFF;
+  opacity: 0.8;
 }
 
 .maestros-topbar-actions {
