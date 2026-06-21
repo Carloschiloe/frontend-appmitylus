@@ -80,7 +80,7 @@ const MENU_STRUCTURE = [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
       { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
-      { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug },
+      { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug, alertId: 'errorReports' },
     ],
   },
   {
@@ -123,8 +123,27 @@ export default function Sidebar() {
         if (err.name === 'AbortError' || err.status === 401) return;
       });
 
+    if (user.rol === 'admin' || user.rol === 'superadmin') {
+      apiClient.get('/support/error-reports?status=new&limit=1', { signal: controller.signal })
+        .then((data) => {
+          if (!data) return;
+          if ((data.total || 0) > 0) {
+            setAlerts((prev) => ({ ...prev, errorReports: data.total }));
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError' || err.status === 401) return;
+        });
+    }
+
     return () => controller.abort();
   }, [selectedTenantDb, user]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/gestion/soporte/errores')) {
+      setAlerts((prev) => ({ ...prev, errorReports: 0 }));
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const activeGroup = MENU_STRUCTURE.find((group) => (
