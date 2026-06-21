@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
@@ -47,6 +47,120 @@ const ACTION_COLORS = {
   bug:       { color: '#dc2626', bg: 'rgba(220,38,38,0.09)' },
 };
 
+// ── Module mini-screen data for animations ─────────────────────────────────
+const ANIM_DATA = {
+  tratos: {
+    rows: [
+      { name: 'Proveedor A', badge: 'Acordado', bc: '#0891b2' },
+      { name: 'Proveedor B', badge: 'Activo',   bc: '#16a34a' },
+      { name: 'Proveedor C', badge: 'Pausado',  bc: '#d97706' },
+    ],
+  },
+  muestreos: {
+    fields: [
+      { label: 'Proveedor',    value: 'Mar Austral' },
+      { label: 'U/Kg',         value: '14.2' },
+      { label: 'Rendimiento',  value: '68%' },
+    ],
+  },
+  biomasa: {
+    days: [
+      { d: 'L', on: false },
+      { d: 'M', on: true  },
+      { d: 'M', on: true  },
+      { d: 'J', on: false },
+      { d: 'V', on: true  },
+      { d: 'S', on: true  },
+    ],
+  },
+  historial: {
+    events: [
+      { label: 'Trato registrado',     time: '09:42' },
+      { label: 'Muestreo guardado',    time: '11:15' },
+      { label: 'Programa actualizado', time: 'Ayer'  },
+    ],
+  },
+};
+
+function ModuleAnim({ moduleId, color }) {
+  const data = ANIM_DATA[moduleId];
+  if (!data) return null;
+
+  const titles = {
+    tratos:    'Tratos',
+    muestreos: 'Nuevo muestreo',
+    biomasa:   'Prog. de Cosecha',
+    historial: 'Historial',
+  };
+
+  return (
+    <div className={`ma ma-${moduleId}`} aria-hidden="true">
+      <div className="ma-bar">
+        <span className="ma-dots"><i /><i /><i /></span>
+        <span className="ma-screen-name">{titles[moduleId]}</span>
+        {moduleId === 'tratos' && (
+          <span className="ma-regbtn" style={{ background: color }}>+ Registrar</span>
+        )}
+      </div>
+
+      {moduleId === 'tratos' && (
+        <div className="ma-body">
+          {data.rows.map((r, i) => (
+            <div key={i} className="ma-row">
+              <span className="ma-ava" style={{ background: color + '22', color }} />
+              <span className="ma-nm">{r.name}</span>
+              <span className="ma-ch" style={{ background: r.bc + '1a', color: r.bc }}>{r.badge}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {moduleId === 'muestreos' && (
+        <div className="ma-body">
+          {data.fields.map((f, i) => (
+            <div key={i} className="ma-fld">
+              <span className="ma-fld-lbl">{f.label}</span>
+              <div className="ma-fld-inp">
+                <span className="ma-fld-val" style={{ color }}>{f.value}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {moduleId === 'biomasa' && (
+        <div className="ma-body ma-body-cal">
+          <div className="ma-cal">
+            {data.days.map((d2, i) => (
+              <div key={i} className={`ma-cday ${d2.on ? 'on' : ''}`} style={{ '--c': color }}>
+                {d2.d}
+              </div>
+            ))}
+          </div>
+          <div className="ma-prog"><div className="ma-prog-fill" style={{ '--c': color }} /></div>
+          <div className="ma-calstat" style={{ color }}>
+            <span className="ma-stat-n">42</span><span className="ma-stat-l"> camiones</span>
+            <span className="ma-stat-sep">·</span>
+            <span className="ma-stat-n">1.260</span><span className="ma-stat-l"> ton.</span>
+          </div>
+        </div>
+      )}
+
+      {moduleId === 'historial' && (
+        <div className="ma-body">
+          {data.events.map((e, i) => (
+            <div key={i} className="ma-ev">
+              <span className="ma-ev-dot" style={{ '--c': color }} />
+              <span className="ma-ev-lbl">{e.label}</span>
+              <span className="ma-ev-time">{e.time}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TOUR_META = {
   tratos:    { icon: FileText,     color: '#0A5CFF', bg: 'rgba(10,92,255,0.10)' },
   muestreos: { icon: FlaskConical, color: '#7c3aed', bg: 'rgba(124,58,237,0.10)' },
@@ -85,8 +199,15 @@ function QuickActionCard({ action }) {
 }
 
 function GuidedFlowCard({ flow, isOpen, onToggle }) {
+  const [activeStep, setActiveStep] = useState(0);
   const Icon = ICON_MAP[flow.icon] || BookOpen;
   const palette = ACTION_COLORS[flow.icon] || ACTION_COLORS.handshake;
+
+  useEffect(() => {
+    if (!isOpen) { setActiveStep(0); return; }
+    const t = setInterval(() => setActiveStep((s) => (s + 1) % flow.steps.length), 2600);
+    return () => clearInterval(t);
+  }, [isOpen, flow.steps.length]);
 
   const handleAction = () => {
     if (flow.action === 'support-report') {
@@ -110,9 +231,26 @@ function GuidedFlowCard({ flow, isOpen, onToggle }) {
 
       {isOpen && (
         <div className="ayuda-flow-card-body">
+          {/* Stepper dots */}
+          <div className="afc-stepper">
+            {flow.steps.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`afc-dot ${i === activeStep ? 'active' : i < activeStep ? 'past' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setActiveStep(i); }}
+              />
+            ))}
+            <span className="afc-counter">Paso {activeStep + 1} / {flow.steps.length}</span>
+          </div>
+
           <ol className="ayuda-steps-list">
             {flow.steps.map((step, i) => (
-              <li key={i} className="ayuda-step-item">
+              <li
+                key={i}
+                className={`ayuda-step-item ${i === activeStep ? 'is-active' : ''}`}
+                onClick={() => setActiveStep(i)}
+              >
                 <span className="ayuda-step-num">{i + 1}</span>
                 <div className="ayuda-step-copy">
                   <strong>{step.title}</strong>
@@ -121,6 +259,7 @@ function GuidedFlowCard({ flow, isOpen, onToggle }) {
               </li>
             ))}
           </ol>
+
           {flow.route ? (
             <Link to={flow.route} className="ayuda-flow-card-cta">
               Ir al módulo <ArrowRight size={13} />
@@ -270,16 +409,19 @@ export default function Ayuda() {
                     const Icon = meta.icon;
                     return (
                       <Link key={tour.id} to={tour.route} className="ayuda-tour-card" style={{ '--tour-color': meta.color, '--tour-bg': meta.bg }}>
-                        <div className="ayuda-tour-card-icon" style={{ background: meta.bg, color: meta.color }}>
-                          <Icon size={20} />
+                        <ModuleAnim moduleId={tour.id} color={meta.color} />
+                        <div className="ayuda-tour-card-footer">
+                          <div className="ayuda-tour-card-icon" style={{ background: meta.bg, color: meta.color }}>
+                            <Icon size={18} />
+                          </div>
+                          <div className="ayuda-tour-card-copy">
+                            <h3>{tour.title}</h3>
+                            <p>{tour.summary}</p>
+                          </div>
+                          <span className="ayuda-tour-card-link" style={{ background: meta.color }}>
+                            {toursPageContent.goToModuleLabel} <ArrowRight size={13} />
+                          </span>
                         </div>
-                        <div className="ayuda-tour-card-copy">
-                          <h3>{tour.title}</h3>
-                          <p>{tour.summary}</p>
-                        </div>
-                        <span className="ayuda-tour-card-link" style={{ background: meta.color }}>
-                          {toursPageContent.goToModuleLabel} <ArrowRight size={13} />
-                        </span>
                       </Link>
                     );
                   })}
