@@ -31,12 +31,12 @@ const PARAMS_FIJOS = [
 ];
 
 const TIPOS = [
-  { id: 'categoria-muestreo', label: 'Categorías de Muestreo', icon: Table },
-  { id: 'regla_calidad', label: 'Reglas de Calidad', icon: Award },
-  { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
-  { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
-  { id: 'responsable', label: 'Responsables', icon: Users },
-  { id: 'tipo_transporte', label: 'Tipos de Transporte', icon: Truck },
+  { id: 'categoria-muestreo',  label: 'Categorías de Muestreo', short: 'Categorías',   icon: Table },
+  { id: 'regla_calidad',       label: 'Reglas de Calidad',       short: 'Calidad',      icon: Award },
+  { id: 'proximo-paso',        label: 'Próximos Pasos',          short: 'Próx. Pasos',  icon: CheckSquare },
+  { id: 'condicion_negociacion', label: 'Acuerdo de Tratos',     short: 'Tratos',       icon: ClipboardList },
+  { id: 'responsable',         label: 'Responsables',            short: 'Responsables', icon: Users },
+  { id: 'tipo_transporte',     label: 'Tipos de Transporte',     short: 'Transporte',   icon: Truck },
 ];
 
 export default function Maestros() {
@@ -278,7 +278,7 @@ export default function Maestros() {
                 title={t.label}
               >
                 <t.icon size={14} />
-                {tipo === t.id && <span>{t.label}</span>}
+                <span>{tipo === t.id ? t.label : t.short}</span>
                 {tabCounts[t.id] > 0 && (
                   <span className="maestros-tab-count">{tabCounts[t.id]}</span>
                 )}
