@@ -519,7 +519,7 @@ const STATUS_FILTER_OPTS = [
 ];
 
 function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider }) {
-  const [viewMode,         setViewMode]         = useState('cards');
+  const [viewMode,         setViewMode]         = useState('lista');
   const [dateFilter,       setDateFilter]       = useState('todos');
   const [statusFilter,     setStatusFilter]     = useState('');
   const [responsableFilter,setResponsableFilter] = useState('todos');
@@ -689,8 +689,8 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                               {getInitials(provider.name)}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700 }}>{provider.name}</div>
-                              <div style={{ fontSize: '0.76rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{provider.name}</div>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
                                 {provider.totalContactos} contacto{provider.totalContactos !== 1 ? 's' : ''}
                               </div>
                             </div>
@@ -717,7 +717,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                         <td style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                           {provider.lastResponsable || '—'}
                         </td>
-                        <td style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700 }}>
+                        <td style={{ textAlign: 'center', fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                           {provider.totalEventos}
                         </td>
                         <td>
