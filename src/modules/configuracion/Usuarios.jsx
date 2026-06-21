@@ -23,6 +23,24 @@ import { useToast } from '../../context/ToastContext';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import './usuarios.css';
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `Hace ${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `Hace ${weeks} sem`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+  const years = Math.floor(days / 365);
+  return `Hace ${years} año${years > 1 ? 's' : ''}`;
+}
+
 const EMPTY_CONFIRM = {
   isOpen: false,
   type: '',
@@ -39,6 +57,7 @@ export default function Usuarios() {
   const { user: currentUser } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [rolFilter, setRolFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isConfirmStatusOpen, setIsConfirmStatusOpen] = useState(false);
@@ -169,9 +188,10 @@ export default function Usuarios() {
   };
 
   const filteredUsuarios = usuarios.filter((u) => {
-    if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
-    return u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    const matchSearch = !searchTerm.trim() || u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    const matchRol = !rolFilter || u.rol === rolFilter;
+    return matchSearch && matchRol;
   });
 
   const initials = (nombre) =>
@@ -188,9 +208,9 @@ export default function Usuarios() {
   };
 
   const getEmpresaNombre = (empresaId) => {
-    if (!empresaId) return 'N/A';
+    if (!empresaId) return '—';
     const emp = empresas.find((e) => e._id === empresaId);
-    return emp ? emp.nombre : 'Cargando...';
+    return emp ? emp.nombre : '—';
   };
 
   return (
@@ -218,16 +238,28 @@ export default function Usuarios() {
       <div className="mx-content-frame usuarios-content-frame">
         <div className="mx-toolbar usuarios-toolbar">
           <div className="mx-search-box usuarios-search-box">
-            <Search size={18} />
+            <Search size={16} />
             <input
               type="text"
-              placeholder="Buscar usuarios..."
+              placeholder="Buscar por nombre o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="mx-badge mx-badge-muted" style={{ marginLeft: 'auto' }}>
-            <Users size={16} /> <span>{filteredUsuarios.length} Usuarios</span>
+          <select
+            className="mx-select usuarios-rol-filter"
+            value={rolFilter}
+            onChange={(e) => setRolFilter(e.target.value)}
+          >
+            <option value="">Todos los roles</option>
+            <option value="superadmin">SuperAdmin</option>
+            <option value="admin">Administrador</option>
+            <option value="usuario">Usuario</option>
+            <option value="lectura">Solo Lectura</option>
+          </select>
+          <div className="usuarios-count">
+            <Users size={14} />
+            <span>{filteredUsuarios.length} usuario{filteredUsuarios.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
 
@@ -286,12 +318,22 @@ export default function Usuarios() {
                           </div>
                         </td>
                         <td>
-                          <span className={`mx-badge mx-badge-${u.activo ? 'success' : 'muted'}`}>
-                            {u.activo ? 'ACTIVO' : 'INACTIVO'}
-                          </span>
+                          <button
+                            type="button"
+                            className="usuarios-toggle"
+                            onClick={(e) => { e.stopPropagation(); setUserToToggle(u); setIsConfirmStatusOpen(true); }}
+                            title={u.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                          >
+                            <span className={`usuarios-toggle-pill ${u.activo ? 'on' : ''}`} />
+                            <span className={`usuarios-toggle-label ${u.activo ? 'on' : ''}`}>
+                              {u.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </button>
                         </td>
-                        <td style={{ fontSize: '0.85rem', color: 'var(--color-text-subtle)' }}>
-                          {u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : '—'}
+                        <td>
+                          <span className="usuarios-time-ago" title={u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : ''}>
+                            {timeAgo(u.ultimoLogin)}
+                          </span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div className="mx-table-actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', position: 'relative' }}>
