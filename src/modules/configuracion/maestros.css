@@ -166,3 +166,113 @@
 .maestros-modal-label-mb0 {
   margin-bottom: 0;
 }
+
+/* ── Tab count badges ──────────────────────────────────────────────────────── */
+.maestros-tab-count {
+  background: rgba(0, 0, 0, 0.11);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  margin-left: 4px;
+  line-height: 1.6;
+}
+.mx-toggle-btn.active .maestros-tab-count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Tipo filter dropdown ──────────────────────────────────────────────────── */
+.maestros-tipo-filter {
+  height: 38px;
+  font-size: 13px;
+  min-width: 160px;
+  max-width: 180px;
+}
+
+/* ── Inline toggle switch ─────────────────────────────────────────────────── */
+.maestros-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 2px 0;
+  font-family: inherit;
+}
+.maestros-toggle:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.maestros-toggle-pill {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #cbd5e1;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.maestros-toggle-pill.on {
+  background: #16a34a;
+}
+.maestros-toggle-pill::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.maestros-toggle-pill.on::after {
+  transform: translateX(16px);
+}
+.maestros-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+.maestros-toggle-label.on {
+  color: #16a34a;
+}
+
+/* ── Drag & drop ──────────────────────────────────────────────────────────── */
+.maestros-drag-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: #94a3b8;
+  border-bottom: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+.maestros-drag-saving {
+  margin-left: 8px;
+  color: #0A5CFF;
+  font-weight: 600;
+}
+.maestros-drag-th {
+  width: 36px;
+}
+.maestros-drag-cell {
+  color: #cbd5e1;
+  cursor: grab;
+  padding: 0 8px;
+  user-select: none;
+  transition: color 0.15s;
+}
+.maestros-drag-cell:hover {
+  color: #64748b;
+}
+.maestros-row-dragging {
+  opacity: 0.35;
+  background: #f1f5f9;
+}
+.maestros-row-dragover td {
+  border-top: 2px solid var(--color-primary, #0A5CFF);
+}

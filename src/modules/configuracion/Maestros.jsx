@@ -13,6 +13,7 @@ import {
   MinusCircle,
   Settings2,
   Truck,
+  GripVertical,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
@@ -29,31 +30,36 @@ const PARAMS_FIJOS = [
   { campo: 'defectos', nombre: '% Defectos', unidad: '%' },
 ];
 
+const TIPOS = [
+  { id: 'categoria-muestreo', label: 'Categorías de Muestreo', icon: Table },
+  { id: 'regla_calidad', label: 'Reglas de Calidad', icon: Award },
+  { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
+  { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
+  { id: 'responsable', label: 'Responsables', icon: Users },
+  { id: 'tipo_transporte', label: 'Tipos de Transporte', icon: Truck },
+];
+
 export default function Maestros() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [tipoFilter, setTipoFilter] = useState('');
   const [tipo, setTipo] = useState('categoria-muestreo');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [modalParams, setModalParams] = useState([]);
+  const [orderedItems, setOrderedItems] = useState([]);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
 
   // Prefetch de todas las categorías para carga instantánea
   React.useEffect(() => {
-    const tiposArr = [
-      'categoria-muestreo',
-      'regla_calidad',
-      'proximo-paso',
-      'condicion_negociacion',
-      'responsable',
-      'tipo_transporte',
-    ];
-    tiposArr.forEach(t => {
+    TIPOS.forEach((t) => {
       queryClient.prefetchQuery({
-        queryKey: ['maestros', t],
-        queryFn: () => maestrosApi.getMaestros(t),
+        queryKey: ['maestros', t.id],
+        queryFn: () => maestrosApi.getMaestros(t.id),
         staleTime: 5 * 60 * 1000,
       });
     });
@@ -65,20 +71,14 @@ export default function Maestros() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Filtro de búsqueda local (ultra rápido)
-  const maestrosList = React.useMemo(() => {
-    const list = Array.isArray(maestros) ? maestros : (maestros?.items || []);
-    if (!searchTerm) return list;
-    const s = searchTerm.toLowerCase();
-    return list.filter(m => m.nombre?.toLowerCase().includes(s));
-  }, [maestros, searchTerm]);
-
   const { data: catMuestreo = [] } = useQuery({
     queryKey: ['maestros', 'categoria-muestreo', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('categoria-muestreo'),
     enabled: tipo === 'regla_calidad',
     staleTime: 5 * 60 * 1000,
   });
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
 
   const saveMutation = useMutation({
     mutationFn: (body) =>
@@ -108,37 +108,97 @@ export default function Maestros() {
     },
   });
 
-  const TIPOS = [
-    { id: 'categoria-muestreo', label: 'Categorías de Muestreo', icon: Table },
-    { id: 'regla_calidad', label: 'Reglas de Calidad', icon: Award },
-    { id: 'proximo-paso', label: 'Próximos Pasos', icon: CheckSquare },
-    { id: 'condicion_negociacion', label: 'Acuerdo de Tratos', icon: ClipboardList },
-    { id: 'responsable', label: 'Responsables', icon: Users },
-    { id: 'tipo_transporte', label: 'Tipos de Transporte', icon: Truck },
-  ];
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, activo }) => maestrosApi.actualizarMaestro(id, { activo }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['maestros'] }),
+    onError: () =>
+      addToast({ title: 'Error', message: 'No se pudo cambiar el estado.', type: 'error' }),
+  });
 
-  const handleNuevo = () => {
-    setEditingItem(null);
-    setModalParams([]);
-    setIsModalOpen(true);
-  };
+  const reorderMutation = useMutation({
+    mutationFn: (items) =>
+      Promise.all(items.map((item) => maestrosApi.actualizarMaestro(item._id, { orden: item.orden }))),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['maestros', 'categoria-muestreo'] }),
+    onError: () => {
+      addToast({ title: 'Error', message: 'No se pudo guardar el orden.', type: 'error' });
+      queryClient.invalidateQueries({ queryKey: ['maestros', 'categoria-muestreo'] });
+    },
+  });
 
-  const handleEdit = (item) => {
-    setEditingItem(item);
-    setModalParams(item.parametros || []);
-    setIsModalOpen(true);
-  };
+  // ── Derived data ───────────────────────────────────────────────────────────
 
-  const askDelete = (item) => {
-    setItemToDelete(item);
-    setIsConfirmDeleteOpen(true);
-  };
+  const rawList = React.useMemo(
+    () => (Array.isArray(maestros) ? maestros : (maestros?.items || [])),
+    [maestros],
+  );
 
-  const handleDelete = () => {
-    if (itemToDelete) {
-      deleteMutation.mutate(itemToDelete._id);
+  const maestrosList = React.useMemo(() => {
+    let filtered = rawList;
+    if (searchTerm) {
+      const s = searchTerm.toLowerCase();
+      filtered = filtered.filter((m) => m.nombre?.toLowerCase().includes(s));
     }
+    if (tipoFilter && tipo === 'categoria-muestreo') {
+      filtered = filtered.filter((m) => m.tipoCat === tipoFilter);
+    }
+    return filtered;
+  }, [rawList, searchTerm, tipoFilter, tipo]);
+
+  // Conteo por tab — se actualiza cada vez que cambiamos de tab (nuevo dato en cache)
+  const tabCounts = React.useMemo(() => {
+    const result = {};
+    TIPOS.forEach((t) => {
+      const cached = queryClient.getQueryData(['maestros', t.id]);
+      const list = Array.isArray(cached) ? cached : (cached?.items || []);
+      result[t.id] = list.length;
+    });
+    return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, maestros]);
+
+  // Drag mode: solo para categoria-muestreo sin filtros activos
+  const isDragMode = tipo === 'categoria-muestreo' && !searchTerm && !tipoFilter;
+
+  // Sync orderedItems cuando cambia el dato raw
+  React.useEffect(() => {
+    if (tipo === 'categoria-muestreo') setOrderedItems(rawList);
+  }, [rawList, tipo]);
+
+  const displayList = isDragMode ? orderedItems : maestrosList;
+
+  // ── Drag handlers ──────────────────────────────────────────────────────────
+
+  const handleDragStart = (e, idx) => {
+    setDragIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
   };
+  const handleDragEnter = (idx) => setDragOverIdx(idx);
+  const handleDragOver = (e) => e.preventDefault();
+  const handleDragEnd = () => { setDragIdx(null); setDragOverIdx(null); };
+  const handleDrop = (toIdx) => {
+    const fromIdx = dragIdx;
+    setDragIdx(null);
+    setDragOverIdx(null);
+    if (fromIdx === null || fromIdx === toIdx) return;
+
+    const next = [...orderedItems];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    const withOrder = next.map((item, i) => ({ ...item, orden: i }));
+    setOrderedItems(withOrder);
+
+    const prevMap = new Map(orderedItems.map((item) => [String(item._id), item.orden ?? 0]));
+    const changed = withOrder.filter((item) => item.orden !== prevMap.get(String(item._id)));
+    reorderMutation.mutate(changed);
+  };
+
+  // ── Form handlers ──────────────────────────────────────────────────────────
+
+  const handleNuevo = () => { setEditingItem(null); setModalParams([]); setIsModalOpen(true); };
+  const handleEdit = (item) => { setEditingItem(item); setModalParams(item.parametros || []); setIsModalOpen(true); };
+  const askDelete = (item) => { setItemToDelete(item); setIsConfirmDeleteOpen(true); };
+  const handleDelete = () => { if (itemToDelete) deleteMutation.mutate(itemToDelete._id); };
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -148,22 +208,18 @@ export default function Maestros() {
     body.activo = formData.get('activo') === 'on';
     if (body.orden !== undefined) body.orden = Number(body.orden);
     if (body.requerido !== undefined) body.requerido = formData.get('requerido') === 'on';
-
     if (tipo === 'regla_calidad') {
       body.parametros = modalParams;
       body.prioridad = { Entero: 1, 'Media Concha': 2, Carne: 3 }[body.tipoPrincipal] || 99;
     }
-
     if (tipo === 'tipo_transporte') {
       body.maxisPorUnidad = body.maxisPorUnidad !== '' ? Number(body.maxisPorUnidad) : null;
       body.kgPorMaxiRef   = body.kgPorMaxiRef   !== '' ? Number(body.kgPorMaxiRef)   : null;
     }
-
     if (body.opcionesRaw) {
       body.opciones = body.opcionesRaw.split('\n').map((s) => s.trim()).filter(Boolean);
       delete body.opcionesRaw;
     }
-
     saveMutation.mutate(body);
   };
 
@@ -172,8 +228,9 @@ export default function Maestros() {
     ...catMuestreo.map((c) => ({ campo: 'cats', campoId: c._id, nombre: c.nombre, unidad: '%' })),
   ];
 
-  const activeTenant = localStorage.getItem('selected_tenant_db');
+  // ── Guard: sin tenant ──────────────────────────────────────────────────────
 
+  const activeTenant = localStorage.getItem('selected_tenant_db');
   if (!activeTenant) {
     return (
       <div className="mx-page">
@@ -184,7 +241,7 @@ export default function Maestros() {
           </div>
         </header>
         <div className="mx-content-frame" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', background: 'white', borderRadius: '12px', marginTop: '24px' }}>
-          <div className="am-text-center" style={{ maxWidth: '400px', padding: '40px' }}>
+          <div style={{ maxWidth: '400px', padding: '40px', textAlign: 'center' }}>
             <div style={{ background: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <Settings2 size={32} style={{ color: '#64748b' }} />
             </div>
@@ -197,6 +254,8 @@ export default function Maestros() {
       </div>
     );
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="mx-page">
@@ -215,13 +274,29 @@ export default function Maestros() {
               <button
                 key={t.id}
                 className={`mx-toggle-btn ${tipo === t.id ? 'active' : ''}`}
-                onClick={() => setTipo(t.id)}
+                onClick={() => { setTipo(t.id); setTipoFilter(''); setSearchTerm(''); }}
               >
-                <t.icon size={14} /> {t.label}
+                <t.icon size={14} />
+                {t.label}
+                {tabCounts[t.id] > 0 && (
+                  <span className="maestros-tab-count">{tabCounts[t.id]}</span>
+                )}
               </button>
             ))}
           </div>
           <div className="maestros-toolbar-right">
+            {tipo === 'categoria-muestreo' && (
+              <select
+                className="mx-select maestros-tipo-filter"
+                value={tipoFilter}
+                onChange={(e) => setTipoFilter(e.target.value)}
+              >
+                <option value="">Todos los tipos</option>
+                <option value="procesable">Procesable</option>
+                <option value="rechazo">Rechazo</option>
+                <option value="defecto">Defecto</option>
+              </select>
+            )}
             <div className="mx-search-box maestros-search-box">
               <Search size={18} />
               <input
@@ -238,10 +313,17 @@ export default function Maestros() {
         </div>
 
         <div className="mx-table-card maestros-table-card">
+          {isDragMode && (
+            <div className="maestros-drag-hint">
+              <GripVertical size={13} /> Arrastra las filas para reordenar
+              {reorderMutation.isPending && <span className="maestros-drag-saving">Guardando...</span>}
+            </div>
+          )}
           <div className="mx-table-wrap">
             <table className="mx-table">
               <thead>
                 <tr>
+                  {isDragMode && <th className="maestros-drag-th" />}
                   <th style={{ width: '30%' }}>Nombre / Valor</th>
                   {tipo === 'categoria-muestreo' && <th>Tipo Categoría</th>}
                   {tipo === 'regla_calidad' && <th>Configuración</th>}
@@ -250,43 +332,56 @@ export default function Maestros() {
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
-                  {tipo === 'categoria-muestreo' && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
-                  <th style={{ width: '120px' }}>Estado</th>
-                  <th style={{ width: '100px', textAlign: 'right' }}>Acciones</th>
+                  {tipo === 'categoria-muestreo' && !isDragMode && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
+                  <th style={{ width: '130px' }}>Estado</th>
+                  <th style={{ width: '80px', textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
                     <td colSpan="10">
-                      <div className="mx-state-placeholder">
-                        <div className="mx-spinner"></div>
-                      </div>
+                      <div className="mx-state-placeholder"><div className="mx-spinner" /></div>
                     </td>
                   </tr>
-                ) : maestrosList.length === 0 ? (
+                ) : displayList.length === 0 ? (
                   <tr>
                     <td colSpan="10">
                       <div className="mx-state-placeholder">No hay registros.</div>
                     </td>
                   </tr>
                 ) : (
-                  maestrosList.map((item) => (
-                    <tr key={item._id}>
+                  displayList.map((item, idx) => (
+                    <tr
+                      key={item._id}
+                      draggable={isDragMode}
+                      onDragStart={isDragMode ? (e) => handleDragStart(e, idx) : undefined}
+                      onDragEnter={isDragMode ? () => handleDragEnter(idx) : undefined}
+                      onDragOver={isDragMode ? handleDragOver : undefined}
+                      onDrop={isDragMode ? () => handleDrop(idx) : undefined}
+                      onDragEnd={isDragMode ? handleDragEnd : undefined}
+                      className={
+                        isDragMode && dragIdx === idx
+                          ? 'maestros-row-dragging'
+                          : isDragMode && dragOverIdx === idx && dragIdx !== idx
+                            ? 'maestros-row-dragover'
+                            : ''
+                      }
+                    >
+                      {isDragMode && (
+                        <td className="maestros-drag-cell">
+                          <GripVertical size={16} />
+                        </td>
+                      )}
                       <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.nombre}</span></td>
                       {tipo === 'categoria-muestreo' && (
                         <td>
-                          <span
-                            className={`mx-badge mx-badge-${
-                              item.tipoCat === 'procesable'
-                                ? 'success'
-                                : item.tipoCat === 'rechazo'
-                                  ? 'danger'
-                                  : item.tipoCat === 'defecto'
-                                    ? 'info'
-                                    : 'muted'
-                            }`}
-                          >
+                          <span className={`mx-badge mx-badge-${
+                            item.tipoCat === 'procesable' ? 'success'
+                              : item.tipoCat === 'rechazo' ? 'danger'
+                                : item.tipoCat === 'defecto' ? 'info'
+                                  : 'muted'
+                          }`}>
                             {item.tipoCat?.toUpperCase()}
                           </span>
                         </td>
@@ -321,14 +416,25 @@ export default function Maestros() {
                           </td>
                         );
                       })()}
-                      {tipo === 'categoria-muestreo' && <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>}
+                      {tipo === 'categoria-muestreo' && !isDragMode && (
+                        <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>
+                      )}
                       <td>
-                        <span className={`mx-badge mx-badge-${item.activo ? 'success' : 'muted'}`}>
-                          {item.activo ? 'ACTIVO' : 'INACTIVO'}
-                        </span>
+                        <button
+                          type="button"
+                          className="maestros-toggle"
+                          onClick={() => toggleMutation.mutate({ id: item._id, activo: !item.activo })}
+                          disabled={toggleMutation.isPending}
+                          title={item.activo ? 'Desactivar' : 'Activar'}
+                        >
+                          <span className={`maestros-toggle-pill ${item.activo ? 'on' : ''}`} />
+                          <span className={`maestros-toggle-label ${item.activo ? 'on' : ''}`}>
+                            {item.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </button>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <div className="mx-table-actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button className="mx-action-btn edit" onClick={() => handleEdit(item)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" onClick={() => askDelete(item)}><Trash2 size={14} /></button>
                         </div>
@@ -394,9 +500,7 @@ export default function Maestros() {
                         >
                           <option value="">+ Añadir Parámetro</option>
                           {paramOptions.map((o) => (
-                            <option key={o.campoId || o.campo} value={o.campoId || o.campo}>
-                              {o.nombre}
-                            </option>
+                            <option key={o.campoId || o.campo} value={o.campoId || o.campo}>{o.nombre}</option>
                           ))}
                         </select>
                       </label>
@@ -406,9 +510,7 @@ export default function Maestros() {
                             <span className="maestros-modal-param-name">{p.nombre}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <input
-                                type="number"
-                                step="0.1"
-                                placeholder="Mín"
+                                type="number" step="0.1" placeholder="Mín"
                                 className="mx-input maestros-modal-param-input"
                                 value={p.min ?? ''}
                                 onChange={(e) => {
@@ -418,9 +520,7 @@ export default function Maestros() {
                                 }}
                               />
                               <input
-                                type="number"
-                                step="0.1"
-                                placeholder="Máx"
+                                type="number" step="0.1" placeholder="Máx"
                                 className="mx-input maestros-modal-param-input"
                                 value={p.max ?? ''}
                                 onChange={(e) => {
@@ -454,27 +554,11 @@ export default function Maestros() {
                     </div>
                     <div className="mx-form-group">
                       <label className="mx-label">Maxis por unidad</label>
-                      <input
-                        name="maxisPorUnidad"
-                        type="number"
-                        min="1"
-                        step="1"
-                        className="mx-input"
-                        defaultValue={editingItem?.maxisPorUnidad ?? ''}
-                        placeholder="Ej: 20"
-                      />
+                      <input name="maxisPorUnidad" type="number" min="1" step="1" className="mx-input" defaultValue={editingItem?.maxisPorUnidad ?? ''} placeholder="Ej: 20" />
                     </div>
                     <div className="mx-form-group">
                       <label className="mx-label">Kg por maxi (referencia)</label>
-                      <input
-                        name="kgPorMaxiRef"
-                        type="number"
-                        min="1"
-                        step="1"
-                        className="mx-input"
-                        defaultValue={editingItem?.kgPorMaxiRef ?? ''}
-                        placeholder="Ej: 1100"
-                      />
+                      <input name="kgPorMaxiRef" type="number" min="1" step="1" className="mx-input" defaultValue={editingItem?.kgPorMaxiRef ?? ''} placeholder="Ej: 1100" />
                     </div>
                   </>
                 )}
@@ -516,12 +600,8 @@ export default function Maestros() {
                 </div>
               </div>
               <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="mx-btn mx-btn-primary">
-                  Guardar Registro
-                </button>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="mx-btn mx-btn-primary">Guardar Registro</button>
               </div>
             </form>
           </div>
@@ -534,7 +614,6 @@ export default function Maestros() {
         onConfirm={handleDelete}
         itemName={itemToDelete?.nombre}
       />
-
     </div>
   );
 }
