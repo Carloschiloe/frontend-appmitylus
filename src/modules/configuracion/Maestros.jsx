@@ -273,11 +273,12 @@ export default function Maestros() {
             {TIPOS.map((t) => (
               <button
                 key={t.id}
-                className={`mx-toggle-btn ${tipo === t.id ? 'active' : ''}`}
+                className={`mx-toggle-btn maestros-tab-btn ${tipo === t.id ? 'active' : ''}`}
                 onClick={() => { setTipo(t.id); setTipoFilter(''); setSearchTerm(''); }}
+                title={t.label}
               >
                 <t.icon size={14} />
-                {t.label}
+                {tipo === t.id && <span>{t.label}</span>}
                 {tabCounts[t.id] > 0 && (
                   <span className="maestros-tab-count">{tabCounts[t.id]}</span>
                 )}
@@ -373,7 +374,7 @@ export default function Maestros() {
                           <GripVertical size={16} />
                         </td>
                       )}
-                      <td><span style={{ fontWeight: 'var(--weight-bold)' }}>{item.nombre}</span></td>
+                      <td><span style={{ fontWeight: 500 }}>{item.nombre}</span></td>
                       {tipo === 'categoria-muestreo' && (
                         <td>
                           <span className={`mx-badge mx-badge-${

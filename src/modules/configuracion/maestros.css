@@ -167,6 +167,23 @@
   margin-bottom: 0;
 }
 
+/* ── Tab buttons compactos ────────────────────────────────────────────────── */
+.maestros-tab-btn {
+  padding: 6px 10px;
+  gap: 6px;
+}
+.maestros-tab-btn.active {
+  padding: 6px 14px;
+}
+
+/* ── Filas más densas ─────────────────────────────────────────────────────── */
+.maestros-table-card .mx-table td {
+  padding: 7px 12px;
+}
+.maestros-table-card .mx-table th {
+  padding: 8px 12px;
+}
+
 /* ── Tab count badges ──────────────────────────────────────────────────────── */
 .maestros-tab-count {
   background: rgba(0, 0, 0, 0.11);
