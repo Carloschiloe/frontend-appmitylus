@@ -268,52 +268,55 @@ export default function Maestros() {
       </header>
 
       <div className="mx-content-frame maestros-content-frame">
-        <div className="mx-toolbar maestros-toolbar">
-          <div className="mx-toggle-group">
+        <div className="mx-table-card maestros-layout">
+
+          {/* ── Nav lateral de categorías ── */}
+          <nav className="maestros-sidenav">
             {TIPOS.map((t) => (
               <button
                 key={t.id}
-                className={`mx-toggle-btn maestros-tab-btn ${tipo === t.id ? 'active' : ''}`}
+                className={`maestros-sidenav-btn ${tipo === t.id ? 'active' : ''}`}
                 onClick={() => { setTipo(t.id); setTipoFilter(''); setSearchTerm(''); }}
-                title={t.label}
               >
-                <t.icon size={14} />
-                <span>{tipo === t.id ? t.label : t.short}</span>
+                <t.icon size={15} />
+                <span>{t.label}</span>
                 {tabCounts[t.id] > 0 && (
-                  <span className="maestros-tab-count">{tabCounts[t.id]}</span>
+                  <span className="maestros-sidenav-count">{tabCounts[t.id]}</span>
                 )}
               </button>
             ))}
-          </div>
-          <div className="maestros-toolbar-right">
-            {tipo === 'categoria-muestreo' && (
-              <select
-                className="mx-select maestros-tipo-filter"
-                value={tipoFilter}
-                onChange={(e) => setTipoFilter(e.target.value)}
-              >
-                <option value="">Todos los tipos</option>
-                <option value="procesable">Procesable</option>
-                <option value="rechazo">Rechazo</option>
-                <option value="defecto">Defecto</option>
-              </select>
-            )}
-            <div className="mx-search-box maestros-search-box">
-              <Search size={18} />
-              <input
-                type="text"
-                placeholder="Filtrar registros..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
-              <Plus size={18} /> Nuevo Registro
-            </button>
-          </div>
-        </div>
+          </nav>
 
-        <div className="mx-table-card maestros-table-card">
+          {/* ── Contenido principal ── */}
+          <div className="maestros-main">
+            <div className="maestros-topbar">
+              {tipo === 'categoria-muestreo' && (
+                <select
+                  className="mx-select maestros-tipo-filter"
+                  value={tipoFilter}
+                  onChange={(e) => setTipoFilter(e.target.value)}
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="procesable">Procesable</option>
+                  <option value="rechazo">Rechazo</option>
+                  <option value="defecto">Defecto</option>
+                </select>
+              )}
+              <div className="mx-search-box maestros-search-box">
+                <Search size={18} />
+                <input
+                  type="text"
+                  placeholder="Filtrar registros..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
+                <Plus size={18} /> Nuevo Registro
+              </button>
+            </div>
+
+        <div className="maestros-table-inner">
           {isDragMode && (
             <div className="maestros-drag-hint">
               <GripVertical size={13} /> Arrastra las filas para reordenar
@@ -446,8 +449,10 @@ export default function Maestros() {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </div>      {/* fin maestros-table-inner */}
+          </div>    {/* fin maestros-main */}
+        </div>      {/* fin maestros-layout */}
+      </div>        {/* fin maestros-content-frame */}
 
       {isModalOpen && (
         <div className="mx-modal-overlay">

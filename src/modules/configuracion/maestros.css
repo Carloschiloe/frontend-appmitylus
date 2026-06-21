@@ -3,37 +3,93 @@
 .maestros-content-frame {
   padding: 12px var(--page-padding) 40px var(--page-padding);
   margin-top: 0;
-  gap: 12px;
 }
 
-.maestros-toolbar {
-  margin-top: 0;
-  flex-wrap: nowrap;
-  gap: 12px;
+/* ── Layout principal: sidenav + contenido ────────────────────────────────── */
+.maestros-layout {
+  display: flex;
+  min-height: 500px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.maestros-sidenav {
+  width: 210px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.maestros-sidenav-btn {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-right: 2px solid transparent;
+  background: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-muted, #64748b);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
 }
 
-.maestros-toggle-wrap {
+.maestros-sidenav-btn:hover {
+  background: var(--color-bg, #f8fafc);
+  color: var(--color-text, #0f172a);
+}
+
+.maestros-sidenav-btn.active {
+  background: rgba(10, 92, 255, 0.06);
+  color: var(--color-primary, #0A5CFF);
+  font-weight: 600;
+  border-right-color: var(--color-primary, #0A5CFF);
+}
+
+.maestros-sidenav-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  padding: 1px 7px;
   flex-shrink: 0;
 }
 
-.maestros-toggle-btn {
-  white-space: nowrap;
+.maestros-sidenav-btn.active .maestros-sidenav-count {
+  background: rgba(10, 92, 255, 0.12);
+  color: var(--color-primary, #0A5CFF);
 }
 
-.maestros-toolbar-right {
+.maestros-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.maestros-topbar {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
 .maestros-search-box {
   flex: 1;
-  min-width: 200px;
-  max-width: 340px;
+  min-width: 160px;
+}
+
+.maestros-table-inner {
+  flex: 1;
+  overflow: auto;
 }
 
 .maestros-table-card {
