@@ -38,7 +38,6 @@ const ESTADO_CONFIG = {
   disponible:       { label: 'Disponible',       color: '#10b981', bg: '#f0fdf4' },
 };
 
-const RANK_COLORS = ['#f59e0b', '#94a3b8', '#b45309', '#64748b', '#64748b'];
 
 const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
@@ -256,43 +255,58 @@ export default function Dashboard() {
 
             <article className="dsh-card">
               <div className="dsh-card-header">
-                <h3 className="dsh-card-title">Top Proveedores</h3>
+                <div>
+                  <h3 className="dsh-card-title">Top Proveedores</h3>
+                  <p className="dsh-card-subtitle">Biomasa disponible aproximada</p>
+                </div>
                 <Link to="/centros" className="dsh-link-all">
                   Ver directorio <ChevronRight size={12} />
                 </Link>
               </div>
-              {!data?.topProveedores?.length ? (
-                <div className="dsh-empty">
-                  <Users size={26} />
-                  <p>Sin datos de proveedores</p>
-                </div>
-              ) : (
-                <div className="dsh-providers">
-                  {data.topProveedores.map((p, i) => {
-                    const max = data.topProveedores[0]?.tons || 1;
-                    const pct = max > 0 ? Math.round((p.tons / max) * 100) : 0;
-                    return (
-                      <div key={i} className="dsh-provider-row">
-                        <span className="dsh-provider-rank" style={{ color: RANK_COLORS[i] }}>
-                          {i + 1}
-                        </span>
-                        <div className="dsh-provider-info">
-                          <span className="dsh-provider-name">{p.nombre}</span>
-                          <div className="dsh-bar-track">
-                            <div
-                              className="dsh-bar-fill"
-                              style={{ '--w': `${pct}%`, background: i === 0 ? RANK_COLORS[0] : '#0A5CFF' }}
-                            />
+              {(() => {
+                const withTons = (data?.topProveedores || []).filter((p) => (p.tons || 0) > 0 && p.nombre);
+                if (!withTons.length) {
+                  return (
+                    <div className="dsh-empty">
+                      <Users size={26} />
+                      <p>Sin biomasa registrada</p>
+                    </div>
+                  );
+                }
+                const maxTons   = withTons[0]?.tons || 1;
+                const totalTons = withTons.reduce((s, p) => s + (p.tons || 0), 0);
+                return (
+                  <>
+                    <div className="dsh-providers">
+                      {withTons.map((p, i) => {
+                        const barPct   = Math.round((p.tons / maxTons) * 100);
+                        const sharePct = Math.round((p.tons / totalTons) * 100);
+                        return (
+                          <div key={i} className="dsh-provider-row">
+                            <span className="dsh-provider-rank">{i + 1}</span>
+                            <div className="dsh-provider-info">
+                              <div className="dsh-provider-nameline">
+                                <span className="dsh-provider-name">{p.nombre}</span>
+                                <span className="dsh-provider-share">{sharePct}%</span>
+                              </div>
+                              <div className="dsh-bar-track">
+                                <div className="dsh-bar-fill" style={{ '--w': `${barPct}%` }} />
+                              </div>
+                            </div>
+                            <span className="dsh-provider-tons">
+                              {p.tons.toLocaleString('es-CL')} t
+                            </span>
                           </div>
-                        </div>
-                        <span className="dsh-provider-tons">
-                          {(p.tons ?? 0).toLocaleString('es-CL')} t
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                        );
+                      })}
+                    </div>
+                    <div className="dsh-providers-total">
+                      <span>Total registrado</span>
+                      <strong>{totalTons.toLocaleString('es-CL')} t</strong>
+                    </div>
+                  </>
+                );
+              })()}
             </article>
           </div>
 
