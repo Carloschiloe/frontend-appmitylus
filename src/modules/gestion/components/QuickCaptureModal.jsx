@@ -161,7 +161,30 @@ function buildProviderDirectory(centros = [], contactos = []) {
     if (!existing.comuna && centro.comuna) existing.comuna = centro.comuna;
   });
 
-  return Array.from(providers.values()).sort((a, b) => a.proveedorNombre.localeCompare(b.proveedorNombre));
+  // Contactos sin empresa asociada (o cuya empresa no tiene centros registrados):
+  // deben poder buscarse y seleccionarse igual, aunque no haya proveedor detras.
+  contactos.forEach((item, index) => {
+    const key = String(item.proveedorKey || '').trim().toLowerCase();
+    if (key && providers.has(key)) return; // ya cubierto como parte de un proveedor existente
+    const soloId = `contacto-${item._id || index}`;
+    if (providers.has(soloId)) return;
+    providers.set(soloId, {
+      id: soloId,
+      contactoId: item._id || '',
+      proveedorKey: item.proveedorKey || '',
+      proveedorNombre: item.proveedorNombre || '',
+      contactoNombre: item.contactoNombre || item.nombre || '',
+      contactoTelefono: item.contactoTelefono || '',
+      contactoEmail: item.contactoEmail || '',
+      contactosSearchText: `${item.contactoNombre || item.nombre || ''} ${item.contactoTelefono || ''} ${item.contactoEmail || ''}`,
+      comuna: '',
+      centros: 0,
+    });
+  });
+
+  return Array.from(providers.values()).sort((a, b) =>
+    (a.proveedorNombre || a.contactoNombre || '').localeCompare(b.proveedorNombre || b.contactoNombre || '')
+  );
 }
 
 export default function QuickCaptureModal() {
@@ -263,7 +286,7 @@ export default function QuickCaptureModal() {
 
   function handleSelectProvider(provider) {
     setSelected(provider);
-    setSearch(provider.proveedorNombre || '');
+    setSearch(provider.proveedorNombre || provider.contactoNombre || '');
     setSuggestionApplied(false);
   }
 
@@ -436,7 +459,7 @@ export default function QuickCaptureModal() {
                           onChange={(e) => {
                             const nextValue = e.target.value;
                             setSearch(nextValue);
-                            if (selected && nextValue.trim() !== (selected.proveedorNombre || '').trim()) {
+                            if (selected && nextValue.trim() !== (selected.proveedorNombre || selected.contactoNombre || '').trim()) {
                               setSelected(null);
                             }
                           }}
@@ -485,9 +508,11 @@ export default function QuickCaptureModal() {
                             background: selected?.id === item.id ? 'rgba(10, 92, 255, 0.08)' : 'white',
                           }}
                         >
-                          <strong style={{ display: 'block' }}>{item.proveedorNombre || 'Proveedor'}</strong>
+                          <strong style={{ display: 'block' }}>{item.proveedorNombre || item.contactoNombre || 'Proveedor'}</strong>
                           <span style={{ display: 'block', marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.88rem' }}>
-                            {item.contactoNombre || 'Primer contacto'} {item.contactoTelefono ? `· ${item.contactoTelefono}` : ''} {item.comuna ? `· ${item.comuna}` : ''}
+                            {item.proveedorNombre
+                              ? `${item.contactoNombre || 'Primer contacto'}${item.contactoTelefono ? ` · ${item.contactoTelefono}` : ''}${item.comuna ? ` · ${item.comuna}` : ''}`
+                              : `Sin empresa asociada${item.contactoTelefono ? ` · ${item.contactoTelefono}` : ''}`}
                           </span>
                         </button>
                       ))
@@ -508,9 +533,11 @@ export default function QuickCaptureModal() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                         <div>
-                          <strong style={{ display: 'block' }}>{selected.proveedorNombre || 'Proveedor'}</strong>
+                          <strong style={{ display: 'block' }}>{selected.proveedorNombre || selected.contactoNombre || 'Proveedor'}</strong>
                           <span style={{ display: 'block', marginTop: 4, color: 'var(--color-text-subtle)', fontSize: '0.88rem' }}>
-                            {selected.comuna || 'Comuna no informada'} {selected.centros ? `· ${selected.centros} centro${selected.centros > 1 ? 's' : ''}` : ''}
+                            {selected.proveedorNombre
+                              ? `${selected.comuna || 'Comuna no informada'}${selected.centros ? ` · ${selected.centros} centro${selected.centros > 1 ? 's' : ''}` : ''}`
+                              : 'Sin empresa asociada'}
                           </span>
                         </div>
 
