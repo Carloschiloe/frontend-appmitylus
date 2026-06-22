@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Inbox,
   Building2,
   Droplet,
   History,
@@ -33,16 +32,7 @@ const MENU_STRUCTURE = [
     icon: LayoutDashboard,
     links: [
       { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    id: 'operacion',
-    label: 'Operaciones',
-    icon: Inbox,
-    links: [
       { label: 'Resumen', to: '/gestion/bandeja', icon: ClipboardList },
-      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
-      { label: 'Biomasa', to: '/biomasa/status', icon: Droplet, activeFor: ['/biomasa/status', '/biomasa/tratos', '/biomasa/programa', '/biomasa/muestreos'] },
     ],
   },
   {
@@ -52,6 +42,8 @@ const MENU_STRUCTURE = [
     links: [
       { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
       { label: 'Centros', to: '/centros/directorio', icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa'] },
+      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
+      { label: 'Biomasa', to: '/biomasa/status', icon: Droplet, activeFor: ['/biomasa/status', '/biomasa/tratos', '/biomasa/programa', '/biomasa/muestreos'] },
     ],
   },
   {
