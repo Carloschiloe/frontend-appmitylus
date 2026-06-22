@@ -48,27 +48,6 @@
   box-shadow: 0 0 0 3px var(--color-primary-ring, rgba(10, 92, 255, 0.15));
 }
 
-.qc-goto-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(10, 92, 255, 0.25);
-  background: rgba(10, 92, 255, 0.08);
-  color: var(--color-primary);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.qc-goto-trigger:hover {
-  background: rgba(10, 92, 255, 0.16);
-  border-color: rgba(10, 92, 255, 0.4);
-}
-
 .qc-module-option {
   display: flex;
   align-items: center;

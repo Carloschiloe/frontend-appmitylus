@@ -18,7 +18,6 @@ import {
   Truck,
   Zap,
   UserPlus,
-  Compass,
   Inbox,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
@@ -203,7 +202,7 @@ export default function QuickCaptureModal() {
   const [loadingContext, setLoadingContext] = useState(false);
   const [suggestionApplied, setSuggestionApplied] = useState(false);
   const [form, setForm] = useState(initialState);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [savedInfo, setSavedInfo] = useState(null);
   const searchInputRef = useRef(null);
 
   useEffect(() => {
@@ -288,7 +287,7 @@ export default function QuickCaptureModal() {
     setProviderContext(null);
     setSuggestionApplied(false);
     setForm(initialState());
-    setShowShortcuts(false);
+    setSavedInfo(null);
   }
 
   function handleGoTo(path) {
@@ -400,7 +399,7 @@ export default function QuickCaptureModal() {
       await quickCaptureSeguimiento(payload);
       window.dispatchEvent(new CustomEvent('gestion:quick-capture-saved'));
       addToast({ title: 'Gestión registrada', message: 'Se actualizó el seguimiento del proveedor.', type: 'success' });
-      closeModal();
+      setSavedInfo({ nombre: selected.proveedorNombre || selected.contactoNombre || 'el proveedor' });
     } catch (error) {
       addToast({ title: 'Error', message: error?.message || 'No se pudo guardar la gestión rápida.', type: 'error' });
     } finally {
@@ -435,25 +434,39 @@ export default function QuickCaptureModal() {
           <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
             <div className="mx-modal-header">
               <div>
-                <h3 className="mx-modal-title">Registrar acción rápida</h3>
+                <h3 className="mx-modal-title">{savedInfo ? 'Gestión registrada' : 'Registrar acción rápida'}</h3>
                 <p style={{ margin: '6px 0 0', color: 'var(--color-text-subtle)', fontSize: '0.92rem' }}>
-                  Registra una llamada, WhatsApp, visita a centro, reunión o muestreo rápido.
+                  {savedInfo
+                    ? `Se guardó correctamente con ${savedInfo.nombre}.`
+                    : 'Registra una llamada, WhatsApp, visita a centro, reunión o muestreo rápido.'}
                 </p>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  className="qc-goto-trigger"
-                  onClick={() => setShowShortcuts(true)}
-                >
-                  <Compass size={14} /> Ir a otro módulo
-                </button>
-                <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
-              </div>
+              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
             </div>
 
+            {savedInfo ? (
+              <div className="mx-modal-body" style={{ display: 'grid', gap: '8px' }}>
+                <CheckCircle2 size={36} style={{ color: '#10b981', margin: '0 auto 8px' }} />
+                <p style={{ margin: '0 0 6px', textAlign: 'center', color: 'var(--color-text-subtle)', fontSize: '0.88rem' }}>
+                  ¿Qué quieres hacer ahora?
+                </p>
+                {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
+                  <button key={path} type="button" className="qc-module-option" onClick={() => handleGoTo(path)}>
+                    <Icon size={16} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+                <button type="button" className="mx-btn mx-btn-outline" style={{ marginTop: '6px' }} onClick={closeModal}>
+                  Cerrar
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
+
+                <p style={{ margin: 0, padding: '8px 12px', borderRadius: '10px', background: 'rgba(10, 92, 255, 0.06)', color: 'var(--color-text-subtle)', fontSize: '0.82rem' }}>
+                  Podrás registrar disponibilidad, un contacto u otra gestión apenas guardes este registro.
+                </p>
 
                 <section className="mx-form-group">
                   <div className="quick-capture-provider-row">
@@ -803,33 +816,7 @@ export default function QuickCaptureModal() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {showShortcuts && (
-        <div className="mx-modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowShortcuts(false)}>
-          <div className="mx-modal" style={{ maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="mx-modal-header">
-              <h3 className="mx-modal-title">Ir a otro módulo</h3>
-              <button type="button" className="mx-btn-icon" onClick={() => setShowShortcuts(false)}><X size={18} /></button>
-            </div>
-            <div className="mx-modal-body" style={{ display: 'grid', gap: '8px' }}>
-              {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
-                <button
-                  key={path}
-                  type="button"
-                  className="qc-module-option"
-                  onClick={() => {
-                    setShowShortcuts(false);
-                    handleGoTo(path);
-                  }}
-                >
-                  <Icon size={16} />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
+            )}
           </div>
         </div>
       )}
