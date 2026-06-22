@@ -242,9 +242,9 @@ export default function Dashboard() {
               color="#6366f1"
             />
             <KpiCard
-              title="Rendimiento Promedio"
+              title="Rendimiento Activo"
               value={calidadData?.avgRendimiento != null ? `${calidadData.avgRendimiento}%` : '—'}
-              sub="Últimos 30 días"
+              sub="Último muestreo c/proveedor"
               icon={Award}
               color="#f59e0b"
             />
@@ -506,8 +506,8 @@ export default function Dashboard() {
                   <h3 className="dsh-card-title">Calidad Promedio</h3>
                   <p className="dsh-card-subtitle">
                     {calidadData?.count
-                      ? `${calidadData.count} muestreos · últimos 30 días`
-                      : 'Sin muestreos recientes'}
+                      ? `${calidadData.count} proveedor${calidadData.count === 1 ? '' : 'es'} · cosecha activa`
+                      : 'Sin datos de proveedores activos'}
                   </p>
                 </div>
                 <Link to="/biomasa/muestreos" className="dsh-link-all">
@@ -517,7 +517,7 @@ export default function Dashboard() {
               {!calidadData || calidadData.count === 0 ? (
                 <div className="dsh-empty">
                   <TestTube2 size={26} />
-                  <p>Sin muestreos recientes</p>
+                  <p>Sin muestreos de proveedores activos</p>
                 </div>
               ) : (
                 <div className="dsh-calidad-grid">
