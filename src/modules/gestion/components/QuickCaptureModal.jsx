@@ -17,6 +17,7 @@ import {
   FileText,
   Truck,
   Zap,
+  UserPlus,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -38,6 +39,7 @@ const ACTION_OPTIONS = [
 ];
 
 const MODULE_SHORTCUTS = [
+  { label: 'Registrar contacto', path: '/gestion/proveedores?nuevoContacto=1', icon: UserPlus },
   { label: 'Tratos', path: '/biomasa/tratos', icon: FileText },
   { label: 'Programa de Cosecha', path: '/biomasa/programa', icon: Truck },
   { label: 'Muestreo técnico', path: '/biomasa/muestreos', icon: Beaker },

@@ -322,6 +322,19 @@ export default function Directorio() {
     setSearchParams(nextParams, { replace: true });
   }, [queryFromUrl, searchParams, setSearchParams]);
 
+  // Deep-link desde "Acción rápida": abre directo el modal de Nuevo Contacto.
+  useEffect(() => {
+    if (searchParams.get('nuevoContacto') !== '1') return;
+    setTab('contactos');
+    setModalState({ open: true, mode: 'create', item: null });
+    setContactCompanyQuery('');
+    setContactCenterValue('');
+    setContactSelectedProviderKey('');
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('nuevoContacto');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     if (!openMenuKey) return;
     const handler = (e) => {
