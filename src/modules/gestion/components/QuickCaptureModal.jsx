@@ -115,11 +115,14 @@ function initialState() {
 }
 
 function buildProviderDirectory(centros = [], contactos = []) {
-  const firstContactByKey = new Map();
+  // Todos los contactos por proveedor (no solo el primero), para que la busqueda
+  // por nombre/telefono/email de CUALQUIER contacto encuentre a su empresa.
+  const contactsByKey = new Map();
   contactos.forEach((item) => {
     const key = String(item.proveedorKey || '').trim().toLowerCase();
-    if (!key || firstContactByKey.has(key)) return;
-    firstContactByKey.set(key, item);
+    if (!key) return;
+    if (!contactsByKey.has(key)) contactsByKey.set(key, []);
+    contactsByKey.get(key).push(item);
   });
 
   const providers = new Map();
@@ -128,18 +131,23 @@ function buildProviderDirectory(centros = [], contactos = []) {
     const proveedorKey = String(centro.proveedorKey || proveedorNombre).trim().toLowerCase();
     if (!proveedorKey) return;
 
-    const linkedContact = firstContactByKey.get(proveedorKey);
+    const providerContacts = contactsByKey.get(proveedorKey) || [];
+    const primaryContact = providerContacts[0] || null;
+    const contactosSearchText = providerContacts
+      .map((c) => `${c.contactoNombre || ''} ${c.contactoTelefono || ''} ${c.contactoEmail || ''}`)
+      .join(' ');
     const existing = providers.get(proveedorKey);
 
     if (!existing) {
       providers.set(proveedorKey, {
         id: `prov-${proveedorKey || index}`,
-        contactoId: linkedContact?._id || '',
+        contactoId: primaryContact?._id || '',
         proveedorKey,
         proveedorNombre,
-        contactoNombre: linkedContact?.contactoNombre || '',
-        contactoTelefono: linkedContact?.contactoTelefono || '',
-        contactoEmail: linkedContact?.contactoEmail || '',
+        contactoNombre: primaryContact?.contactoNombre || '',
+        contactoTelefono: primaryContact?.contactoTelefono || '',
+        contactoEmail: primaryContact?.contactoEmail || '',
+        contactosSearchText,
         comuna: centro.comuna || '',
         centros: 1,
       });
@@ -147,9 +155,9 @@ function buildProviderDirectory(centros = [], contactos = []) {
     }
 
     existing.centros += 1;
-    if (!existing.contactoNombre && linkedContact?.contactoNombre) existing.contactoNombre = linkedContact.contactoNombre;
-    if (!existing.contactoTelefono && linkedContact?.contactoTelefono) existing.contactoTelefono = linkedContact.contactoTelefono;
-    if (!existing.contactoEmail && linkedContact?.contactoEmail) existing.contactoEmail = linkedContact.contactoEmail;
+    if (!existing.contactoNombre && primaryContact?.contactoNombre) existing.contactoNombre = primaryContact.contactoNombre;
+    if (!existing.contactoTelefono && primaryContact?.contactoTelefono) existing.contactoTelefono = primaryContact.contactoTelefono;
+    if (!existing.contactoEmail && primaryContact?.contactoEmail) existing.contactoEmail = primaryContact.contactoEmail;
     if (!existing.comuna && centro.comuna) existing.comuna = centro.comuna;
   });
 
@@ -228,11 +236,11 @@ export default function QuickCaptureModal() {
   }, [open, providers.length, addToast]);
 
   const filteredProviders = useMemo(() => {
-    if (!search.trim()) return providers.slice(0, 10);
+    if (!search.trim()) return [];
     const q = search.toLowerCase();
     return providers.filter((item) => {
       const providerText = `${item.proveedorNombre || ''} ${item.proveedorKey || ''} ${item.comuna || ''}`.toLowerCase();
-      const contactText = `${item.contactoNombre || ''} ${item.contactoTelefono || ''} ${item.contactoEmail || ''}`.toLowerCase();
+      const contactText = (item.contactosSearchText || '').toLowerCase();
       return providerText.includes(q) || contactText.includes(q);
     }).slice(0, 10);
   }, [providers, search]);
@@ -458,6 +466,8 @@ export default function QuickCaptureModal() {
                   <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
                     {loadingProviders ? (
                       <div className="gs-empty-inline">Cargando proveedores...</div>
+                    ) : !search.trim() ? (
+                      <div className="gs-empty-inline">Escribe para buscar por proveedor o por contacto.</div>
                     ) : filteredProviders.length === 0 ? (
                       <div className="gs-empty-inline">No encontramos coincidencias en el directorio.</div>
                     ) : (
