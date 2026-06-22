@@ -213,10 +213,12 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
     provider.contactoTelefono = contactPhone(firstContact);
     provider.contactoEmail = contactEmail(firstContact);
-    provider.seguimientoEstado = latestOpportunity?.seguimientoEstado || '';
+    // Si no hay un Trato abierto, el seguimiento registrado vía "Acción rápida"
+    // (Interacción con proximoPaso/fechaProximo/estado) es la fuente válida más reciente.
+    provider.seguimientoEstado = latestOpportunity?.seguimientoEstado || latestInteraction?.estado || '';
     provider.estadoComercial = latestOpportunity?.estado || '';
-    provider.proximaAccion = latestOpportunity?.proximaAccion || '';
-    provider.fechaProximaAccion = latestOpportunity?.fechaProximaAccion || latestOpportunity?.fechaRevision || '';
+    provider.proximaAccion = latestOpportunity?.proximaAccion || latestInteraction?.proximoPaso || '';
+    provider.fechaProximaAccion = latestOpportunity?.fechaProximaAccion || latestOpportunity?.fechaRevision || latestInteraction?.fechaProximo || '';
 
     // Comparar fecha de ultima interaccion comercial con ultima fecha de muestreo tecnico
     const interactionDate = latestInteraction?.fecha ? new Date(latestInteraction.fecha) : null;
