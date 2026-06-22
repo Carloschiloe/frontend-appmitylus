@@ -5,6 +5,7 @@ import {
   Activity,
   CheckCircle,
   ShieldAlert,
+  ShieldCheck,
   RotateCcw,
   TrendingUp,
   TrendingDown,
@@ -18,8 +19,13 @@ import {
   Calendar,
   Droplet,
   TestTube2,
+  Scissors,
+  Award,
+  Clock,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+
+const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
 const QUICK_LINKS = [
   { label: 'Resumen Operativo', to: '/gestion/bandeja',   icon: ClipboardList },
@@ -38,8 +44,19 @@ const ESTADO_CONFIG = {
   disponible:       { label: 'Disponible',       color: '#10b981', bg: '#f0fdf4' },
 };
 
+const PIPELINE_STAGES = [
+  { estado: 'prospecto',        label: 'Prospectos',    color: '#6366f1', bg: '#eef2ff' },
+  { estado: 'negociando',       label: 'Negociando',    color: '#f59e0b', bg: '#fffbeb' },
+  { estado: 'acordado',         label: 'Acordados',     color: '#0A5CFF', bg: '#eff4ff' },
+  { estado: 'compra_efectuada', label: 'En cosecha',    color: '#10b981', bg: '#f0fdf4' },
+];
 
-const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
+const SEMAPHORE_CONFIG = [
+  { key: 'verde',    label: 'Verde',    dot: '#16a34a' },
+  { key: 'amarillo', label: 'Amarillo', dot: '#ca8a04' },
+  { key: 'naranja',  label: 'Naranja',  dot: '#ea580c' },
+  { key: 'rojo',     label: 'Rojo',     dot: '#dc2626' },
+];
 
 function getEstado(descripcion) {
   return descripcion?.replace('Estado actual: ', '').trim() || '';
@@ -55,11 +72,16 @@ function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Ahora mismo';
+  if (mins < 1)  return 'Ahora mismo';
   if (mins < 60) return `Hace ${mins} min`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Hace ${hrs}h`;
+  if (hrs < 24)  return `Hace ${hrs}h`;
   return `Hace ${Math.floor(hrs / 24)} días`;
+}
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
 const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
@@ -110,14 +132,14 @@ export default function Dashboard() {
   }, []);
 
   const speciesData = useMemo(() => ({
-    labels: ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
+    labels:   ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
     datasets: [{
       data: [
-        data?.biomasa?.disponible    || 0,
-        data?.biomasa?.semi_cerrado  || 0,
-        data?.biomasa?.cerrado       || 0,
-        data?.biomasa?.descartado    || 0,
-        data?.biomasa?.perdido       || 0,
+        data?.biomasa?.disponible   || 0,
+        data?.biomasa?.semi_cerrado || 0,
+        data?.biomasa?.cerrado      || 0,
+        data?.biomasa?.descartado   || 0,
+        data?.biomasa?.perdido      || 0,
       ],
       backgroundColor: ['#10b981', '#f59e0b', '#dc2626', '#94a3b8', '#334155'],
       borderWidth: 0,
@@ -127,6 +149,23 @@ export default function Dashboard() {
   const mesActual  = data?.acordadoMes     || 0;
   const mesProximo = data?.acordadoProxMes || 0;
   const deltaMes   = mesActual > 0 ? Math.round(((mesProximo - mesActual) / mesActual) * 100) : null;
+
+  const pipelineMap = useMemo(() => {
+    const m = {};
+    (data?.pipeline || []).forEach(p => { m[p.estado] = p; });
+    return m;
+  }, [data]);
+
+  const pipelineMaxCount = useMemo(
+    () => PIPELINE_STAGES.reduce((max, s) => Math.max(max, pipelineMap[s.estado]?.count || 0), 1),
+    [pipelineMap],
+  );
+
+  const cosechaData = data?.cosecha          || { programasHoy: 0, programasList: [] };
+  const calidadData = data?.calidad          || null;
+  const sanDetalle  = data?.sanitarioDetalle || {};
+  const hasAlerts   = (data?.alertas || 0) > 0;
+  const sanTotal    = Object.values(sanDetalle).reduce((s, d) => s + (d?.count || 0), 0);
 
   if (loading) {
     return (
@@ -151,8 +190,6 @@ export default function Dashboard() {
     );
   }
 
-  const hasAlerts = (data?.alertas || 0) > 0;
-
   return (
     <div className="mx-page dsh-root">
       <header className="mx-hero mx-hero--with-desc">
@@ -166,7 +203,7 @@ export default function Dashboard() {
       <div className="mx-content-frame dsh-content-frame">
         <div className="mx-page-stack">
 
-          {/* ── Barra de navegación rápida ─────────────────────────────── */}
+          {/* ── Barra de navegación rápida ───────────────────────────── */}
           <section className="dsh-nav-bar">
             <div className="dsh-nav-links">
               {QUICK_LINKS.map(({ label, to, icon: Icon }) => (
@@ -181,7 +218,7 @@ export default function Dashboard() {
             </button>
           </section>
 
-          {/* ── KPIs ───────────────────────────────────────────────────── */}
+          {/* ── Row 1: 5 KPIs ────────────────────────────────────────── */}
           <section className="dsh-kpi-grid">
             <KpiCard
               title="Tons Acordadas (mes)"
@@ -191,12 +228,11 @@ export default function Dashboard() {
               color="#0A5CFF"
             />
             <KpiCard
-              title="Tons Próximo Mes"
-              value={formatTons(data?.acordadoProxMes)}
-              sub="Proyección siguiente mes"
-              icon={TrendingUp}
-              color="#3b82f6"
-              trend={deltaMes}
+              title="Programas Activos Hoy"
+              value={cosechaData.programasHoy}
+              sub="Proveedores cosechando"
+              icon={Scissors}
+              color="#10b981"
             />
             <KpiCard
               title="En Negociación"
@@ -206,15 +242,121 @@ export default function Dashboard() {
               color="#6366f1"
             />
             <KpiCard
+              title="Rendimiento Promedio"
+              value={calidadData?.avgRendimiento != null ? `${calidadData.avgRendimiento}%` : '—'}
+              sub="Últimos 30 días"
+              icon={Award}
+              color="#f59e0b"
+            />
+            <KpiCard
               title="Alertas Sanitarias"
               value={data?.alertas ?? '—'}
-              sub="Áreas naranja/rojo activas"
-              icon={ShieldAlert}
+              sub="Áreas naranja / rojo"
+              icon={hasAlerts ? ShieldAlert : ShieldCheck}
               color={hasAlerts ? '#ef4444' : '#10b981'}
             />
           </section>
 
-          {/* ── Actividad + Top Proveedores ────────────────────────────── */}
+          {/* ── Row 2: Pipeline + Cosecha activa ─────────────────────── */}
+          <div className="dsh-pipeline-grid">
+
+            {/* Pipeline funnel */}
+            <article className="dsh-card">
+              <div className="dsh-card-header">
+                <div>
+                  <h3 className="dsh-card-title">Pipeline de Tratos</h3>
+                  <p className="dsh-card-subtitle">Ciclo comercial activo por etapa</p>
+                </div>
+                <Link to="/biomasa/tratos" className="dsh-link-all">
+                  Ver tratos <ChevronRight size={12} />
+                </Link>
+              </div>
+
+              <div className="dsh-funnel">
+                {PIPELINE_STAGES.map(({ estado, label, color, bg }) => {
+                  const st   = pipelineMap[estado] || { count: 0, tons: 0 };
+                  const barW = Math.round((st.count / pipelineMaxCount) * 100);
+                  return (
+                    <div key={estado} className="dsh-funnel-row">
+                      <div className="dsh-funnel-dot" style={{ background: color }} />
+                      <span className="dsh-funnel-label">{label}</span>
+                      <div className="dsh-funnel-track">
+                        <div className="dsh-funnel-fill" style={{ '--fw': `${barW}%`, '--fc': color }} />
+                      </div>
+                      <span className="dsh-funnel-count" style={{ color, background: bg }}>
+                        {st.count}
+                      </span>
+                      <span className="dsh-funnel-tons">{st.tons > 0 ? formatTons(st.tons) : '—'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const caidos    = pipelineMap['caido']?.count || 0;
+                const cierres   = (pipelineMap['acordado']?.count || 0) + (pipelineMap['compra_efectuada']?.count || 0);
+                const conv      = (cierres + caidos) > 0 ? Math.round((cierres / (cierres + caidos)) * 100) : null;
+                return (
+                  <div className="dsh-funnel-footer">
+                    <span>
+                      <span className="dsh-funnel-footer-label">Caídos</span>
+                      <span className="dsh-funnel-footer-val" style={{ color: '#ef4444' }}>{caidos}</span>
+                    </span>
+                    {conv != null && (
+                      <span>
+                        <span className="dsh-funnel-footer-label">Tasa de cierre</span>
+                        <span className="dsh-funnel-footer-val" style={{ color: '#10b981' }}>{conv}%</span>
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+            </article>
+
+            {/* Cosecha activa */}
+            <article className="dsh-card dsh-cosecha-card">
+              <div className="dsh-card-header">
+                <div>
+                  <h3 className="dsh-card-title">Cosecha Activa</h3>
+                  <p className="dsh-card-subtitle">Programas cosechando hoy</p>
+                </div>
+                <span className={`dsh-cosecha-badge ${cosechaData.programasHoy > 0 ? 'active' : ''}`}>
+                  {cosechaData.programasHoy}
+                </span>
+              </div>
+
+              {cosechaData.programasList.length === 0 ? (
+                <div className="dsh-empty">
+                  <Scissors size={26} />
+                  <p>Sin programas activos hoy</p>
+                </div>
+              ) : (
+                <div className="dsh-cosecha-list">
+                  {cosechaData.programasList.map((p, i) => (
+                    <div key={i} className="dsh-cosecha-item">
+                      <div className="dsh-cosecha-dot" />
+                      <div className="dsh-cosecha-info">
+                        <span className="dsh-cosecha-name">{p.nombre}</span>
+                        <span className="dsh-cosecha-until">
+                          <Clock size={10} />
+                          hasta {formatShortDate(p.vigenciaHasta)}
+                        </span>
+                      </div>
+                      {p.tons != null && (
+                        <span className="dsh-cosecha-tons">{formatTons(p.tons)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Link to="/biomasa/programa" className="dsh-cosecha-footer-link">
+                Ver programa de cosecha <ChevronRight size={12} />
+              </Link>
+            </article>
+          </div>
+
+          {/* ── Row 3: Actividad + Top Proveedores ───────────────────── */}
           <div className="dsh-main-grid">
 
             <article className="dsh-card">
@@ -232,7 +374,7 @@ export default function Dashboard() {
                   </div>
                 ) : data.actividad.map((item) => {
                   const estado = getEstado(item.descripcion);
-                  const cfg = ESTADO_CONFIG[estado] || {};
+                  const cfg    = ESTADO_CONFIG[estado] || {};
                   return (
                     <Link key={item.id} to="/biomasa/tratos" className="dsh-feed-item">
                       <div className="dsh-feed-icon" style={{ background: `${cfg.color || '#64748b'}18`, color: cfg.color || '#64748b' }}>
@@ -264,7 +406,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               {(() => {
-                const withTons = (data?.topProveedores || []).filter((p) => (p.tons || 0) > 0 && p.nombre);
+                const withTons  = (data?.topProveedores || []).filter(p => (p.tons || 0) > 0 && p.nombre);
                 if (!withTons.length) {
                   return (
                     <div className="dsh-empty">
@@ -293,9 +435,7 @@ export default function Dashboard() {
                                 <div className="dsh-bar-fill" style={{ '--w': `${barPct}%` }} />
                               </div>
                             </div>
-                            <span className="dsh-provider-tons">
-                              {p.tons.toLocaleString('es-CL')} t
-                            </span>
+                            <span className="dsh-provider-tons">{p.tons.toLocaleString('es-CL')} t</span>
                           </div>
                         );
                       })}
@@ -310,17 +450,97 @@ export default function Dashboard() {
             </article>
           </div>
 
-          {/* ── Fila inferior ──────────────────────────────────────────── */}
-          <div className="dsh-secondary-grid">
+          {/* ── Row 4: Biomasa · Sanitario · Calidad · Proyección ────── */}
+          <div className="dsh-quad-grid">
 
-            {/* Donut de estados */}
+            {/* Distribución de tratos (donut) */}
             <article className="dsh-card">
-              <h3 className="dsh-section-label">Estado de Biomasa</h3>
+              <h3 className="dsh-section-label">Distribución de Tratos</h3>
               <div className="dsh-donut-wrap">
                 <Suspense fallback={<div className="mx-skeleton dsh-chart-skeleton" />}>
                   <DashboardBiomasaChart data={speciesData} />
                 </Suspense>
               </div>
+            </article>
+
+            {/* Semáforo sanitario */}
+            <article className="dsh-card">
+              <div className="dsh-card-header">
+                <h3 className="dsh-card-title">Estado Sanitario</h3>
+                <Link to="/centros" className="dsh-link-all">
+                  Ver áreas <ChevronRight size={12} />
+                </Link>
+              </div>
+              <div className="dsh-semaphore">
+                {SEMAPHORE_CONFIG.map(({ key, label, dot }) => {
+                  const sd         = sanDetalle[key] || { count: 0, areas: [] };
+                  const isCritical = (key === 'naranja' || key === 'rojo') && sd.count > 0;
+                  return (
+                    <div key={key} className={`dsh-semaphore-row${isCritical ? ' critical' : ''}`}>
+                      <div className="dsh-semaphore-left">
+                        <div className="dsh-semaphore-dot" style={{ background: dot }} />
+                        <span className="dsh-semaphore-label">{label}</span>
+                      </div>
+                      <span className="dsh-semaphore-count" style={{ color: dot }}>
+                        {sd.count}
+                      </span>
+                      {isCritical && sd.areas.length > 0 && (
+                        <div className="dsh-semaphore-areas">{sd.areas.join(', ')}</div>
+                      )}
+                    </div>
+                  );
+                })}
+                {sanTotal > 0 && (
+                  <div className="dsh-semaphore-total">
+                    <span>Total monitoreadas</span>
+                    <strong>{sanTotal}</strong>
+                  </div>
+                )}
+              </div>
+            </article>
+
+            {/* Calidad promedio */}
+            <article className="dsh-card">
+              <div className="dsh-card-header">
+                <div>
+                  <h3 className="dsh-card-title">Calidad Promedio</h3>
+                  <p className="dsh-card-subtitle">
+                    {calidadData?.count
+                      ? `${calidadData.count} muestreos · últimos 30 días`
+                      : 'Sin muestreos recientes'}
+                  </p>
+                </div>
+                <Link to="/biomasa/muestreos" className="dsh-link-all">
+                  Ver <ChevronRight size={12} />
+                </Link>
+              </div>
+              {!calidadData || calidadData.count === 0 ? (
+                <div className="dsh-empty">
+                  <TestTube2 size={26} />
+                  <p>Sin muestreos recientes</p>
+                </div>
+              ) : (
+                <div className="dsh-calidad-grid">
+                  <div className="dsh-calidad-metric">
+                    <span className="dsh-calidad-value">
+                      {calidadData.avgRendimiento != null ? `${calidadData.avgRendimiento}%` : '—'}
+                    </span>
+                    <span className="dsh-calidad-label">Rendimiento</span>
+                  </div>
+                  <div className="dsh-calidad-metric">
+                    <span className="dsh-calidad-value">
+                      {calidadData.avgUxkg != null ? calidadData.avgUxkg : '—'}
+                    </span>
+                    <span className="dsh-calidad-label">u/kg Calibre</span>
+                  </div>
+                  <div className="dsh-calidad-metric danger">
+                    <span className="dsh-calidad-value">
+                      {calidadData.avgRechazos != null ? `${calidadData.avgRechazos}%` : '—'}
+                    </span>
+                    <span className="dsh-calidad-label">Rechazos</span>
+                  </div>
+                </div>
+              )}
             </article>
 
             {/* Proyección mensual */}
@@ -337,7 +557,7 @@ export default function Dashboard() {
                   {deltaMes != null ? (
                     <>
                       {deltaMes >= 0
-                        ? <TrendingUp size={18} style={{ color: '#4ade80' }} />
+                        ? <TrendingUp  size={18} style={{ color: '#4ade80' }} />
                         : <TrendingDown size={18} style={{ color: '#fca5a5' }} />}
                       <span className={`dsh-proj-delta ${deltaMes >= 0 ? 'up' : 'down'}`}>
                         {deltaMes >= 0 ? '+' : ''}{deltaMes}%
@@ -356,29 +576,6 @@ export default function Dashboard() {
               <div className="dsh-proj-stat">
                 <span className="dsh-proj-stat-label">En negociación</span>
                 <span className="dsh-proj-stat-val">{data?.enNegociacion ?? 0} tratos</span>
-              </div>
-            </article>
-
-            {/* Áreas sanitarias */}
-            <article className="dsh-card dsh-sanitario-card">
-              <h3 className="dsh-section-label">Áreas Sanitarias</h3>
-              <div className="dsh-sanitario-body">
-                {!hasAlerts ? (
-                  <>
-                    <div className="dsh-sanitario-icon ok"><CheckCircle size={26} /></div>
-                    <p className="dsh-sanitario-label ok">Sin alertas activas</p>
-                    <p className="dsh-sanitario-sub">Todas las áreas en estado normal</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="dsh-sanitario-icon alert"><ShieldAlert size={26} /></div>
-                    <p className="dsh-sanitario-count">{data.alertas}</p>
-                    <p className="dsh-sanitario-label alert">áreas en estado crítico</p>
-                    <Link to="/centros" className="dsh-sanitario-link">
-                      Ver áreas <ChevronRight size={11} />
-                    </Link>
-                  </>
-                )}
               </div>
             </article>
           </div>
