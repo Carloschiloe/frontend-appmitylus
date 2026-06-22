@@ -235,7 +235,7 @@ export default function QuickCaptureModal() {
       try {
         const [centrosRes, contactosRes] = await Promise.all([
           apiClient.get('/centros', { signal: controller.signal }),
-          apiClient.get('/contactos?conEmpresa=1', { signal: controller.signal }),
+          apiClient.get('/contactos', { signal: controller.signal }),
         ]);
 
         if (!cancelled) {
