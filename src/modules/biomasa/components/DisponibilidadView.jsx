@@ -160,10 +160,19 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     setModalOpen(true);
   };
 
-  // Deep-link desde "Acción rápida": abre directo el modal de Registrar disponibilidad.
+  // Deep-link desde "Acción rápida": abre directo el modal de Registrar disponibilidad,
+  // con el proveedor/contacto ya guardado precargado si vino de ahí.
   useEffect(() => {
     if (searchParams.get('nuevaDisponibilidad') !== '1') return;
-    setModalItem(null);
+    let prefill = null;
+    try {
+      const raw = sessionStorage.getItem('mitynex:nueva-disponibilidad-context');
+      if (raw) {
+        prefill = JSON.parse(raw);
+        sessionStorage.removeItem('mitynex:nueva-disponibilidad-context');
+      }
+    } catch { /* contexto invalido, abre en blanco */ }
+    setModalItem(prefill);
     setModalOpen(true);
     const next = new URLSearchParams(searchParams);
     next.delete('nuevaDisponibilidad');

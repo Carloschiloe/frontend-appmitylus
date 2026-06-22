@@ -451,7 +451,24 @@ export default function QuickCaptureModal() {
                   ¿Qué quieres hacer ahora?
                 </p>
                 {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
-                  <button key={path} type="button" className="qc-module-option" onClick={() => handleGoTo(path)}>
+                  <button
+                    key={path}
+                    type="button"
+                    className="qc-module-option"
+                    onClick={() => {
+                      if (path.includes('nuevaDisponibilidad') && selected) {
+                        sessionStorage.setItem('mitynex:nueva-disponibilidad-context', JSON.stringify({
+                          proveedorKey: selected.proveedorKey || '',
+                          proveedorNombre: selected.proveedorNombre || '',
+                          contactoId: selected.contactoId || '',
+                          contactoNombre: selected.contactoNombre || '',
+                          contactoTelefono: selected.contactoTelefono || '',
+                          contactoEmail: selected.contactoEmail || '',
+                        }));
+                      }
+                      handleGoTo(path);
+                    }}
+                  >
                     <Icon size={16} />
                     <span>{label}</span>
                   </button>
