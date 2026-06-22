@@ -18,7 +18,7 @@ import {
   Truck,
   Zap,
   UserPlus,
-  ChevronDown,
+  Compass,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -444,41 +444,15 @@ export default function QuickCaptureModal() {
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
 
-                {/* ── Accesos directos a módulos (oculto por defecto) ── */}
-                <section style={{ borderBottom: showShortcuts ? '1px solid var(--color-border)' : 'none', paddingBottom: showShortcuts ? '14px' : 0 }}>
+                {/* ── Acceso a otros módulos: botón que abre un modal de selección ── */}
+                <section>
                   <button
                     type="button"
-                    onClick={() => setShowShortcuts((v) => !v)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      border: 'none',
-                      background: 'none',
-                      padding: 0,
-                      fontSize: '0.76rem',
-                      fontWeight: 700,
-                      color: 'var(--color-text-subtle)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      cursor: 'pointer',
-                    }}
+                    className="mx-btn mx-btn-outline sm"
+                    onClick={() => setShowShortcuts(true)}
                   >
-                    Ir a otro módulo
-                    <ChevronDown
-                      size={13}
-                      style={{ transform: showShortcuts ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
-                    />
+                    <Compass size={14} /> Ir a otro módulo
                   </button>
-                  {showShortcuts && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                      {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
-                        <button key={path} type="button" className="mx-btn mx-btn-outline sm" onClick={() => handleGoTo(path)}>
-                          <Icon size={13} /> {label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </section>
 
                 <section className="mx-form-group">
@@ -829,6 +803,33 @@ export default function QuickCaptureModal() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showShortcuts && (
+        <div className="mx-modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowShortcuts(false)}>
+          <div className="mx-modal" style={{ maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="mx-modal-header">
+              <h3 className="mx-modal-title">Ir a otro módulo</h3>
+              <button type="button" className="mx-btn-icon" onClick={() => setShowShortcuts(false)}><X size={18} /></button>
+            </div>
+            <div className="mx-modal-body" style={{ display: 'grid', gap: '8px' }}>
+              {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
+                <button
+                  key={path}
+                  type="button"
+                  className="qc-module-option"
+                  onClick={() => {
+                    setShowShortcuts(false);
+                    handleGoTo(path);
+                  }}
+                >
+                  <Icon size={16} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
