@@ -912,12 +912,6 @@ button.dir-status-item.is-active .dir-status-label {
 .dir-provider-avatar.is-acordado,
 .dir-provider-avatar.is-none     { background: rgba(100, 116, 139, 0.1); color: #64748b; }
 
-/* ── Row status left stripe ── */
-
-.dir-row-activo  > td:first-child { box-shadow: inset 3px 0 0 #10b981; }
-.dir-row-pausado > td:first-child  { box-shadow: inset 3px 0 0 var(--color-warning); }
-.dir-row-acordado > td:first-child { box-shadow: inset 3px 0 0 #0891b2; }
-
 /* ── Pending contact dimmed ── */
 
 .dir-primary-text.is-pending {
