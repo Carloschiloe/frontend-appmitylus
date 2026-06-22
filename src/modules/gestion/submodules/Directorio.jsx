@@ -496,7 +496,7 @@ export default function Directorio() {
 
   const filteredProviderOptions = useMemo(() => {
     const query = normalizeKey(contactCompanyQuery);
-    if (!query) return providerOptions.slice(0, 10);
+    if (!query) return [];
     return providerOptions
       .filter((provider) =>
         [
@@ -1160,7 +1160,9 @@ export default function Directorio() {
                         </div>
                       ) : (
                         <div className="gs-contact-provider-results">
-                        {filteredProviderOptions.length === 0 ? (
+                        {!contactCompanyQuery ? (
+                          <div className="gs-contact-provider-empty">Escribe para buscar una empresa o codigo de centro.</div>
+                        ) : filteredProviderOptions.length === 0 ? (
                           <div className="gs-contact-provider-empty">No encontramos empresas con ese nombre o codigo de centro.</div>
                         ) : (
                           filteredProviderOptions.map((provider) => {
