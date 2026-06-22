@@ -213,6 +213,7 @@ button {
 .mx-table-wrap {
   max-width: 100%;
   min-width: 0;
+  overflow-x: auto;
 }
 
 .mx-table th {

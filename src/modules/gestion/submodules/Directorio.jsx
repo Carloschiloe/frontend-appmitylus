@@ -860,7 +860,6 @@ export default function Directorio() {
                   <th className="dir-col-followup">Estado comercial</th>
                   <th className="dir-col-last">Última gestión</th>
                   <th className="dir-col-next">Próxima acción</th>
-                  <th className="dir-col-ingreso">Ingreso</th>
                   <th className="dir-col-actions"></th>
                 </tr>
               ) : (
@@ -950,11 +949,6 @@ export default function Directorio() {
                         {provider.fechaProximaAccion && (
                           <div className="dir-subtle-note">{formatShortDate(provider.fechaProximaAccion)}</div>
                         )}
-                      </td>
-
-                      <td>
-                        <div className="dir-reg-date">{provider.fechaIngreso ? formatShortDate(provider.fechaIngreso) : '—'}</div>
-                        {provider.ingresadoPor && <div className="dir-subtle-note">{provider.ingresadoPor}</div>}
                       </td>
 
                       <td className="dir-actions-cell">
