@@ -19,6 +19,7 @@ import {
   Zap,
   UserPlus,
   Compass,
+  Inbox,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -41,6 +42,7 @@ const ACTION_OPTIONS = [
 
 const MODULE_SHORTCUTS = [
   { label: 'Registrar contacto', path: '/gestion/proveedores?nuevoContacto=1', icon: UserPlus },
+  { label: 'Registrar disponibilidad', path: '/biomasa/status?nuevaDisponibilidad=1', icon: Inbox },
   { label: 'Tratos', path: '/biomasa/tratos', icon: FileText },
   { label: 'Programa de Cosecha', path: '/biomasa/programa', icon: Truck },
   { label: 'Muestreo técnico', path: '/biomasa/muestreos', icon: Beaker },
@@ -438,22 +440,20 @@ export default function QuickCaptureModal() {
                   Registra una llamada, WhatsApp, visita a centro, reunión o muestreo rápido.
                 </p>
               </div>
-              <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="qc-goto-trigger"
+                  onClick={() => setShowShortcuts(true)}
+                >
+                  <Compass size={14} /> Ir a otro módulo
+                </button>
+                <button type="button" className="mx-btn-icon" onClick={closeModal}><X size={20} /></button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
-
-                {/* ── Acceso a otros módulos: botón que abre un modal de selección ── */}
-                <section>
-                  <button
-                    type="button"
-                    className="mx-btn mx-btn-outline sm"
-                    onClick={() => setShowShortcuts(true)}
-                  >
-                    <Compass size={14} /> Ir a otro módulo
-                  </button>
-                </section>
 
                 <section className="mx-form-group">
                   <div className="quick-capture-provider-row">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users } from 'lucide-react';
 
 const ORIGEN_ICON = {
@@ -50,6 +51,7 @@ const filterDisponibilidades = (sourceItems, filters) => {
 export default function DisponibilidadView({ items, loading, mes, setMes, reload }) {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [proveedores, setProveedores] = useState([]);
   const [centros, setCentros] = useState([]);
   const [modalItem, setModalItem] = useState(null);
@@ -157,6 +159,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     setModalItem(null);
     setModalOpen(true);
   };
+
+  // Deep-link desde "Acción rápida": abre directo el modal de Registrar disponibilidad.
+  useEffect(() => {
+    if (searchParams.get('nuevaDisponibilidad') !== '1') return;
+    setModalItem(null);
+    setModalOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('nuevaDisponibilidad');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const openEdit = (item) => {
     setModalItem(item);
