@@ -40,6 +40,12 @@
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.quick-capture-provider-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-ring, rgba(10, 92, 255, 0.15));
 }
 
 @media (max-width: 640px) {

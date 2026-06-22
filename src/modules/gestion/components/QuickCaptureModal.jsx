@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../gestion.css';
 import {
@@ -18,6 +18,7 @@ import {
   Truck,
   Zap,
   UserPlus,
+  ChevronDown,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { quickCaptureSeguimiento } from '../../../api/api-oportunidades';
@@ -200,6 +201,14 @@ export default function QuickCaptureModal() {
   const [loadingContext, setLoadingContext] = useState(false);
   const [suggestionApplied, setSuggestionApplied] = useState(false);
   const [form, setForm] = useState(initialState);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => searchInputRef.current?.focus(), 80);
+    return () => clearTimeout(t);
+  }, [open]);
 
   useEffect(() => {
     function handleOpenWithContext(event) {
@@ -277,6 +286,7 @@ export default function QuickCaptureModal() {
     setProviderContext(null);
     setSuggestionApplied(false);
     setForm(initialState());
+    setShowShortcuts(false);
   }
 
   function handleGoTo(path) {
@@ -434,16 +444,41 @@ export default function QuickCaptureModal() {
             <form onSubmit={handleSubmit} className="mx-form">
               <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
 
-                {/* ── Accesos directos a módulos ── */}
-                <section style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', padding: '2px 0 2px', borderBottom: '1px solid var(--color-border)', paddingBottom: '14px' }}>
-                  <span style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--color-text-subtle)', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
-                    Ir a:
-                  </span>
-                  {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
-                    <button key={path} type="button" className="mx-btn mx-btn-outline sm" onClick={() => handleGoTo(path)}>
-                      <Icon size={13} /> {label}
-                    </button>
-                  ))}
+                {/* ── Accesos directos a módulos (oculto por defecto) ── */}
+                <section style={{ borderBottom: showShortcuts ? '1px solid var(--color-border)' : 'none', paddingBottom: showShortcuts ? '14px' : 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowShortcuts((v) => !v)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      color: 'var(--color-text-subtle)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Ir a otro módulo
+                    <ChevronDown
+                      size={13}
+                      style={{ transform: showShortcuts ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
+                    />
+                  </button>
+                  {showShortcuts && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+                      {MODULE_SHORTCUTS.map(({ label, path, icon: Icon }) => (
+                        <button key={path} type="button" className="mx-btn mx-btn-outline sm" onClick={() => handleGoTo(path)}>
+                          <Icon size={13} /> {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </section>
 
                 <section className="mx-form-group">
@@ -453,6 +488,7 @@ export default function QuickCaptureModal() {
                       <div className="quick-capture-provider-search">
                         <Search size={18} style={{ color: 'var(--color-text-subtle)', flexShrink: 0 }} />
                         <input
+                          ref={searchInputRef}
                           type="text"
                           placeholder="Buscar empresa, comuna o contacto..."
                           value={search}
