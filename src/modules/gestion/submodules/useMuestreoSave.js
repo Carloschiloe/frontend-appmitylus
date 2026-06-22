@@ -136,8 +136,12 @@ export default function useMuestreoSave({
       setIsResultOpen(true);
       loadData(page);
       addToast({ title: 'Exito', message: `Muestreo ${editingId ? 'actualizado' : 'guardado'} correctamente.`, type: 'success' });
-    } catch {
-      addToast({ title: 'Error', message: 'No se pudo guardar el muestreo.', type: 'error' });
+    } catch (error) {
+      const detalle =
+        error?.data?.details?.[0]?.message ||
+        error?.data?.error ||
+        error?.message;
+      addToast({ title: 'Error', message: detalle || 'No se pudo guardar el muestreo.', type: 'error' });
     }
   }, [
     form,
