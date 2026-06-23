@@ -3,20 +3,38 @@ import {
   Beaker,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   MessageSquare,
   MinusCircle,
   Phone,
+  Target,
+  Users,
   X,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 
 const TIPO_OPTIONS = [
-  { value: 'llame', label: 'Llamé', icon: Phone },
-  { value: 'visite', label: 'Visité', icon: Calendar },
+  { value: 'llame', label: 'Llamada', icon: Phone },
+  { value: 'visite', label: 'Visita a centro', icon: Calendar },
   { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
-  { value: 'tome_muestra', label: 'Tomé muestra', icon: Beaker },
+  { value: 'tome_muestra', label: 'Muestreo', icon: Beaker },
+  { value: 'negocie', label: 'Reunión', icon: Users },
 ];
+
+function getActionOption(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return null;
+  return TIPO_OPTIONS.find((option) => (
+    text === option.value
+    || text === option.label.toLowerCase()
+    || (option.value === 'llame' && text.includes('llam'))
+    || (option.value === 'visite' && text.includes('visit'))
+    || (option.value === 'whatsapp' && text.includes('whatsapp'))
+    || (option.value === 'tome_muestra' && text.includes('muestr'))
+    || (option.value === 'negocie' && (text.includes('reuni') || text.includes('negoci')))
+  )) || null;
+}
 
 function getCurrentUserName() {
   try {
@@ -37,6 +55,11 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
   const [proximaAccion, setProximaAccion] = useState('');
   const [fechaProxima, setFechaProxima] = useState('');
   const [saving, setSaving] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [nextActionMenuOpen, setNextActionMenuOpen] = useState(false);
+
+  const selectedAction = TIPO_OPTIONS.find((option) => option.value === tipoGestion) || TIPO_OPTIONS[0];
+  const selectedNextAction = getActionOption(proximaAccion);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -44,8 +67,8 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
       addToast({ title: 'Falta resumen', message: 'Escribe brevemente qué pasó.', type: 'warning' });
       return;
     }
-    if (hayProxima && !fechaProxima) {
-      addToast({ title: 'Falta fecha', message: 'Indica cuándo es la próxima acción.', type: 'warning' });
+    if (hayProxima && (!proximaAccion || !fechaProxima)) {
+      addToast({ title: 'Falta próximo paso', message: 'Selecciona la próxima acción y su fecha.', type: 'warning' });
       return;
     }
 
@@ -124,35 +147,49 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
           <div className="mx-modal-body" style={{ display: 'grid', gap: '18px' }}>
 
             <section className="mx-form-group">
-              <label className="mx-label">¿Qué hiciste?</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 8 }}>
-                {TIPO_OPTIONS.map((opt) => {
-                  const Icon = opt.icon;
-                  const active = tipoGestion === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setTipoGestion(opt.value)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
-                        borderRadius: 12, minHeight: 44, fontWeight: 700, fontSize: '0.88rem',
-                        border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        background: active ? 'rgba(10, 92, 255, 0.08)' : 'white',
-                        color: active ? 'var(--color-primary)' : 'var(--color-text)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Icon size={14} /> {opt.label}
-                    </button>
-                  );
-                })}
+              <label className="mx-label">Acción realizada</label>
+              <div className="quick-capture-action-picker" style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className={`quick-capture-action-select${actionMenuOpen ? ' is-open' : ''}`}
+                  onClick={() => setActionMenuOpen((open) => !open)}
+                  aria-haspopup="listbox"
+                  aria-expanded={actionMenuOpen}
+                >
+                  <selectedAction.icon size={18} />
+                  <span>{selectedAction.label}</span>
+                  <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                </button>
+                {actionMenuOpen && (
+                  <div className="quick-capture-action-menu" role="listbox" aria-label="Acción realizada">
+                    {TIPO_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const active = tipoGestion === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          className={active ? 'is-active' : ''}
+                          onClick={() => {
+                            setTipoGestion(option.value);
+                            setActionMenuOpen(false);
+                          }}
+                        >
+                          <Icon size={16} />
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </section>
 
             <section className="mx-form-group">
               <label className="mx-label">
-                ¿Qué pasó? <span style={{ color: 'var(--color-danger)' }}>*</span>
+                Resumen de la gestión <span style={{ color: 'var(--color-danger)' }}>*</span>
               </label>
               <input
                 className="mx-input"
@@ -198,12 +235,43 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 10, marginTop: 12 }}>
                   <div className="mx-form-group">
                     <label className="mx-label">Próxima acción</label>
-                    <input
-                      className="mx-input"
-                      value={proximaAccion}
-                      onChange={(e) => setProximaAccion(e.target.value)}
-                      placeholder="Ej: Llamar para confirmar"
-                    />
+                    <div className="quick-capture-action-picker">
+                      <button
+                        type="button"
+                        className={`quick-capture-action-select${nextActionMenuOpen ? ' is-open' : ''}`}
+                        onClick={() => setNextActionMenuOpen((open) => !open)}
+                        aria-haspopup="listbox"
+                        aria-expanded={nextActionMenuOpen}
+                      >
+                        {selectedNextAction ? <selectedNextAction.icon size={18} /> : <Target size={18} />}
+                        <span>{selectedNextAction?.label || 'Selecciona el próximo paso'}</span>
+                        <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                      </button>
+                      {nextActionMenuOpen && (
+                        <div className="quick-capture-action-menu" role="listbox" aria-label="Próxima acción">
+                          {TIPO_OPTIONS.map((option) => {
+                            const Icon = option.icon;
+                            const active = selectedNextAction?.value === option.value;
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="option"
+                                aria-selected={active}
+                                className={active ? 'is-active' : ''}
+                                onClick={() => {
+                                  setProximaAccion(option.label);
+                                  setNextActionMenuOpen(false);
+                                }}
+                              >
+                                <Icon size={16} />
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="mx-form-group">
                     <label className="mx-label">Fecha</label>
