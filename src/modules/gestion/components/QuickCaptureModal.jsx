@@ -209,6 +209,7 @@ export default function QuickCaptureModal() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loadingProviders, setLoadingProviders] = useState(false);
+  const [creatingContact, setCreatingContact] = useState(false);
   const [saving, setSaving] = useState(false);
   const [providers, setProviders] = useState([]);
   const [search, setSearch] = useState('');
@@ -319,6 +320,36 @@ export default function QuickCaptureModal() {
     setSelected(provider);
     setSearch(provider.proveedorNombre || provider.contactoNombre || '');
     setSuggestionApplied(false);
+  }
+
+  async function handleCreateContact() {
+    const contactoNombre = search.trim();
+    if (!contactoNombre) return;
+
+    setCreatingContact(true);
+    try {
+      const response = await apiClient.post('/contactos', { contactoNombre });
+      const contacto = response?.item || response;
+      const created = {
+        id: `contacto-${contacto._id || contacto.id}`,
+        contactoId: contacto._id || contacto.id || '',
+        proveedorKey: '',
+        proveedorNombre: '',
+        contactoNombre: contacto.contactoNombre || contactoNombre,
+        contactoTelefono: '',
+        contactoEmail: '',
+        contactosSearchText: contacto.contactoNombre || contactoNombre,
+        comuna: '',
+        centros: 0,
+      };
+      setProviders((prev) => [created, ...prev]);
+      handleSelectProvider(created);
+      addToast({ title: 'Contacto creado', message: `${created.contactoNombre} quedó guardado en Directorio sin empresa ni teléfono.`, type: 'success' });
+    } catch (error) {
+      addToast({ title: 'No se pudo crear', message: error?.message || 'Intenta nuevamente.', type: 'error' });
+    } finally {
+      setCreatingContact(false);
+    }
   }
 
   useEffect(() => {
@@ -556,7 +587,14 @@ export default function QuickCaptureModal() {
                     ) : !search.trim() ? (
                       <div className="gs-empty-inline">Escribe para buscar por proveedor o por contacto.</div>
                     ) : filteredProviders.length === 0 ? (
-                      <div className="gs-empty-inline">No encontramos coincidencias en el directorio.</div>
+                      <div className="quick-capture-create-contact">
+                        <span>No encontramos coincidencias en el directorio.</span>
+                        <strong>¿Quieres crear el contacto “{search.trim()}”?</strong>
+                        <small>Se guardará por ahora sin empresa ni teléfono.</small>
+                        <button type="button" className="mx-btn mx-btn-outline" onClick={handleCreateContact} disabled={creatingContact}>
+                          <UserPlus size={16} /> {creatingContact ? 'Creando contacto...' : 'Crear contacto'}
+                        </button>
+                      </div>
                     ) : (
                       filteredProviders.map((item) => (
                         <button
