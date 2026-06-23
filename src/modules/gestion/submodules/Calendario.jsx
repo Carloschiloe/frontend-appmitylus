@@ -265,6 +265,81 @@ function AgendaType({ kind }) {
   return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || 'Otro'}</span>;
 }
 
+function ListPeriodPicker({ listPeriod, label, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutside = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    return () => document.removeEventListener('mousedown', closeOnOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="agenda-list-period-picker">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        <CalendarRange size={15} />
+        <span>{label}</span>
+        <ChevronDown size={15} />
+      </button>
+      {open && (
+        <div className="agenda-list-filter-menu agenda-list-period-menu">
+          <button type="button" className={listPeriod === 'month' ? 'is-active' : ''} onClick={() => { onSelect('month'); setOpen(false); }}>
+            Mes completo
+          </button>
+          <button type="button" className={listPeriod === 'week' ? 'is-active' : ''} onClick={() => { onSelect('week'); setOpen(false); }}>
+            Semana actual
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ListFiltersPicker({ activeCount, typeFilter, onTypeChange, responsibleFilter, onResponsibleChange, responsibles, onClear }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutside = (event) => {
+      if (!ref.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    return () => document.removeEventListener('mousedown', closeOnOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="agenda-list-filters-picker">
+      <button type="button" className={`agenda-list-filters-trigger${activeCount ? ' is-active' : ''}`} onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        <Filter size={15} /> Filtros{activeCount ? ` (${activeCount})` : ''}
+      </button>
+      {open && (
+        <div className="agenda-list-filter-menu agenda-list-filters-menu">
+          <label>
+            Tipo de contacto
+            <select value={typeFilter} onChange={(event) => onTypeChange(event.target.value)}>
+              <option value="all">Todos los tipos</option>
+              {Array.from(FILTERABLE_TYPES).map((type) => <option key={type} value={type}>{TYPE_LABELS[type]}</option>)}
+            </select>
+          </label>
+          <label>
+            Responsable
+            <select value={responsibleFilter} onChange={(event) => onResponsibleChange(event.target.value)}>
+              <option value="all">Todos los responsables</option>
+              {responsibles.map((responsible) => <option key={responsible} value={responsible}>{responsible}</option>)}
+            </select>
+          </label>
+          {activeCount > 0 && <button type="button" className="agenda-list-filter-clear" onClick={() => { onClear(); setOpen(false); }}>Limpiar filtros</button>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function useFloatingMenu() {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({});
@@ -676,8 +751,6 @@ export default function Calendario() {
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
-  const hasActiveFilters = statusFilter !== 'todos' || search !== '' || range !== 'month' || listPeriod !== 'month' || typeFilter !== 'all' || responsibleFilter !== 'all';
-
   function clearFilters() {
     setStatusFilter('todos');
     setSearch('');
@@ -891,34 +964,27 @@ export default function Calendario() {
           {viewMode === 'list' && (
             <div className="agenda-filter-row">
               <div className="agenda-month-nav agenda-list-period-nav">
-                <label className="agenda-list-period-select">
-                  <CalendarRange size={15} />
-                  <select value={listPeriod} onChange={(e) => setListPeriod(e.target.value)} aria-label="Periodo de lista">
-                    <option value="month">Mes</option>
-                    <option value="week">Semana</option>
-                  </select>
-                </label>
                 <button type="button" onClick={() => changeListPeriod(-1)}><ChevronLeft size={16} /></button>
-                <strong>{listPeriod === 'week' ? weekPeriodLabel : periodLabel}</strong>
+                <ListPeriodPicker
+                  listPeriod={listPeriod}
+                  label={listPeriod === 'week' ? `Semana ${weekPeriodLabel}` : `Mes ${periodLabel}`}
+                  onSelect={setListPeriod}
+                />
                 <button type="button" onClick={() => changeListPeriod(1)}><ChevronRight size={16} /></button>
               </div>
               <div className="cal-search-box">
                 <Search size={17} />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, acción o responsable..." />
               </div>
-              <label className="cal-filter-select">
-                <Filter size={15} />
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                  <option value="all">Todos los tipos</option>
-                  {availableTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
-              </label>
-              {ResponsableSelect}
-              {hasActiveFilters && (
-                <button type="button" className="agenda-clear-btn" onClick={clearFilters}>
-                  <Filter size={13} /> Limpiar
-                </button>
-              )}
+              <ListFiltersPicker
+                activeCount={(typeFilter !== 'all' ? 1 : 0) + (responsibleFilter !== 'all' ? 1 : 0)}
+                typeFilter={typeFilter}
+                onTypeChange={setTypeFilter}
+                responsibleFilter={responsibleFilter}
+                onResponsibleChange={setResponsibleFilter}
+                responsibles={availableResponsibles}
+                onClear={clearFilters}
+              />
             </div>
           )}
         </div>
@@ -942,7 +1008,7 @@ export default function Calendario() {
               className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
               onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
             >
-              <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Volver a agenda' : 'Mostrar gestiones'}
+              <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Ocultar gestiones' : 'Mostrar gestiones'}
             </button>
           </div>
         )}
