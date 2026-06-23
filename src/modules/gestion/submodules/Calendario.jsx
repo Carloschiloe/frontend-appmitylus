@@ -625,7 +625,9 @@ export default function Calendario() {
   }, [month, year]);
 
   const eventsByDay = useMemo(() => {
-    const pool = showRealizados ? [...agendaItems, ...realizadoItems] : agendaItems;
+    const pool = showRealizados
+      ? [...agendaItems.filter((item) => item.status === 'overdue'), ...realizadoItems]
+      : agendaItems;
     const source = responsibleFilter === 'all'
       ? pool
       : pool.filter((item) => normalizeAccents(item.responsible) === normalizeAccents(responsibleFilter));
@@ -844,13 +846,6 @@ export default function Calendario() {
                 </select>
               </label>
               {ResponsableSelect}
-              <button
-                type="button"
-                className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
-                onClick={() => setShowRealizados((v) => !v)}
-              >
-                <ClipboardCheck size={15} /> Mostrar gestiones
-              </button>
               {hasActiveFilters && (
                 <button type="button" className="agenda-clear-btn" onClick={clearFilters}>
                   <Filter size={13} /> Limpiar
@@ -862,16 +857,25 @@ export default function Calendario() {
 
         {viewMode === 'list' && (
           <div className="agenda-status-chips">
-            {STATUS_OPTIONS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                className={`agenda-chip agenda-chip-${id}${statusFilter === id ? ' is-active' : ''}`}
-                onClick={() => setStatusFilter(id)}
-              >
-                {label} <strong>{chipCounts[id]}</strong>
-              </button>
-            ))}
+            <div className="agenda-status-chips-group">
+              {STATUS_OPTIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`agenda-chip agenda-chip-${id}${statusFilter === id ? ' is-active' : ''}`}
+                  onClick={() => setStatusFilter((prev) => (prev === id ? 'todos' : id))}
+                >
+                  {label} <strong>{chipCounts[id]}</strong>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
+              onClick={() => setShowRealizados((v) => !v)}
+            >
+              <ClipboardCheck size={15} /> Mostrar gestiones
+            </button>
           </div>
         )}
 
