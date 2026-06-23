@@ -103,7 +103,7 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
         } else if (item.source === 'interaccion' && item.sourceId) {
           await apiClient.put(`/interacciones/${item.sourceId}`, {
             fechaProximo: null,
-            proximoPaso: hayProxima ? proximaAccion : '',
+            proximoPaso: '',
             tipo: item.kind || 'interaccion',
             fecha: item.date ? new Date(item.date).toISOString() : new Date().toISOString(),
             responsablePG: responsable,
@@ -111,7 +111,7 @@ export default function CompletarTareaModal({ item, onClose, onSaved }) {
         } else if (item.source === 'visita' && item.sourceId) {
           await apiClient.patch(`/visitas/${item.sourceId}`, {
             proximoPasoFecha: null,
-            proximoPaso: hayProxima ? proximaAccion : '',
+            proximoPaso: '',
           });
         }
       } catch {
