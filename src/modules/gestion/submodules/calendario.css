@@ -56,6 +56,12 @@
   background: #f8fbff;
 }
 
+.agenda-kpis button.is-active {
+  border-color: #0a5cff;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(10, 92, 255, 0.12);
+}
+
 .agenda-kpis svg {
   width: 30px;
   height: 30px;

@@ -742,6 +742,23 @@ export default function Calendario() {
     ? `Gestiones realizadas en ${MONTHS[month]} ${year}.`
     : 'Compromisos programados, vencidos y pendientes de gestión.';
 
+  function isKpiActive(filter, rangeValue) {
+    if (viewMode !== 'list' || statusFilter !== filter) return false;
+    if (rangeValue !== undefined && range !== rangeValue) return false;
+    return true;
+  }
+
+  function toggleKpi(filter, rangeValue) {
+    if (isKpiActive(filter, rangeValue)) {
+      setStatusFilter('todos');
+      setRange('month');
+      return;
+    }
+    setViewMode('list');
+    setStatusFilter(filter);
+    if (rangeValue !== undefined) setRange(rangeValue);
+  }
+
   return (
     <div className="calendario-main-wrapper agenda-modern">
       <div className="calendario-header-bar">
@@ -752,22 +769,22 @@ export default function Calendario() {
       </div>
 
       <div className="agenda-kpis">
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pendiente'); setRange('today'); }}>
+        <button type="button" className={isKpiActive('pendiente', 'today') ? 'is-active' : ''} onClick={() => toggleKpi('pendiente', 'today')}>
           <Target size={16} /><span>Hoy</span><strong>{kpis.today}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pendiente'); setRange('month'); }}>
+        <button type="button" className={isKpiActive('pendiente', 'month') ? 'is-active' : ''} onClick={() => toggleKpi('pendiente', 'month')}>
           <Clock size={16} /><span>Pendientes</span><strong>{kpis.pendiente}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('vencido'); setRange('all'); }}>
+        <button type="button" className={isKpiActive('vencido', 'all') ? 'is-active' : ''} onClick={() => toggleKpi('vencido', 'all')}>
           <AlertTriangle size={16} /><span>Vencidos</span><strong>{kpis.overdue}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('realizado'); }}>
+        <button type="button" className={isKpiActive('realizado') ? 'is-active' : ''} onClick={() => toggleKpi('realizado')}>
           <ClipboardCheck size={16} /><span>Gestiones</span><strong>{kpis.realizado}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('todos'); setRange('7d'); }}>
+        <button type="button" className={isKpiActive('todos', '7d') ? 'is-active' : ''} onClick={() => toggleKpi('todos', '7d')}>
           <CalendarClock size={16} /><span>Próx. 7 días</span><strong>{kpis.next7}</strong>
         </button>
-        <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('pausado'); setRange('all'); }}>
+        <button type="button" className={isKpiActive('pausado', 'all') ? 'is-active' : ''} onClick={() => toggleKpi('pausado', 'all')}>
           <PauseCircle size={16} /><span>Pausados</span><strong>{kpis.paused}</strong>
         </button>
       </div>
