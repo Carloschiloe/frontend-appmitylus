@@ -564,7 +564,7 @@ export default function Calendario() {
         if (range === 'month' && (item.date.getTime() < monthStart || item.date.getTime() > monthEnd)) return false;
         return matchesRange(item, range, today);
       });
-      const realizadoPool = realizadoItems.filter(applyFilters);
+      const realizadoPool = showRealizados ? realizadoItems.filter(applyFilters) : [];
       const seen = new Set();
       return [...pendingPool, ...realizadoPool].filter((item) => {
         if (seen.has(item.id)) return false;
@@ -580,7 +580,7 @@ export default function Calendario() {
       if (statusFilter === 'pausado') return item.status === 'paused';
       return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaItems, realizadoItems, month, range, search, statusFilter, today, typeFilter, responsibleFilter, year]);
+  }, [agendaItems, realizadoItems, month, range, search, showRealizados, statusFilter, today, typeFilter, responsibleFilter, year]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -654,7 +654,7 @@ export default function Calendario() {
   ) : null;
 
   const chipCounts = {
-    todos: kpis.total,
+    todos: showRealizados ? kpis.total : agendaItems.length,
     vencido: kpis.overdue,
     realizado: kpis.realizado,
     pendiente: kpis.pendiente,
@@ -836,6 +836,13 @@ export default function Calendario() {
                 </select>
               </label>
               {ResponsableSelect}
+              <button
+                type="button"
+                className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
+                onClick={() => setShowRealizados((v) => !v)}
+              >
+                <ClipboardCheck size={15} /> Mostrar gestiones
+              </button>
               {hasActiveFilters && (
                 <button type="button" className="agenda-clear-btn" onClick={clearFilters}>
                   <Filter size={13} /> Limpiar

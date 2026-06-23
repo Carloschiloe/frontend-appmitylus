@@ -170,7 +170,7 @@
 
 .agenda-filter-row {
   display: grid;
-  grid-template-columns: 190px minmax(140px, 1fr) 168px 210px auto;
+  grid-template-columns: 190px minmax(140px, 1fr) 168px 210px auto auto;
   align-items: center;
   gap: 10px;
   min-width: 0;
