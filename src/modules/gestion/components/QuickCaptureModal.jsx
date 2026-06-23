@@ -216,6 +216,7 @@ export default function QuickCaptureModal() {
   const [providerContext, setProviderContext] = useState(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [suggestionApplied, setSuggestionApplied] = useState(false);
+  const [nextActionMenuOpen, setNextActionMenuOpen] = useState(false);
   const [form, setForm] = useState(initialState);
   const [savedInfo, setSavedInfo] = useState(null);
   const searchInputRef = useRef(null);
@@ -302,6 +303,7 @@ export default function QuickCaptureModal() {
     setSelected(null);
     setProviderContext(null);
     setSuggestionApplied(false);
+    setNextActionMenuOpen(false);
     setForm(initialState());
     setSavedInfo(null);
   }
@@ -388,6 +390,10 @@ export default function QuickCaptureModal() {
     event.preventDefault();
     if (!selected?.id) {
       addToast({ title: 'Falta proveedor', message: 'Selecciona un proveedor antes de guardar.', type: 'warning' });
+      return;
+    }
+    if (['seguir', 'pausar'].includes(form.resultadoSeguimiento) && !form.proximaAccion) {
+      addToast({ title: 'Falta próxima acción', message: 'Selecciona el paso que se debe agendar.', type: 'warning' });
       return;
     }
 
@@ -755,20 +761,42 @@ export default function QuickCaptureModal() {
                     )}
                     <div className="mx-form-group">
                       <label className="mx-label">Próxima acción</label>
-                      <div className="quick-capture-action-select">
-                        {selectedNextAction ? <selectedNextAction.icon size={18} /> : <Target size={18} />}
-                        <select
-                          className="mx-select"
-                          value={form.proximaAccion}
-                          onChange={(e) => setForm((prev) => ({ ...prev, proximaAccion: e.target.value }))}
-                          required
+                      <div className="quick-capture-action-picker">
+                        <button
+                          type="button"
+                          className={`quick-capture-action-select${nextActionMenuOpen ? ' is-open' : ''}`}
+                          onClick={() => setNextActionMenuOpen((open) => !open)}
+                          aria-haspopup="listbox"
+                          aria-expanded={nextActionMenuOpen}
                         >
-                          <option value="" disabled>Selecciona el próximo paso</option>
-                          {ACTION_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.label}>{option.label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                          {selectedNextAction ? <selectedNextAction.icon size={18} /> : <Target size={18} />}
+                          <span>{selectedNextAction?.label || 'Selecciona el próximo paso'}</span>
+                          <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                        </button>
+                        {nextActionMenuOpen && (
+                          <div className="quick-capture-action-menu" role="listbox" aria-label="Próxima acción">
+                            {ACTION_OPTIONS.map((option) => {
+                              const Icon = option.icon;
+                              const active = form.proximaAccion === option.label;
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={active}
+                                  className={active ? 'is-active' : ''}
+                                  onClick={() => {
+                                    setForm((prev) => ({ ...prev, proximaAccion: option.label }));
+                                    setNextActionMenuOpen(false);
+                                  }}
+                                >
+                                  <Icon size={16} />
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <span className="quick-capture-field-help">Define qué se agendará para este proveedor.</span>
                     </div>

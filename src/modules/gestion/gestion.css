@@ -63,36 +63,43 @@
   grid-column: 1 / -1;
 }
 
+.quick-capture-action-picker {
+  position: relative;
+}
+
 .quick-capture-action-select {
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   min-height: 46px;
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: #fff;
   color: var(--color-primary);
+  text-align: left;
+  font: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
 }
 
-.quick-capture-action-select:focus-within {
+.quick-capture-action-select:hover,
+.quick-capture-action-select.is-open {
+  border-color: var(--color-primary);
+}
+
+.quick-capture-action-select:focus-visible {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-ring, rgba(10, 92, 255, 0.15));
 }
 
-.quick-capture-action-select .mx-select {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 26px 0 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
+.quick-capture-action-select span {
+  min-width: 0;
+  flex: 1;
   color: var(--color-text);
   font-weight: 650;
-  appearance: none;
-  cursor: pointer;
 }
 
 .quick-capture-action-select__chevron {
@@ -100,6 +107,44 @@
   right: 11px;
   pointer-events: none;
   color: var(--color-text-subtle);
+}
+
+.quick-capture-action-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+
+.quick-capture-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-capture-action-menu button:hover,
+.quick-capture-action-menu button.is-active {
+  background: rgba(10, 92, 255, 0.09);
+  color: var(--color-primary);
 }
 
 .quick-capture-field-help {
