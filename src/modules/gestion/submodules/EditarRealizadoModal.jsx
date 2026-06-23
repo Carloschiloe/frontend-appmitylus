@@ -136,7 +136,7 @@ export default function EditarRealizadoModal({ item, onClose, onSaved }) {
 
               <section className="mx-form-group">
                 <label className="mx-label">
-                  ¿Qué pasó? <span style={{ color: 'var(--color-danger)' }}>*</span>
+                  Resumen de la gestión <span style={{ color: 'var(--color-danger)' }}>*</span>
                 </label>
                 <textarea
                   className="mx-input"
