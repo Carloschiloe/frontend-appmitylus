@@ -35,7 +35,7 @@ import ReprogramModal from './ReprogramModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
-import { useCalendarioAgenda, useInteracciones, useMuestreos } from '../hooks/useGestionQueries';
+import { useCalendarioAgenda, useInteracciones } from '../hooks/useGestionQueries';
 import './calendario.css';
 
 const DOW = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
@@ -60,7 +60,7 @@ const STATUS_OPTIONS = [
 ];
 
 const TYPE_LABELS = {
-  muestreo: 'Muestreo',
+  muestreo: 'Tomar muestras',
   visita: 'Visita a centro',
   llamada: 'Llamada',
   whatsapp: 'WhatsApp',
@@ -190,7 +190,9 @@ function compareCalendarItems(a, b) {
 function buildCalendarEvent(item) {
   const date = getRawEventDate(item);
   if (!date) return null;
-  const kind = normalizeKind(item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
+  // En Agenda importa el compromiso que se debe realizar, no el contacto
+  // anterior desde el cual se originó. Ej.: llamada → Tomar muestras.
+  const kind = normalizeKind(item.proximoPaso || item.proximaAccion || item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
   const rawStatus = String(item.estado || item.status || item.seguimientoEstado || '').toLowerCase();
 
   return {
@@ -241,40 +243,8 @@ function buildRealizadoItems(payload) {
         canDelete: true,
       };
     })
-    .filter(Boolean)
+    .filter((item) => item && item.kind !== 'muestreo')
     .sort((a, b) => b.date.getTime() - a.date.getTime());
-}
-
-function buildMuestreoItems(payload) {
-  return toList(payload)
-    .map((item) => {
-      const date = parseLocalDate(item.fecha);
-      if (!date) return null;
-      const center = item.centroCodigo ? ` · ${item.centroCodigo}` : '';
-      return {
-        id: `muestreo-${item._id || item.id}`,
-        source: 'muestreo',
-        sourceId: item._id || item.id,
-        kind: 'muestreo',
-        date,
-        time: '',
-        provider: item.proveedorNombre || item.proveedor || 'Sin proveedor',
-        proveedorKey: item.proveedorKey || '',
-        contactoNombre: '',
-        telefono: '',
-        email: '',
-        centroCodigo: item.centroCodigo || '',
-        title: `Muestreo técnico${center}`,
-        description: item.observaciones || item.comentarios || `Muestreo técnico${center}`,
-        nextStep: '',
-        nextStepDate: null,
-        responsible: item.responsablePG || item.responsable || '-',
-        status: 'realizado',
-        canReprogram: false,
-        canDelete: false,
-      };
-    })
-    .filter(Boolean);
 }
 
 function withDerivedStatus(item, today) {
@@ -456,7 +426,6 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
   const { open, pos, btnRef, menuRef, toggle, close } = useFloatingMenu();
   const actionCount = 3 + (item.canReprogram ? 1 : 0) + (item.canDelete ? 1 : 0);
   const providerHistoryKey = item.proveedorKey || item.provider || item.contactoNombre;
-  const isMuestreo = item.source === 'muestreo';
 
   const handleViewHistory = () => {
     close();
@@ -466,7 +435,7 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       <InfoPopover item={item} />
-      {item.status === 'realizado' && !isMuestreo && (
+      {item.status === 'realizado' && (
         <button type="button" className="mx-action-btn" onClick={() => onEdit(item)} title="Ver / Editar gestión">
           <Pencil size={14} />
         </button>
@@ -487,13 +456,9 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
               <CheckCircle2 size={14} /> Marcar como hecho
             </button>
           )}
-          {item.status === 'realizado' && !isMuestreo ? (
+          {item.status === 'realizado' ? (
             <button type="button" className="agenda-option-item" onClick={() => { close(); onEdit(item); }}>
               <Pencil size={14} /> Ver / Editar gestión
-            </button>
-          ) : item.status === 'realizado' ? (
-            <button type="button" className="agenda-option-item" onClick={() => { close(); navigate('/biomasa/muestreos'); }}>
-              <Eye size={14} /> Ver muestreo
             </button>
           ) : (
             <button type="button" className="agenda-option-item" onClick={() => { close(); onViewCalendar(item); }}>
@@ -631,7 +596,6 @@ export default function Calendario() {
     queryClient.invalidateQueries({ queryKey: ['calendario-agenda'] });
     queryClient.invalidateQueries({ queryKey: ['oportunidades'] });
     queryClient.invalidateQueries({ queryKey: ['interacciones'] });
-    queryClient.invalidateQueries({ queryKey: ['muestreos'] });
   }, [queryClient]);
 
   useEffect(() => {
@@ -652,34 +616,20 @@ export default function Calendario() {
   const { data: realizadosRes, isLoading: loadingRealizados } = useInteracciones(
     { from: realizadoFrom, to: realizadoTo, limit: 200 },
   );
-  const { data: muestreosRes, isLoading: loadingMuestreos } = useMuestreos(
-    { from: realizadoFrom, to: realizadoTo, limit: 200 },
-  );
 
   const listWeekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
   const listWeekEnd = useMemo(() => endOfDay(addDays(listWeekStart, 6)), [listWeekStart]);
   const { data: weeklyRealizadosRes, isLoading: loadingWeeklyRealizados } = useInteracciones(
     { from: listWeekStart.toISOString(), to: listWeekEnd.toISOString(), limit: 200 },
   );
-  const { data: weeklyMuestreosRes, isLoading: loadingWeeklyMuestreos } = useMuestreos(
-    { from: listWeekStart.toISOString(), to: listWeekEnd.toISOString(), limit: 200 },
-  );
 
-  const realizadoItems = useMemo(() => (
-    [...buildRealizadoItems(realizadosRes), ...buildMuestreoItems(muestreosRes)]
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-  ), [realizadosRes, muestreosRes]);
-  const weeklyRealizadoItems = useMemo(() => (
-    [...buildRealizadoItems(weeklyRealizadosRes), ...buildMuestreoItems(weeklyMuestreosRes)]
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-  ), [weeklyRealizadosRes, weeklyMuestreosRes]);
+  const realizadoItems = useMemo(() => buildRealizadoItems(realizadosRes), [realizadosRes]);
+  const weeklyRealizadoItems = useMemo(() => buildRealizadoItems(weeklyRealizadosRes), [weeklyRealizadosRes]);
   const listRealizadoItems = listPeriod === 'week' ? weeklyRealizadoItems : realizadoItems;
 
   const loading = loadingAgenda || (
-    (statusFilter === 'realizado' && (viewMode === 'list' && listPeriod === 'week'
-      ? (loadingWeeklyRealizados || loadingWeeklyMuestreos)
-      : (loadingRealizados || loadingMuestreos)))
-    || (viewMode !== 'list' && showRealizados && (loadingRealizados || loadingMuestreos))
+    (statusFilter === 'realizado' && (viewMode === 'list' && listPeriod === 'week' ? loadingWeeklyRealizados : loadingRealizados))
+    || (viewMode !== 'list' && showRealizados && loadingRealizados)
   );
   const today = useMemo(() => startOfDay(new Date()), []);
 
