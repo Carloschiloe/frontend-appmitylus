@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   CalendarClock,
@@ -14,6 +15,7 @@ import {
   Eye,
   Filter,
   Info,
+  History,
   ListChecks,
   Mail,
   MoreHorizontal,
@@ -418,8 +420,15 @@ function InfoPopover({ item }) {
 }
 
 function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, onComplete }) {
+  const navigate = useNavigate();
   const { open, pos, btnRef, menuRef, toggle, close } = useFloatingMenu();
-  const actionCount = 2 + (item.canReprogram ? 1 : 0) + (item.canDelete ? 1 : 0);
+  const actionCount = 3 + (item.canReprogram ? 1 : 0) + (item.canDelete ? 1 : 0);
+  const providerHistoryKey = item.proveedorKey || item.provider || item.contactoNombre;
+
+  const handleViewHistory = () => {
+    close();
+    navigate(`/historial?proveedor=${encodeURIComponent(providerHistoryKey)}`);
+  };
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -454,6 +463,9 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
               <Eye size={14} /> Ver en calendario
             </button>
           )}
+          <button type="button" className="agenda-option-item" onClick={handleViewHistory}>
+            <History size={14} /> Ver historial
+          </button>
           {(item.canReprogram || item.canDelete) && <div className="agenda-option-sep" />}
           {item.canReprogram && (
             <button type="button" className="agenda-option-item" onClick={() => { close(); onReprogram(item); }}>
