@@ -169,11 +169,30 @@
 }
 
 .agenda-filter-row {
-  display: grid;
-  grid-template-columns: 190px minmax(140px, 1fr) 168px 210px auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.agenda-filter-row > .agenda-month-nav {
+  flex: 0 0 190px;
+}
+
+.agenda-filter-row > .cal-search-box {
+  flex: 1 1 140px;
+  min-width: 140px;
+}
+
+.agenda-filter-row > .cal-filter-select {
+  flex: 0 0 auto;
+  min-width: 168px;
+}
+
+.agenda-filter-row > .agenda-toggle-realizados,
+.agenda-filter-row > .agenda-clear-btn {
+  flex: 0 0 auto;
 }
 
 .agenda-status-chips {
@@ -1044,10 +1063,6 @@
   .cal-toolbar,
   .agenda-calendar-layout {
     grid-template-columns: 1fr;
-  }
-
-  .agenda-filter-row {
-    grid-template-columns: 1fr 1fr;
   }
 
   .cal-view-switch {

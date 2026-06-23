@@ -568,6 +568,7 @@ export default function Calendario() {
     if (statusFilter === 'todos') {
       const pendingPool = agendaItems.filter((item) => {
         if (!applyFilters(item)) return false;
+        if (showRealizados && item.status !== 'overdue') return false;
         if (range === 'month' && (item.date.getTime() < monthStart || item.date.getTime() > monthEnd)) return false;
         return matchesRange(item, range, today);
       });
@@ -661,7 +662,7 @@ export default function Calendario() {
   ) : null;
 
   const chipCounts = {
-    todos: showRealizados ? kpis.total : agendaItems.length,
+    todos: showRealizados ? (kpis.overdue + kpis.realizado) : agendaItems.length,
     vencido: kpis.overdue,
     realizado: kpis.realizado,
     pendiente: kpis.pendiente,
