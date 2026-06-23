@@ -44,14 +44,14 @@ const MONTHS = [
 const VIEW_OPTIONS = [
   { id: 'list', label: 'Lista operativa', icon: ListChecks },
   { id: 'week', label: 'Semana', icon: CalendarRange },
-  { id: 'calendar', label: 'Calendario', icon: CalendarDays },
+  { id: 'calendar', label: 'Mes', icon: CalendarDays },
 ];
 
 // Order: vencidos, realizados, pendiente, pausados (as specified)
 const STATUS_OPTIONS = [
   { id: 'todos', label: 'Todos los estados' },
   { id: 'vencido', label: 'Vencido' },
-  { id: 'realizado', label: 'Realizado' },
+  { id: 'realizado', label: 'Gestión' },
   { id: 'pendiente', label: 'Pendiente' },
   { id: 'pausado', label: 'Pausado' },
 ];
@@ -72,7 +72,7 @@ const STATUS_LABELS = {
   active: 'Pendiente',
   overdue: 'Vencido',
   paused: 'Pausado',
-  realizado: 'Realizado',
+  realizado: 'Gestión',
 };
 
 
@@ -752,7 +752,7 @@ export default function Calendario() {
           <AlertTriangle size={16} /><span>Vencidos</span><strong>{kpis.overdue}</strong>
         </button>
         <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('realizado'); }}>
-          <ClipboardCheck size={16} /><span>Realizados</span><strong>{kpis.realizado}</strong>
+          <ClipboardCheck size={16} /><span>Gestiones</span><strong>{kpis.realizado}</strong>
         </button>
         <button type="button" onClick={() => { setViewMode('list'); setStatusFilter('todos'); setRange('7d'); }}>
           <CalendarClock size={16} /><span>Próx. 7 días</span><strong>{kpis.next7}</strong>
@@ -794,7 +794,7 @@ export default function Calendario() {
                 className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
                 onClick={() => setShowRealizados((v) => !v)}
               >
-                <ClipboardCheck size={15} /> Mostrar realizados
+                <ClipboardCheck size={15} /> Mostrar gestiones
               </button>
             </div>
           )}
@@ -812,7 +812,7 @@ export default function Calendario() {
                 className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
                 onClick={() => setShowRealizados((v) => !v)}
               >
-                <ClipboardCheck size={15} /> Mostrar realizados
+                <ClipboardCheck size={15} /> Mostrar gestiones
               </button>
             </div>
           )}
