@@ -374,10 +374,10 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
             {completedView ? (
               <>
                 <th>Tipo de contacto</th>
-                <th>Fecha realizada</th>
+                <th>Fecha gestión</th>
+                <th>Notas / resumen</th>
                 <th>Próximo paso</th>
                 <th>Fecha próximo paso</th>
-                <th>Notas / resumen</th>
               </>
             ) : (
               <>
@@ -402,8 +402,6 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                 <>
                   <td><AgendaType kind={item.kind} /></td>
                   <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-                  <td>{item.nextStep || '—'}</td>
-                  <td className="agenda-cell-date">{formatShortDate(item.nextStepDate)}</td>
                   <td>
                     <div className="agenda-action-cell">
                       <span className="agenda-action-title">{item.title}</span>
@@ -412,6 +410,8 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                         : null}
                     </div>
                   </td>
+                  <td>{item.nextStep || '—'}</td>
+                  <td className="agenda-cell-date">{formatShortDate(item.nextStepDate)}</td>
                 </>
               ) : (
                 <>
