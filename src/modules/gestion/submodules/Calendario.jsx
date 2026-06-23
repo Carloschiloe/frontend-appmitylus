@@ -918,6 +918,11 @@ export default function Calendario() {
                                   <CheckCircle2 size={13} />
                                 </button>
                               )}
+                              {item.status === 'realizado' && (
+                                <button type="button" className="cal-icon-action" onClick={() => setEditingRealizadoItem(item)} title="Ver / Editar gestión">
+                                  <Pencil size={13} />
+                                </button>
+                              )}
                               {item.canReprogram && (
                                 <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
                                   <RotateCcw size={13} />
@@ -997,6 +1002,11 @@ export default function Calendario() {
                           {item.status !== 'realizado' && (
                             <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
                               <CheckCircle2 size={14} />
+                            </button>
+                          )}
+                          {item.status === 'realizado' && (
+                            <button type="button" className="cal-icon-action" onClick={() => setEditingRealizadoItem(item)} title="Ver / Editar gestión">
+                              <Pencil size={14} />
                             </button>
                           )}
                           {item.canReprogram && (
