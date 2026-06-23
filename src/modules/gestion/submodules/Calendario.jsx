@@ -876,6 +876,13 @@ export default function Calendario() {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
+              onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
+            >
+              <ClipboardCheck size={15} /> Mostrar gestiones
+            </button>
           </div>
         )}
 
