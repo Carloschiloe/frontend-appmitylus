@@ -706,7 +706,7 @@ export default function Calendario() {
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
     const applyFilters = (item) => {
-      const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
+      const haystack = `${item.provider} ${item.contactoNombre} ${item.centroCodigo} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
       if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
       if (nextStepFilter !== 'all' && item.nextStep !== nextStepFilter) return false;
