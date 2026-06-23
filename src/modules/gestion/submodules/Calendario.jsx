@@ -371,10 +371,21 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
         <thead>
           <tr>
             <th>Proveedor</th>
-            <th>{completedView ? 'Gestión realizada' : 'Próxima acción'}</th>
-            {completedView ? <th>Tipo</th> : <th>Estado</th>}
-            <th>{completedView ? 'Fecha realizada' : 'Fecha programada'}</th>
-            <th>Responsable</th>
+            {completedView ? (
+              <>
+                <th>Tipo de contacto</th>
+                <th>Fecha realizada</th>
+                <th>Responsable</th>
+                <th>Notas / resumen</th>
+              </>
+            ) : (
+              <>
+                <th>Próxima acción</th>
+                <th>Estado</th>
+                <th>Fecha programada</th>
+                <th>Responsable</th>
+              </>
+            )}
             <th></th>
           </tr>
         </thead>
@@ -387,17 +398,32 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                   <span className="agenda-provider-contacto">{item.contactoNombre}</span>
                 )}
               </td>
-              <td>
-                <div className="agenda-action-cell">
-                  <span className="agenda-action-title">{item.title}</span>
-                  {completedView && item.description && item.description !== item.title
-                    ? <span className="agenda-action-desc">{item.description}</span>
-                    : null}
-                </div>
-              </td>
-              <td>{completedView ? <AgendaType kind={item.kind} /> : <AgendaStatus status={item.status} />}</td>
-              <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-              <td className="agenda-cell-responsible">{item.responsible}</td>
+              {completedView ? (
+                <>
+                  <td><AgendaType kind={item.kind} /></td>
+                  <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
+                  <td className="agenda-cell-responsible">{item.responsible}</td>
+                  <td>
+                    <div className="agenda-action-cell">
+                      <span className="agenda-action-title">{item.title}</span>
+                      {item.description && item.description !== item.title
+                        ? <span className="agenda-action-desc">{item.description}</span>
+                        : null}
+                    </div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td>
+                    <div className="agenda-action-cell">
+                      <span className="agenda-action-title">{item.title}</span>
+                    </div>
+                  </td>
+                  <td><AgendaStatus status={item.status} /></td>
+                  <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
+                  <td className="agenda-cell-responsible">{item.responsible}</td>
+                </>
+              )}
               <td>
                 <AgendaActions
                   item={item}
