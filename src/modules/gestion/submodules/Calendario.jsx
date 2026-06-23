@@ -316,6 +316,11 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       <InfoPopover item={item} />
+      {item.status === 'realizado' && (
+        <button type="button" className="mx-action-btn" onClick={() => onEdit(item)} title="Ver / Editar gestión">
+          <Pencil size={14} />
+        </button>
+      )}
       <button
         ref={btnRef}
         type="button"
