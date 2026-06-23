@@ -290,7 +290,7 @@
 }
 
 .sanitario-history-modal {
-  width: min(1180px, calc(100vw - 32px));
+  width: min(1180px, calc(100% - 32px));
   max-height: min(720px, calc(100vh - 48px));
   overflow: hidden;
   border-radius: 16px;
@@ -342,7 +342,7 @@
 }
 
 .sanitario-centers-modal {
-  width: min(980px, calc(100vw - 32px));
+  width: min(980px, calc(100% - 32px));
 }
 
 .sanitario-history-table th {
@@ -1358,7 +1358,7 @@
 
 /* ── Modal centros (más estrecho) ────────────────────────────── */
 .sanitario-centers-modal {
-  width: min(700px, calc(100vw - 32px));
+  width: min(700px, calc(100% - 32px));
 }
 .sanitario-centers-table td code {
   font-size: 12px;
