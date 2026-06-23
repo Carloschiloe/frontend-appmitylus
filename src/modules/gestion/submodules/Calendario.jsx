@@ -297,7 +297,7 @@ function InfoPopover({ item }) {
               {item.email && (
                 <a href={`mailto:${item.email}`} className="aip-row"><Mail size={12} /> {item.email}</a>
               )}
-              {item.centroCodigo && <div className="aip-row aip-meta">{item.centroCodigo}</div>}
+              {item.centroCodigo && <div className="aip-row aip-meta">Centro: {item.centroCodigo}</div>}
             </>
           ) : (
             <div className="aip-empty">Sin datos de contacto registrados</div>
