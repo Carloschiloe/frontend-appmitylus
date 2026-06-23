@@ -464,14 +464,11 @@ export default function Calendario() {
   );
 
   const realizadoItems = useMemo(() => {
-    const todayStart = startOfDay(new Date());
     return toList(realizadosRes)
       .map((i) => {
-        // Si tiene fechaProximo en el futuro, ya aparece como pendiente en agendaItems — no duplicar
-        if (i.fechaProximo) {
-          const proxDate = parseLocalDate(i.fechaProximo);
-          if (proxDate && proxDate.getTime() >= todayStart.getTime()) return null;
-        }
+        // i.fecha es cuando se hizo la gestion (llamada/visita) y es independiente
+        // de i.fechaProximo (el proximo paso acordado, que puede ser otro dia distinto
+        // y se muestra por separado como pendiente en agendaItems).
         const date = parseLocalDate(i.fecha);
         if (!date) return null;
         return {
