@@ -890,14 +890,14 @@ export default function Calendario() {
 
           {viewMode === 'list' && (
             <div className="agenda-filter-row">
-              <label className="cal-filter-select">
-                <CalendarRange size={15} />
-                <select value={listPeriod} onChange={(e) => setListPeriod(e.target.value)}>
-                  <option value="month">Mes</option>
-                  <option value="week">Semana</option>
-                </select>
-              </label>
-              <div className="agenda-month-nav">
+              <div className="agenda-month-nav agenda-list-period-nav">
+                <label className="agenda-list-period-select">
+                  <CalendarRange size={15} />
+                  <select value={listPeriod} onChange={(e) => setListPeriod(e.target.value)} aria-label="Periodo de lista">
+                    <option value="month">Mes</option>
+                    <option value="week">Semana</option>
+                  </select>
+                </label>
                 <button type="button" onClick={() => changeListPeriod(-1)}><ChevronLeft size={16} /></button>
                 <strong>{listPeriod === 'week' ? weekPeriodLabel : periodLabel}</strong>
                 <button type="button" onClick={() => changeListPeriod(1)}><ChevronRight size={16} /></button>
