@@ -364,17 +364,16 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
   );
 }
 
-function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, onDelete, onComplete }) {
+function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, onReprogram, onDelete, onComplete }) {
   return (
     <div className="agenda-table-wrap">
       <table className="agenda-table">
         <thead>
           <tr>
             <th>Proveedor</th>
-            <th>Compromiso</th>
-            <th>Estado</th>
-            <th>Tipo</th>
-            <th>Fecha compromiso</th>
+            <th>{completedView ? 'Gestión realizada' : 'Próxima acción'}</th>
+            {completedView ? <th>Tipo</th> : <th>Estado</th>}
+            <th>{completedView ? 'Fecha realizada' : 'Fecha programada'}</th>
             <th>Responsable</th>
             <th></th>
           </tr>
@@ -391,13 +390,12 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
               <td>
                 <div className="agenda-action-cell">
                   <span className="agenda-action-title">{item.title}</span>
-                  {item.description && item.description !== item.title
+                  {completedView && item.description && item.description !== item.title
                     ? <span className="agenda-action-desc">{item.description}</span>
                     : null}
                 </div>
               </td>
-              <td><AgendaStatus status={item.status} /></td>
-              <td><AgendaType kind={item.kind} /></td>
+              <td>{completedView ? <AgendaType kind={item.kind} /> : <AgendaStatus status={item.status} />}</td>
               <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
               <td className="agenda-cell-responsible">{item.responsible}</td>
               <td>
@@ -413,10 +411,10 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
             </tr>
           )) : (
             <tr>
-              <td colSpan="7">
+              <td colSpan="6">
                 <div className="mx-empty-state">
                   <CalendarDays size={36} />
-                  <p className="mx-empty-state__title">Sin actividades programadas</p>
+                  <p className="mx-empty-state__title">{completedView ? 'Sin gestiones realizadas' : 'Sin actividades programadas'}</p>
                   <p className="mx-empty-state__text">{emptyText}</p>
                 </div>
               </td>
@@ -503,7 +501,7 @@ export default function Calendario() {
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [realizadosRes]);
 
-  const loading = loadingAgenda || (['realizado', 'todos'].includes(statusFilter) && loadingRealizados);
+  const loading = loadingAgenda || ((statusFilter === 'realizado' || (viewMode !== 'list' && showRealizados)) && loadingRealizados);
   const today = useMemo(() => startOfDay(new Date()), []);
 
   const agendaItems = useMemo(() => {
@@ -566,18 +564,10 @@ export default function Calendario() {
     }
 
     if (statusFilter === 'todos') {
-      const pendingPool = agendaItems.filter((item) => {
+      return agendaItems.filter((item) => {
         if (!applyFilters(item)) return false;
-        if (showRealizados && item.status !== 'overdue') return false;
         if (range === 'month' && (item.date.getTime() < monthStart || item.date.getTime() > monthEnd)) return false;
         return matchesRange(item, range, today);
-      });
-      const realizadoPool = showRealizados ? realizadoItems.filter(applyFilters) : [];
-      const seen = new Set();
-      return [...pendingPool, ...realizadoPool].filter((item) => {
-        if (seen.has(item.id)) return false;
-        seen.add(item.id);
-        return true;
       }).sort((a, b) => compareAgendaItems(a, b, today));
     }
 
@@ -588,7 +578,7 @@ export default function Calendario() {
       if (statusFilter === 'pausado') return item.status === 'paused';
       return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaItems, realizadoItems, month, range, search, showRealizados, statusFilter, today, typeFilter, responsibleFilter, year]);
+  }, [agendaItems, realizadoItems, month, range, search, statusFilter, today, typeFilter, responsibleFilter, year]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -664,7 +654,7 @@ export default function Calendario() {
   ) : null;
 
   const chipCounts = {
-    todos: showRealizados ? (kpis.overdue + kpis.realizado) : agendaItems.length,
+    todos: agendaItems.length,
     vencido: kpis.overdue,
     realizado: kpis.realizado,
     pendiente: kpis.pendiente,
@@ -886,13 +876,6 @@ export default function Calendario() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
-              onClick={() => setShowRealizados((v) => !v)}
-            >
-              <ClipboardCheck size={15} /> Mostrar gestiones
-            </button>
           </div>
         )}
 
@@ -906,6 +889,7 @@ export default function Calendario() {
             {viewMode === 'list' && (
               <AgendaTable
                 items={filteredItems}
+                completedView={statusFilter === 'realizado'}
                 emptyText={
                   statusFilter === 'realizado'
                     ? `Sin gestiones registradas en ${MONTHS[month]} ${year}.`
