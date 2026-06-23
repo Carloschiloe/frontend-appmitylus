@@ -65,7 +65,9 @@ export default function EditarRealizadoModal({ item, onClose, onSaved }) {
         setDocFecha(doc.fecha ? new Date(doc.fecha).toISOString() : new Date().toISOString());
         const nextStep = doc.proximoPaso || doc.proximaAccion || '';
         const nextDate = doc.fechaProximo || doc.proximoPasoFecha || doc.fechaProximaAccion || '';
-        setProximaAccion(nextStep);
+        // Los registros antiguos guardaban "Tomar muestras". Al abrirlos los
+        // mostramos y guardamos con el nombre vigente: "Muestreo".
+        setProximaAccion(getActionOption(nextStep)?.label || nextStep);
         setFechaProxima(toDateInputValue(nextDate));
         setHayProxima(Boolean(nextStep || nextDate));
       } catch {

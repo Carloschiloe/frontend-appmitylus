@@ -159,6 +159,12 @@ function normalizeKind(value) {
   return 'otro';
 }
 
+function normalizeNextStep(value) {
+  const step = String(value || '').trim();
+  if (!step) return '';
+  return normalizeKind(step) === 'muestreo' ? 'Muestreo' : step;
+}
+
 function getRawEventDate(item) {
   return parseLocalDate(item.date || item.fechaProximo || item.fechaActividad || item.fechaProximaAccion || item.fechaRevision || item.nextActionAt);
 }
@@ -190,7 +196,7 @@ function buildCalendarEvent(item) {
   const date = getRawEventDate(item);
   if (!date) return null;
   const kind = normalizeKind(item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
-  const nextStep = item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || '';
+  const nextStep = normalizeNextStep(item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || '');
   const rawStatus = String(item.estado || item.status || item.seguimientoEstado || '').toLowerCase();
 
   return {
@@ -234,7 +240,7 @@ function buildRealizadoItems(payload) {
         centroCodigo: item.centroCodigo || '',
         title: item.resumen || item.resultado || 'Gestión registrada',
         description: item.resultado || item.resumen || '',
-        nextStep: item.proximoPaso || item.proximaAccion || '',
+        nextStep: normalizeNextStep(item.proximoPaso || item.proximaAccion || ''),
         nextStepDate: parseLocalDate(item.fechaProximo || item.proximoPasoFecha || item.fechaProximaAccion || item.fechaRevision || item.nextActionAt),
         responsible: item.responsablePG || '-',
         status: 'realizado',
