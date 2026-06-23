@@ -216,6 +216,7 @@ export default function QuickCaptureModal() {
   const [providerContext, setProviderContext] = useState(null);
   const [loadingContext, setLoadingContext] = useState(false);
   const [suggestionApplied, setSuggestionApplied] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [nextActionMenuOpen, setNextActionMenuOpen] = useState(false);
   const [form, setForm] = useState(initialState);
   const [savedInfo, setSavedInfo] = useState(null);
@@ -303,6 +304,7 @@ export default function QuickCaptureModal() {
     setSelected(null);
     setProviderContext(null);
     setSuggestionApplied(false);
+    setActionMenuOpen(false);
     setNextActionMenuOpen(false);
     setForm(initialState());
     setSavedInfo(null);
@@ -680,33 +682,43 @@ export default function QuickCaptureModal() {
                 </section>
 
                 <section className="mx-form-group">
-                  <label className="mx-label">2. Qué pasó</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', marginTop: 8 }}>
-                    {ACTION_OPTIONS.map((option) => {
-                      const Icon = option.icon;
-                      const active = form.tipoGestion === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setForm((prev) => ({ ...prev, tipoGestion: option.value }))}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            justifyContent: 'center',
-                            borderRadius: '14px',
-                            border: active ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                            background: active ? 'rgba(10, 92, 255, 0.08)' : 'white',
-                            minHeight: '52px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          <Icon size={16} />
-                          {option.label}
-                        </button>
-                      );
-                    })}
+                  <label className="mx-label">2. Acción realizada</label>
+                  <div className="quick-capture-action-picker" style={{ marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className={`quick-capture-action-select${actionMenuOpen ? ' is-open' : ''}`}
+                      onClick={() => setActionMenuOpen((open) => !open)}
+                      aria-haspopup="listbox"
+                      aria-expanded={actionMenuOpen}
+                    >
+                      <selectedAction.icon size={18} />
+                      <span>{selectedAction.label}</span>
+                      <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                    </button>
+                    {actionMenuOpen && (
+                      <div className="quick-capture-action-menu" role="listbox" aria-label="Acción realizada">
+                        {ACTION_OPTIONS.map((option) => {
+                          const Icon = option.icon;
+                          const active = form.tipoGestion === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              role="option"
+                              aria-selected={active}
+                              className={active ? 'is-active' : ''}
+                              onClick={() => {
+                                setForm((prev) => ({ ...prev, tipoGestion: option.value }));
+                                setActionMenuOpen(false);
+                              }}
+                            >
+                              <Icon size={16} />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </section>
 
