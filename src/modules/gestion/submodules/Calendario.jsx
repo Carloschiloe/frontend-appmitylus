@@ -376,6 +376,8 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                 <th>Tipo de contacto</th>
                 <th>Fecha realizada</th>
                 <th>Responsable</th>
+                <th>Próximo paso</th>
+                <th>Fecha próximo paso</th>
                 <th>Notas / resumen</th>
               </>
             ) : (
@@ -403,6 +405,8 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                   <td><AgendaType kind={item.kind} /></td>
                   <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
                   <td className="agenda-cell-responsible">{item.responsible}</td>
+                  <td>{item.nextStep || '—'}</td>
+                  <td className="agenda-cell-date">{formatShortDate(item.nextStepDate)}</td>
                   <td>
                     <div className="agenda-action-cell">
                       <span className="agenda-action-title">{item.title}</span>
@@ -437,7 +441,7 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
             </tr>
           )) : (
             <tr>
-              <td colSpan="6">
+              <td colSpan={completedView ? 8 : 6}>
                 <div className="mx-empty-state">
                   <CalendarDays size={36} />
                   <p className="mx-empty-state__title">{completedView ? 'Sin gestiones realizadas' : 'Sin actividades programadas'}</p>
@@ -517,6 +521,8 @@ export default function Calendario() {
           centroCodigo: i.centroCodigo || '',
           title: i.resumen || i.resultado || 'Gestión registrada',
           description: i.resultado || i.resumen || '',
+          nextStep: i.proximoPaso || i.proximaAccion || '',
+          nextStepDate: parseLocalDate(i.fechaProximo || i.proximoPasoFecha || i.fechaProximaAccion || i.fechaRevision || i.nextActionAt),
           responsible: i.responsablePG || '-',
           status: 'realizado',
           canReprogram: false,
