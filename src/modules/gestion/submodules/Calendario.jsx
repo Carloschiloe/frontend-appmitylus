@@ -210,6 +210,38 @@ function buildCalendarEvent(item) {
   };
 }
 
+function buildRealizadoItems(payload) {
+  return toList(payload)
+    .map((item) => {
+      const date = parseLocalDate(item.fecha);
+      if (!date) return null;
+      return {
+        id: item._id,
+        source: 'interaccion',
+        sourceId: item._id,
+        kind: normalizeKind(item.tipo),
+        date,
+        time: '',
+        provider: item.proveedorNombre || item.contactoNombre || 'Sin proveedor',
+        proveedorKey: item.proveedorKey || '',
+        contactoNombre: item.contactoNombre || '',
+        telefono: item.contactoSnapshot?.telefono || '',
+        email: item.contactoSnapshot?.email || '',
+        centroCodigo: item.centroCodigo || '',
+        title: item.resumen || item.resultado || 'Gestión registrada',
+        description: item.resultado || item.resumen || '',
+        nextStep: item.proximoPaso || item.proximaAccion || '',
+        nextStepDate: parseLocalDate(item.fechaProximo || item.proximoPasoFecha || item.fechaProximaAccion || item.fechaRevision || item.nextActionAt),
+        responsible: item.responsablePG || '-',
+        status: 'realizado',
+        canReprogram: false,
+        canDelete: true,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
 function withDerivedStatus(item, today) {
   if (item.status === 'paused') return item;
   return item.date.getTime() < today.getTime() ? { ...item, status: 'overdue' } : item;
@@ -460,6 +492,7 @@ export default function Calendario() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [range, setRange] = useState('month');
+  const [listPeriod, setListPeriod] = useState('month');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [responsibleFilter, setResponsibleFilter] = useState('all');
@@ -482,7 +515,7 @@ export default function Calendario() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const from = addDays(startOfDay(new Date()), -60).toISOString();
+  const from = addDays(startOfDay(currentDate), -60).toISOString();
   const to = new Date(year + 1, month + 1, 0).toISOString();
 
   const { data: agendaRes, isLoading: loadingAgenda } = useCalendarioAgenda({ from, to });
@@ -494,42 +527,20 @@ export default function Calendario() {
     { from: realizadoFrom, to: realizadoTo, limit: 200 },
   );
 
-  const realizadoItems = useMemo(() => {
-    return toList(realizadosRes)
-      .map((i) => {
-        // i.fecha es cuando se hizo la gestion (llamada/visita) y es independiente
-        // de i.fechaProximo (el proximo paso acordado, que puede ser otro dia distinto
-        // y se muestra por separado como pendiente en agendaItems).
-        const date = parseLocalDate(i.fecha);
-        if (!date) return null;
-        return {
-          id: i._id,
-          source: 'interaccion',
-          sourceId: i._id,
-          kind: normalizeKind(i.tipo),
-          date,
-          time: '',
-          provider: i.proveedorNombre || i.contactoNombre || 'Sin proveedor',
-          proveedorKey: i.proveedorKey || '',
-          contactoNombre: i.contactoNombre || '',
-          telefono: i.contactoSnapshot?.telefono || '',
-          email: i.contactoSnapshot?.email || '',
-          centroCodigo: i.centroCodigo || '',
-          title: i.resumen || i.resultado || 'Gestión registrada',
-          description: i.resultado || i.resumen || '',
-          nextStep: i.proximoPaso || i.proximaAccion || '',
-          nextStepDate: parseLocalDate(i.fechaProximo || i.proximoPasoFecha || i.fechaProximaAccion || i.fechaRevision || i.nextActionAt),
-          responsible: i.responsablePG || '-',
-          status: 'realizado',
-          canReprogram: false,
-          canDelete: true,
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [realizadosRes]);
+  const listWeekStart = useMemo(() => getWeekStart(currentDate), [currentDate]);
+  const listWeekEnd = useMemo(() => endOfDay(addDays(listWeekStart, 6)), [listWeekStart]);
+  const { data: weeklyRealizadosRes, isLoading: loadingWeeklyRealizados } = useInteracciones(
+    { from: listWeekStart.toISOString(), to: listWeekEnd.toISOString(), limit: 200 },
+  );
 
-  const loading = loadingAgenda || ((statusFilter === 'realizado' || (viewMode !== 'list' && showRealizados)) && loadingRealizados);
+  const realizadoItems = useMemo(() => buildRealizadoItems(realizadosRes), [realizadosRes]);
+  const weeklyRealizadoItems = useMemo(() => buildRealizadoItems(weeklyRealizadosRes), [weeklyRealizadosRes]);
+  const listRealizadoItems = listPeriod === 'week' ? weeklyRealizadoItems : realizadoItems;
+
+  const loading = loadingAgenda || (
+    (statusFilter === 'realizado' && (viewMode === 'list' && listPeriod === 'week' ? loadingWeeklyRealizados : loadingRealizados))
+    || (viewMode !== 'list' && showRealizados && loadingRealizados)
+  );
   const today = useMemo(() => startOfDay(new Date()), []);
 
   const agendaItems = useMemo(() => {
@@ -548,6 +559,14 @@ export default function Calendario() {
       .filter((item) => ['active', 'overdue', 'paused'].includes(item.status))
       .sort((a, b) => compareAgendaItems(a, b, today));
   }, [agendaRes, loadingAgenda, today]);
+
+  const listAgendaItems = useMemo(() => {
+    const start = listPeriod === 'week' ? listWeekStart.getTime() : new Date(year, month, 1).getTime();
+    const end = listPeriod === 'week'
+      ? listWeekEnd.getTime()
+      : new Date(year, month + 1, 0, 23, 59, 59).getTime();
+    return agendaItems.filter((item) => item.date.getTime() >= start && item.date.getTime() <= end);
+  }, [agendaItems, listPeriod, listWeekEnd, listWeekStart, month, year]);
 
   const availableTypes = useMemo(() => {
     const map = new Map();
@@ -576,9 +595,6 @@ export default function Calendario() {
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const monthStart = new Date(year, month, 1).getTime();
-    const monthEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
-
     const applyFilters = (item) => {
       const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
@@ -588,25 +604,24 @@ export default function Calendario() {
     };
 
     if (statusFilter === 'realizado') {
-      return realizadoItems.filter(applyFilters);
+      return listRealizadoItems.filter(applyFilters);
     }
 
     if (statusFilter === 'todos') {
-      return agendaItems.filter((item) => {
+      return listAgendaItems.filter((item) => {
         if (!applyFilters(item)) return false;
-        if (range === 'month' && (item.date.getTime() < monthStart || item.date.getTime() > monthEnd)) return false;
         return matchesRange(item, range, today);
       }).sort((a, b) => compareAgendaItems(a, b, today));
     }
 
-    return agendaItems.filter((item) => {
+    return listAgendaItems.filter((item) => {
       if (!applyFilters(item)) return false;
       if (statusFilter === 'vencido') return item.status === 'overdue';
       if (statusFilter === 'pendiente') return item.status === 'active' && matchesRange(item, range, today);
       if (statusFilter === 'pausado') return item.status === 'paused';
       return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaItems, realizadoItems, month, range, search, statusFilter, today, typeFilter, responsibleFilter, year]);
+  }, [listAgendaItems, listRealizadoItems, range, search, statusFilter, today, typeFilter, responsibleFilter]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -661,12 +676,13 @@ export default function Calendario() {
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
-  const hasActiveFilters = statusFilter !== 'todos' || search !== '' || range !== 'month' || typeFilter !== 'all' || responsibleFilter !== 'all';
+  const hasActiveFilters = statusFilter !== 'todos' || search !== '' || range !== 'month' || listPeriod !== 'month' || typeFilter !== 'all' || responsibleFilter !== 'all';
 
   function clearFilters() {
     setStatusFilter('todos');
     setSearch('');
     setRange('month');
+    setListPeriod('month');
     setTypeFilter('all');
     setResponsibleFilter('all');
   }
@@ -682,11 +698,11 @@ export default function Calendario() {
   ) : null;
 
   const chipCounts = {
-    todos: agendaItems.length,
-    vencido: kpis.overdue,
-    realizado: kpis.realizado,
-    pendiente: kpis.pendiente,
-    pausado: kpis.paused,
+    todos: listAgendaItems.length,
+    vencido: listAgendaItems.filter((item) => item.status === 'overdue').length,
+    realizado: listRealizadoItems.length,
+    pendiente: listAgendaItems.filter((item) => item.status === 'active').length,
+    pausado: listAgendaItems.filter((item) => item.status === 'paused').length,
   };
 
   const weekDays = useMemo(() => {
@@ -712,6 +728,14 @@ export default function Calendario() {
 
   function changeWeek(delta) {
     setCurrentDate((prev) => addDays(prev, delta * 7));
+  }
+
+  function changeListPeriod(delta) {
+    if (listPeriod === 'week') {
+      changeWeek(delta);
+      return;
+    }
+    changeMonth(delta);
   }
 
   function viewItemInCalendar(item) {
@@ -757,7 +781,9 @@ export default function Calendario() {
   }
 
   const subtitleText = statusFilter === 'realizado'
-    ? `Gestiones realizadas en ${MONTHS[month]} ${year}.`
+    ? listPeriod === 'week'
+      ? `Gestiones realizadas durante la semana del ${weekPeriodLabel}.`
+      : `Gestiones realizadas en ${MONTHS[month]} ${year}.`
     : 'Compromisos programados, vencidos y pendientes de gestión.';
 
   function isKpiActive(filter, rangeValue) {
@@ -864,10 +890,17 @@ export default function Calendario() {
 
           {viewMode === 'list' && (
             <div className="agenda-filter-row">
+              <label className="cal-filter-select">
+                <CalendarRange size={15} />
+                <select value={listPeriod} onChange={(e) => setListPeriod(e.target.value)}>
+                  <option value="month">Mes</option>
+                  <option value="week">Semana</option>
+                </select>
+              </label>
               <div className="agenda-month-nav">
-                <button type="button" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
-                <strong>{periodLabel}</strong>
-                <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+                <button type="button" onClick={() => changeListPeriod(-1)}><ChevronLeft size={16} /></button>
+                <strong>{listPeriod === 'week' ? weekPeriodLabel : periodLabel}</strong>
+                <button type="button" onClick={() => changeListPeriod(1)}><ChevronRight size={16} /></button>
               </div>
               <div className="cal-search-box">
                 <Search size={17} />
@@ -909,7 +942,7 @@ export default function Calendario() {
               className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
               onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
             >
-              <ClipboardCheck size={15} /> Mostrar gestiones
+              <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Volver a agenda' : 'Mostrar gestiones'}
             </button>
           </div>
         )}
