@@ -141,6 +141,33 @@
   min-width: 0;
 }
 
+.agenda-toggle-realizados {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.agenda-toggle-realizados:hover {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.agenda-toggle-realizados.is-active {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
 .agenda-filter-row {
   display: grid;
   grid-template-columns: 190px minmax(140px, 1fr) 168px 210px auto;
@@ -756,6 +783,13 @@
   color: #c2410c;
 }
 
+.cal-event-pill.is-realizado {
+  border-color: #bbf7d0;
+  border-left-color: #15803d;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
 .cal-more-events {
   padding-left: 4px;
   color: #94a3b8;
@@ -818,6 +852,10 @@
 
 .agenda-mini-card.is-paused {
   border-left-color: #f97316;
+}
+
+.agenda-mini-card.is-realizado {
+  border-left-color: #15803d;
 }
 
 .agenda-mini-card strong {
@@ -919,6 +957,11 @@
 .cal-week-event.is-paused {
   border-left-color: #f97316;
   background: #fff7ed;
+}
+
+.cal-week-event.is-realizado {
+  border-left-color: #15803d;
+  background: #f0fdf4;
 }
 
 .cal-week-event-title {

@@ -432,6 +432,7 @@ export default function Calendario() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [responsibleFilter, setResponsibleFilter] = useState('all');
+  const [showRealizados, setShowRealizados] = useState(false);
   const [completingItem, setCompletingItem] = useState(null);
   const [editingRealizadoItem, setEditingRealizadoItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
@@ -619,9 +620,10 @@ export default function Calendario() {
   }, [month, year]);
 
   const eventsByDay = useMemo(() => {
+    const pool = showRealizados ? [...agendaItems, ...realizadoItems] : agendaItems;
     const source = responsibleFilter === 'all'
-      ? agendaItems
-      : agendaItems.filter((item) => normalizeAccents(item.responsible) === normalizeAccents(responsibleFilter));
+      ? pool
+      : pool.filter((item) => normalizeAccents(item.responsible) === normalizeAccents(responsibleFilter));
     const map = new Map();
     source.forEach((item) => {
       const key = dateKey(item.date);
@@ -630,7 +632,7 @@ export default function Calendario() {
     });
     map.forEach((items) => items.sort(compareCalendarItems));
     return map;
-  }, [agendaItems, responsibleFilter]);
+  }, [agendaItems, realizadoItems, responsibleFilter, showRealizados]);
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
@@ -790,6 +792,13 @@ export default function Calendario() {
                 <button type="button" onClick={() => changeMonth(1)}><ChevronRight size={18} /></button>
               </div>
               {ResponsableSelect}
+              <button
+                type="button"
+                className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
+                onClick={() => setShowRealizados((v) => !v)}
+              >
+                <ClipboardCheck size={15} /> Mostrar realizados
+              </button>
             </div>
           )}
 
@@ -801,6 +810,13 @@ export default function Calendario() {
                 <button type="button" onClick={() => changeWeek(1)}><ChevronRight size={18} /></button>
               </div>
               {ResponsableSelect}
+              <button
+                type="button"
+                className={`agenda-toggle-realizados${showRealizados ? ' is-active' : ''}`}
+                onClick={() => setShowRealizados((v) => !v)}
+              >
+                <ClipboardCheck size={15} /> Mostrar realizados
+              </button>
             </div>
           )}
 
@@ -891,9 +907,11 @@ export default function Calendario() {
                               <div className="cal-week-event-responsible">{item.responsible}</div>
                             )}
                             <div className="cal-week-event-actions">
-                              <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
-                                <CheckCircle2 size={13} />
-                              </button>
+                              {item.status !== 'realizado' && (
+                                <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                                  <CheckCircle2 size={13} />
+                                </button>
+                              )}
                               {item.canReprogram && (
                                 <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
                                   <RotateCcw size={13} />
@@ -970,9 +988,11 @@ export default function Calendario() {
                           <span className="agenda-mini-responsible">{item.responsible}</span>
                         )}
                         <div className="agenda-mini-actions">
-                          <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
-                            <CheckCircle2 size={14} />
-                          </button>
+                          {item.status !== 'realizado' && (
+                            <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                              <CheckCircle2 size={14} />
+                            </button>
+                          )}
                           {item.canReprogram && (
                             <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
                               <RotateCcw size={14} />
