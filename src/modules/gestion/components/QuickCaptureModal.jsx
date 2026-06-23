@@ -11,6 +11,7 @@ import {
   X,
   PauseCircle,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Beaker,
   Users,
@@ -77,6 +78,20 @@ const SEGUIMIENTO_META = {
   cerrado: { label: 'Cerrado', tone: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)' },
   acordado: { label: 'Acordado', tone: '#0891b2', bg: 'rgba(8, 145, 178, 0.12)' },
 };
+
+function getNextActionOption(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return null;
+  return ACTION_OPTIONS.find((option) => (
+    text === option.value
+    || text === option.label.toLowerCase()
+    || (option.value === 'llame' && text.includes('llam'))
+    || (option.value === 'visite' && text.includes('visit'))
+    || (option.value === 'whatsapp' && text.includes('whatsapp'))
+    || (option.value === 'tome_muestra' && (text.includes('muestr') || text.includes('muestre')))
+    || (option.value === 'negocie' && (text.includes('reuni') || text.includes('negoci')))
+  )) || null;
+}
 
 function getCurrentUserName() {
   try {
@@ -279,6 +294,7 @@ export default function QuickCaptureModal() {
   }, [providers, search]);
 
   const selectedAction = ACTION_OPTIONS.find((item) => item.value === form.tipoGestion) || ACTION_OPTIONS[0];
+  const selectedNextAction = getNextActionOption(form.proximaAccion);
 
   function closeModal() {
     setOpen(false);
@@ -362,7 +378,7 @@ export default function QuickCaptureModal() {
     setForm((prev) => ({
       ...prev,
       resultadoSeguimiento: prev.resultadoSeguimiento === 'seguir' ? 'pausar' : prev.resultadoSeguimiento,
-      proximaAccion: prev.proximaAccion || providerContext.proximaAccion || '',
+      proximaAccion: prev.proximaAccion || getNextActionOption(providerContext.proximaAccion)?.label || '',
       fechaRevision: prev.fechaRevision || suggestedDate,
     }));
     setSuggestionApplied(true);
@@ -721,7 +737,7 @@ export default function QuickCaptureModal() {
                 </section>
 
                 {(form.resultadoSeguimiento === 'seguir' || form.resultadoSeguimiento === 'pausar') && (
-                  <section className="mx-field-row" style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 180px' }}>
+                  <section className="quick-capture-next-step">
                     {providerContext?.seguimientoEstado === 'pausado' && suggestionApplied && (
                       <div
                         style={{
@@ -734,18 +750,27 @@ export default function QuickCaptureModal() {
                           fontWeight: 600,
                         }}
                       >
-                        Cargamos como sugerencia la ultima proxima accion del estado pausado. Puedes editarla antes de guardar.
+                        Cargamos la fecha de revisión sugerida. Selecciona la próxima acción antes de guardar.
                       </div>
                     )}
                     <div className="mx-form-group">
                       <label className="mx-label">Próxima acción</label>
-                      <input
-                        className="mx-input"
-                        value={form.proximaAccion}
-                        onChange={(e) => setForm((prev) => ({ ...prev, proximaAccion: e.target.value }))}
-                        placeholder={form.resultadoSeguimiento === 'pausar' ? 'Ej: Recontactar cuando toque revisión' : 'Ej: Llamar para confirmar disponibilidad'}
-                        required
-                      />
+                      <div className="quick-capture-action-select">
+                        {selectedNextAction ? <selectedNextAction.icon size={18} /> : <Target size={18} />}
+                        <select
+                          className="mx-select"
+                          value={form.proximaAccion}
+                          onChange={(e) => setForm((prev) => ({ ...prev, proximaAccion: e.target.value }))}
+                          required
+                        >
+                          <option value="" disabled>Selecciona el próximo paso</option>
+                          {ACTION_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.label}>{option.label}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="quick-capture-action-select__chevron" size={17} aria-hidden="true" />
+                      </div>
+                      <span className="quick-capture-field-help">Define qué se agendará para este proveedor.</span>
                     </div>
                     <div className="mx-form-group">
                       <label className="mx-label">{form.resultadoSeguimiento === 'pausar' ? 'Fecha revisión' : 'Fecha próxima'}</label>
