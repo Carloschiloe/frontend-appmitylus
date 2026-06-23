@@ -296,6 +296,12 @@ export default function Directorio() {
     ]);
   }, [refetchCentros, refetchContactos, refetchOpp, refetchInt, refetchMuestreos]);
 
+  useEffect(() => {
+    const refreshContacts = () => refetchContactos();
+    window.addEventListener('gestion:contact-created', refreshContacts);
+    return () => window.removeEventListener('gestion:contact-created', refreshContacts);
+  }, [refetchContactos]);
+
   // 2. Procesamiento de datos
   const data = useMemo(() => {
     const centros = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
@@ -1574,5 +1580,4 @@ export default function Directorio() {
      </div>
    );
  }
-
 

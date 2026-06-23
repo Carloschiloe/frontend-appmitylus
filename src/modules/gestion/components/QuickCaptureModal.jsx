@@ -344,6 +344,7 @@ export default function QuickCaptureModal() {
       };
       setProviders((prev) => [created, ...prev]);
       handleSelectProvider(created);
+      window.dispatchEvent(new CustomEvent('gestion:contact-created'));
       addToast({ title: 'Contacto creado', message: `${created.contactoNombre} quedó guardado en Directorio sin empresa ni teléfono.`, type: 'success' });
     } catch (error) {
       addToast({ title: 'No se pudo crear', message: error?.message || 'Intenta nuevamente.', type: 'error' });
