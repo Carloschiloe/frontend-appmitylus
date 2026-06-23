@@ -61,6 +61,7 @@ const TYPE_LABELS = {
   visita: 'Visita a centro',
   llamada: 'Llamada',
   whatsapp: 'WhatsApp',
+  reunion: 'Reunión',
   seguimiento: 'Seguimiento',
   pausado: 'Pausado',
 };
@@ -150,6 +151,7 @@ function normalizeKind(value) {
   if (text === 'visite' || text.includes('visita')) return 'visita';
   if (text === 'whatsapp') return 'whatsapp';
   if (text === 'tome_muestra' || text.includes('muestra') || text.includes('muestreo')) return 'muestreo';
+  if (text === 'negocie' || text.includes('reunion')) return 'reunion';
   if (text.includes('paus')) return 'pausado';
   if (text.includes('seguim')) return 'seguimiento';
   return 'otro';
@@ -228,7 +230,7 @@ function AgendaStatus({ status }) {
 }
 
 function AgendaType({ kind }) {
-  return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || 'Gestión'}</span>;
+  return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || 'Otro'}</span>;
 }
 
 function useFloatingMenu() {

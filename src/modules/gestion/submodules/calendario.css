@@ -503,6 +503,18 @@
   color: #047857;
 }
 
+.agenda-type.is-whatsapp {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.agenda-type.is-reunion {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
 /* ── Actions dropdown ────────────────────────────────── */
 .agenda-options-menu {
   z-index: 9999;
