@@ -375,7 +375,6 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
               <>
                 <th>Tipo de contacto</th>
                 <th>Fecha realizada</th>
-                <th>Responsable</th>
                 <th>Próximo paso</th>
                 <th>Fecha próximo paso</th>
                 <th>Notas / resumen</th>
@@ -385,7 +384,6 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                 <th>Próxima acción</th>
                 <th>Estado</th>
                 <th>Fecha programada</th>
-                <th>Responsable</th>
               </>
             )}
             <th></th>
@@ -404,7 +402,6 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                 <>
                   <td><AgendaType kind={item.kind} /></td>
                   <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-                  <td className="agenda-cell-responsible">{item.responsible}</td>
                   <td>{item.nextStep || '—'}</td>
                   <td className="agenda-cell-date">{formatShortDate(item.nextStepDate)}</td>
                   <td>
@@ -425,7 +422,6 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                   </td>
                   <td><AgendaStatus status={item.status} /></td>
                   <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-                  <td className="agenda-cell-responsible">{item.responsible}</td>
                 </>
               )}
               <td>
@@ -441,7 +437,7 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
             </tr>
           )) : (
             <tr>
-              <td colSpan={completedView ? 8 : 6}>
+              <td colSpan={completedView ? 7 : 5}>
                 <div className="mx-empty-state">
                   <CalendarDays size={36} />
                   <p className="mx-empty-state__title">{completedView ? 'Sin gestiones realizadas' : 'Sin actividades programadas'}</p>
