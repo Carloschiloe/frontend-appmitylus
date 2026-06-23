@@ -784,14 +784,6 @@ export default function Calendario() {
     </label>
   ) : null;
 
-  const chipCounts = {
-    todos: listAgendaItems.length,
-    vencido: listAgendaItems.filter((item) => item.status === 'overdue').length,
-    realizado: listRealizadoItems.length,
-    pendiente: listAgendaItems.filter((item) => item.status === 'active').length,
-    pausado: listAgendaItems.filter((item) => item.status === 'paused').length,
-  };
-
   const weekDays = useMemo(() => {
     const start = getWeekStart(currentDate);
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -999,33 +991,16 @@ export default function Calendario() {
                 responsibles={availableResponsibles}
                 onClear={clearFilters}
               />
+              <button
+                type="button"
+                className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
+                onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
+              >
+                <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Volver a agenda' : 'Mostrar gestiones'}
+              </button>
             </div>
           )}
         </div>
-
-        {viewMode === 'list' && (
-          <div className="agenda-status-chips">
-            <div className="agenda-status-chips-group">
-              {STATUS_OPTIONS.map(({ id, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`agenda-chip agenda-chip-${id}${statusFilter === id ? ' is-active' : ''}`}
-                  onClick={() => setStatusFilter((prev) => (prev === id ? 'todos' : id))}
-                >
-                  {label} <strong>{chipCounts[id]}</strong>
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
-              onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
-            >
-              <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Ocultar gestiones' : 'Mostrar gestiones'}
-            </button>
-          </div>
-        )}
 
         {loading ? (
           <div className="mx-loading-placeholder">
