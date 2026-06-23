@@ -195,10 +195,6 @@
   max-width: none;
 }
 
-.agenda-filter-row > .agenda-list-filters-picker {
-  flex: 0 0 auto;
-}
-
 .agenda-clear-btn {
   height: 40px;
   display: inline-flex;
@@ -265,12 +261,12 @@
 }
 
 .agenda-list-period-picker,
-.agenda-list-filters-picker {
+.agenda-list-filter-chip {
   position: relative;
 }
 
 .agenda-list-period-picker > button,
-.agenda-list-filters-trigger {
+.agenda-list-filter-chip-trigger {
   height: 34px;
   display: inline-flex;
   align-items: center;
@@ -300,13 +296,13 @@
 }
 
 .agenda-list-period-picker > button:hover,
-.agenda-list-filters-trigger:hover,
-.agenda-list-filters-trigger.is-active {
+.agenda-list-filter-chip-trigger:hover,
+.agenda-list-filter-chip-trigger.is-active {
   background: #f1f5f9;
   color: #0a5cff;
 }
 
-.agenda-list-filters-trigger {
+.agenda-list-filter-chip-trigger {
   padding: 0 13px;
   border: 1px solid #dbe4ef;
   background: #ffffff;
@@ -354,29 +350,42 @@
   color: #0a5cff;
 }
 
-.agenda-list-filters-menu label {
-  display: grid;
-  gap: 5px;
-  color: #64748b;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.agenda-list-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
-.agenda-list-filters-menu select {
-  height: 36px;
-  padding: 0 8px;
-  border: 1px solid #dbe4ef;
+.agenda-list-filter-chip-menu {
+  right: auto;
+  left: 0;
+  min-width: 220px;
+}
+
+.agenda-list-clear-filters {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px dashed #cbd5e1;
   border-radius: 8px;
   background: #ffffff;
-  color: #334155;
+  color: #64748b;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.agenda-list-filter-clear {
-  color: #dc2626;
+.agenda-list-clear-filters:hover:not(:disabled) {
+  border-color: #94a3b8;
+  color: #334155;
+}
+
+.agenda-list-clear-filters:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .cal-search-box,

@@ -13,7 +13,6 @@ import {
   ClipboardCheck,
   Clock,
   Eye,
-  Filter,
   Info,
   History,
   ListChecks,
@@ -60,7 +59,7 @@ const STATUS_OPTIONS = [
 ];
 
 const TYPE_LABELS = {
-  muestreo: 'Tomar muestras',
+  muestreo: 'Muestreo',
   visita: 'Visita a centro',
   llamada: 'Llamada',
   whatsapp: 'WhatsApp',
@@ -70,7 +69,7 @@ const TYPE_LABELS = {
 };
 
 // Solo estos tipos aparecen en el filtro de tipos
-const FILTERABLE_TYPES = new Set(['llamada', 'visita', 'whatsapp', 'muestreo', 'seguimiento', 'pausado']);
+const FILTERABLE_TYPES = new Set(['llamada', 'visita', 'whatsapp', 'reunion']);
 
 const STATUS_LABELS = {
   active: 'Pendiente',
@@ -190,9 +189,8 @@ function compareCalendarItems(a, b) {
 function buildCalendarEvent(item) {
   const date = getRawEventDate(item);
   if (!date) return null;
-  // En Agenda importa el compromiso que se debe realizar, no el contacto
-  // anterior desde el cual se originó. Ej.: llamada → Tomar muestras.
-  const kind = normalizeKind(item.proximoPaso || item.proximaAccion || item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
+  const kind = normalizeKind(item.kind || item.tipo || item.type || item.categoria || item.actividadTipo);
+  const nextStep = item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || '';
   const rawStatus = String(item.estado || item.status || item.seguimientoEstado || '').toLowerCase();
 
   return {
@@ -208,7 +206,8 @@ function buildCalendarEvent(item) {
     telefono: item.telefono || item.contactoSnapshot?.telefono || '',
     email: item.email || item.contactoSnapshot?.email || '',
     centroCodigo: item.centroCodigo || '',
-    title: item.proximoPaso || item.proximaAccion || item.actividad || item.asunto || item.resumen || item.titulo || item.title || 'Compromiso pendiente',
+    title: nextStep || 'Compromiso pendiente',
+    nextStep,
     description: item.resumen || item.resultado || item.detalle || item.descripcion || item.observacion || item.notas || '',
     responsible: item.responsablePG || item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
     status: rawStatus === 'pausado' ? 'paused' : 'active',
@@ -304,7 +303,7 @@ function ListPeriodPicker({ listPeriod, label, onSelect }) {
   );
 }
 
-function ListFiltersPicker({ activeCount, typeFilter, onTypeChange, responsibleFilter, onResponsibleChange, responsibles, onClear }) {
+function ListFilterChip({ label, value, allLabel, options, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -318,27 +317,21 @@ function ListFiltersPicker({ activeCount, typeFilter, onTypeChange, responsibleF
   }, [open]);
 
   return (
-    <div ref={ref} className="agenda-list-filters-picker">
-      <button type="button" className={`agenda-list-filters-trigger${activeCount ? ' is-active' : ''}`} onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-        <Filter size={15} /> Filtros{activeCount ? ` (${activeCount})` : ''}
+    <div ref={ref} className="agenda-list-filter-chip">
+      <button type="button" className={`agenda-list-filter-chip-trigger${value !== 'all' ? ' is-active' : ''}`} onClick={() => setOpen((current) => !current)} aria-expanded={open}>
+        <span>{value === 'all' ? label : options.find((option) => option.value === value)?.label || label}</span>
+        <ChevronDown size={15} />
       </button>
       {open && (
-        <div className="agenda-list-filter-menu agenda-list-filters-menu">
-          <label>
-            Tipo de contacto
-            <select value={typeFilter} onChange={(event) => onTypeChange(event.target.value)}>
-              <option value="all">Todos los tipos</option>
-              {Array.from(FILTERABLE_TYPES).map((type) => <option key={type} value={type}>{TYPE_LABELS[type]}</option>)}
-            </select>
-          </label>
-          <label>
-            Responsable
-            <select value={responsibleFilter} onChange={(event) => onResponsibleChange(event.target.value)}>
-              <option value="all">Todos los responsables</option>
-              {responsibles.map((responsible) => <option key={responsible} value={responsible}>{responsible}</option>)}
-            </select>
-          </label>
-          {activeCount > 0 && <button type="button" className="agenda-list-filter-clear" onClick={() => { onClear(); setOpen(false); }}>Limpiar filtros</button>}
+        <div className="agenda-list-filter-menu agenda-list-filter-chip-menu">
+          <button type="button" className={value === 'all' ? 'is-active' : ''} onClick={() => { onChange('all'); setOpen(false); }}>
+            {allLabel}
+          </button>
+          {options.map((option) => (
+            <button key={option.value} type="button" className={value === option.value ? 'is-active' : ''} onClick={() => { onChange(option.value); setOpen(false); }}>
+              {option.label}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -585,6 +578,7 @@ export default function Calendario() {
   const [listPeriod, setListPeriod] = useState('month');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [nextStepFilter, setNextStepFilter] = useState('all');
   const [responsibleFilter, setResponsibleFilter] = useState('all');
   const [showRealizados, setShowRealizados] = useState(false);
   const [completingItem, setCompletingItem] = useState(null);
@@ -657,15 +651,36 @@ export default function Calendario() {
     return agendaItems.filter((item) => item.date.getTime() >= start && item.date.getTime() <= end);
   }, [agendaItems, listPeriod, listWeekEnd, listWeekStart, month, year]);
 
+  const tableFilterCandidates = useMemo(() => {
+    if (statusFilter === 'realizado') return listRealizadoItems;
+    return listAgendaItems.filter((item) => {
+      if (statusFilter === 'vencido') return item.status === 'overdue';
+      if (statusFilter === 'pendiente') return item.status === 'active' && matchesRange(item, range, today);
+      if (statusFilter === 'pausado') return item.status === 'paused';
+      return matchesRange(item, range, today);
+    });
+  }, [listAgendaItems, listRealizadoItems, range, statusFilter, today]);
+
   const availableTypes = useMemo(() => {
     const map = new Map();
-    [...agendaItems, ...realizadoItems].forEach((item) => {
+    tableFilterCandidates.forEach((item) => {
       if (FILTERABLE_TYPES.has(item.kind)) {
         map.set(item.kind, TYPE_LABELS[item.kind]);
       }
     });
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [agendaItems, realizadoItems]);
+  }, [tableFilterCandidates]);
+
+  const availableNextSteps = useMemo(() => {
+    const steps = new Map();
+    tableFilterCandidates.forEach((item) => {
+      const step = String(item.nextStep || '').trim();
+      if (step) steps.set(step.toLocaleLowerCase('es'), step);
+    });
+    return Array.from(steps.values())
+      .sort((a, b) => a.localeCompare(b, 'es'))
+      .map((step) => ({ value: step, label: step }));
+  }, [tableFilterCandidates]);
 
   const availableResponsibles = useMemo(() => {
     // Deduplica por nombre sin acentos; prefiere la versión con acento correcto
@@ -688,7 +703,7 @@ export default function Calendario() {
       const haystack = `${item.provider} ${item.title} ${item.description} ${item.responsible}`.toLowerCase();
       if (term && !haystack.includes(term)) return false;
       if (typeFilter !== 'all' && item.kind !== typeFilter) return false;
-      if (responsibleFilter !== 'all' && normalizeAccents(item.responsible) !== normalizeAccents(responsibleFilter)) return false;
+      if (nextStepFilter !== 'all' && item.nextStep !== nextStepFilter) return false;
       return true;
     };
 
@@ -710,7 +725,7 @@ export default function Calendario() {
       if (statusFilter === 'pausado') return item.status === 'paused';
       return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [listAgendaItems, listRealizadoItems, range, search, statusFilter, today, typeFilter, responsibleFilter]);
+  }, [listAgendaItems, listRealizadoItems, nextStepFilter, range, search, statusFilter, today, typeFilter]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
@@ -765,13 +780,10 @@ export default function Calendario() {
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
-  function clearFilters() {
-    setStatusFilter('todos');
+  function clearListFilters() {
     setSearch('');
-    setRange('month');
-    setListPeriod('month');
     setTypeFilter('all');
-    setResponsibleFilter('all');
+    setNextStepFilter('all');
   }
 
   const ResponsableSelect = availableResponsibles.length > 1 ? (
@@ -982,15 +994,6 @@ export default function Calendario() {
                 <Search size={17} />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, acción o responsable..." />
               </div>
-              <ListFiltersPicker
-                activeCount={(typeFilter !== 'all' ? 1 : 0) + (responsibleFilter !== 'all' ? 1 : 0)}
-                typeFilter={typeFilter}
-                onTypeChange={setTypeFilter}
-                responsibleFilter={responsibleFilter}
-                onResponsibleChange={setResponsibleFilter}
-                responsibles={availableResponsibles}
-                onClear={clearFilters}
-              />
               <button
                 type="button"
                 className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
@@ -1001,6 +1004,33 @@ export default function Calendario() {
             </div>
           )}
         </div>
+
+        {viewMode === 'list' && (
+          <div className="agenda-list-filter-chips">
+            <ListFilterChip
+              label="Tipo de contacto"
+              value={typeFilter}
+              allLabel="Todos los tipos de contacto"
+              options={availableTypes.map(([value, label]) => ({ value, label }))}
+              onChange={setTypeFilter}
+            />
+            <ListFilterChip
+              label="Próximo paso"
+              value={nextStepFilter}
+              allLabel="Todos los próximos pasos"
+              options={availableNextSteps}
+              onChange={setNextStepFilter}
+            />
+            <button
+              type="button"
+              className="agenda-list-clear-filters"
+              onClick={clearListFilters}
+              disabled={!search && typeFilter === 'all' && nextStepFilter === 'all'}
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="mx-loading-placeholder">
