@@ -13,16 +13,16 @@ const PAGE_META = {
     title: 'Directorio de Proveedores',
   },
   '/gestion/bandeja': {
-    eyebrow: 'Operaciones · Resumen',
+    eyebrow: 'Inicio · Resumen',
     title: 'Resumen Operativo',
     description: 'Bandeja diaria: seguimiento comercial, visitas, interacciones y muestreos.',
   },
   '/gestion/agenda': {
-    eyebrow: 'Operaciones · Agenda',
+    eyebrow: 'Directorio · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/calendario': {
-    eyebrow: 'Operaciones · Agenda',
+    eyebrow: 'Directorio · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/tratos': {

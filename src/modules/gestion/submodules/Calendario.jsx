@@ -363,11 +363,11 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
       <table className="agenda-table">
         <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Estado</th>
             <th>Proveedor</th>
             <th>Compromiso</th>
+            <th>Estado</th>
             <th>Tipo</th>
+            <th>Fecha compromiso</th>
             <th>Responsable</th>
             <th></th>
           </tr>
@@ -375,8 +375,6 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
         <tbody>
           {items.length ? items.map((item) => (
             <tr key={item.id}>
-              <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-              <td><AgendaStatus status={item.status} /></td>
               <td className="agenda-provider-cell">
                 {item.provider}
                 {item.contactoNombre && item.contactoNombre !== item.provider && (
@@ -391,7 +389,9 @@ function AgendaTable({ items, emptyText, onViewCalendar, onEdit, onReprogram, on
                     : null}
                 </div>
               </td>
+              <td><AgendaStatus status={item.status} /></td>
               <td><AgendaType kind={item.kind} /></td>
+              <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
               <td className="agenda-cell-responsible">{item.responsible}</td>
               <td>
                 <AgendaActions
