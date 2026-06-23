@@ -64,8 +64,6 @@ button {
 
 .mx-main-content {
   position: relative;
-  width: calc(100vw - var(--nav-width));
-  max-width: calc(100vw - var(--nav-width));
   min-width: 0;
   overflow-x: clip;
   background:
