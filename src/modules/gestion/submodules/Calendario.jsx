@@ -17,6 +17,8 @@ import {
   History,
   ListChecks,
   Mail,
+  MapPin,
+  MessageSquare,
   MoreHorizontal,
   PauseCircle,
   Pencil,
@@ -26,6 +28,7 @@ import {
   Target,
   Trash2,
   User,
+  Users,
   X,
 } from 'lucide-react';
 import CompletarTareaModal from './CompletarTareaModal';
@@ -274,6 +277,22 @@ function AgendaStatus({ status }) {
 
 function AgendaType({ kind }) {
   return <span className={`agenda-type is-${kind}`}>{TYPE_LABELS[kind] || 'Otro'}</span>;
+}
+
+function AgendaKindIcon({ kind, size = 14 }) {
+  const icons = {
+    llamada: Phone,
+    visita: MapPin,
+    whatsapp: MessageSquare,
+    reunion: Users,
+    muestreo: ClipboardCheck,
+  };
+  const Icon = icons[kind] || Target;
+  return (
+    <span className={`agenda-kind-icon is-${kind}`} title={TYPE_LABELS[kind] || 'Tipo de contacto'}>
+      <Icon size={size} />
+    </span>
+  );
 }
 
 function ListPeriodPicker({ listPeriod, label, onSelect }) {
@@ -1087,7 +1106,10 @@ export default function Calendario() {
                         {dayItems.map((item) => (
                           <div key={item.id} className={`cal-week-event is-${item.status}`}>
                             <div className="cal-week-event-top">
-                              <div className="cal-week-event-title">{item.title}</div>
+                              <div className="cal-week-event-heading">
+                                <AgendaKindIcon kind={item.kind} />
+                                <div className="cal-week-event-title">{item.title}</div>
+                              </div>
                               <AgendaStatus status={item.status} />
                             </div>
                             <div className="cal-week-event-provider">{item.provider}</div>
@@ -1161,7 +1183,7 @@ export default function Calendario() {
                           <div className="cal-events-stack">
                             {dayItems.slice(0, 3).map((item) => (
                               <span key={item.id} className={`cal-event-pill is-compact is-${item.status}`}>
-                                <strong>{item.title}</strong>
+                                <strong><AgendaKindIcon kind={item.kind} size={12} /> {item.title}</strong>
                                 <em>{item.provider}</em>
                               </span>
                             ))}
@@ -1193,7 +1215,7 @@ export default function Calendario() {
                     {selectedDayItems.length ? selectedDayItems.map((item) => (
                       <article key={item.id} className={`agenda-mini-card is-${item.status}`}>
                         <AgendaStatus status={item.status} />
-                        <strong>{item.title}</strong>
+                        <strong className="agenda-mini-title"><AgendaKindIcon kind={item.kind} /> {item.title}</strong>
                         <span>{item.provider}</span>
                         {item.contactoNombre && item.contactoNombre !== item.provider && (
                           <span>{item.contactoNombre}</span>
