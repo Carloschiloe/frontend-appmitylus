@@ -119,10 +119,16 @@ export default function MuestreosHeaderControls({
 
       {/* Action buttons */}
       <div className="mu-controls-actions">
-        <button className="mx-btn-icon sm" onClick={onRefresh} title="Recargar"><RotateCcw size={16} /></button>
-        <button className="mx-btn-icon sm" onClick={onExportar} disabled={exportando} title="Exportar a Excel"><FileDown size={16} /></button>
-        <HelpTourButton tourId="muestreos" />
-        <button className="mx-btn mx-btn-primary sm" onClick={onNewMuestreo} data-tour="muestreos-registrar">
+        <button className="mx-btn-icon sm mu-control-action-icon" onClick={onRefresh} title="Recargar">
+          <RotateCcw size={16} />
+          <span>Recargar</span>
+        </button>
+        <button className="mx-btn-icon sm mu-control-action-icon" onClick={onExportar} disabled={exportando} title="Exportar a Excel">
+          <FileDown size={16} />
+          <span>{exportando ? 'Exportando' : 'Exportar'}</span>
+        </button>
+        <HelpTourButton tourId="muestreos" className="mu-help-action" />
+        <button className="mx-btn mx-btn-primary sm mu-new-action" onClick={onNewMuestreo} data-tour="muestreos-registrar">
           <Plus size={16} /> Muestreo
         </button>
       </div>

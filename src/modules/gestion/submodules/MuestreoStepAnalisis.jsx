@@ -276,6 +276,11 @@ export default function MuestreoStepAnalisis({
                   ))}
                 </div>
                 <textarea className="mx-input mu-item-popover-textarea" rows={3} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} />
+                <div className="mu-item-popover-footer">
+                  <button type="button" className="mx-btn mx-btn-primary sm" onClick={() => { setActiveItemId(null); setPopoverPos(null); }}>
+                    Aceptar
+                  </button>
+                </div>
               </div>
             </>
           );
