@@ -1126,16 +1126,17 @@ export default function Calendario() {
                               <div className="cal-week-event-heading">
                                 <AgendaKindIcon kind={item.kind} />
                                 <div className="cal-week-event-copy">
-                                  <span className="cal-week-event-kind">{TYPE_LABELS[item.kind] || 'Contacto'}</span>
-                                  <div className="cal-week-event-title">{item.title}</div>
+                                  {(!item.description || item.status !== 'realizado') && (
+                                    <div className="cal-week-event-title">{item.title}</div>
+                                  )}
                                 </div>
                               </div>
                               <AgendaStatus status={item.status} />
                             </div>
-                            <div className="cal-week-event-provider">{item.provider}</div>
-                            {item.contactoNombre && item.contactoNombre !== item.provider && (
-                              <div className="cal-week-event-contact">{item.contactoNombre}</div>
-                            )}
+                            <div className="cal-week-event-provider">
+                              <span>Proveedor:</span>{' '}
+                              {item.provider && item.provider !== 'Sin proveedor' ? item.provider : item.contactoNombre || 'Sin proveedor'}
+                            </div>
                             {item.description && (
                               <div className="cal-week-event-summary">{item.description}</div>
                             )}
