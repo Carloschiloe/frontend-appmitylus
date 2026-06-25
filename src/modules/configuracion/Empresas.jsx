@@ -145,7 +145,7 @@ export default function Empresas() {
                 ) : (
                   filteredEmpresas.map(emp => (
                     <tr key={emp._id}>
-                      <td>
+                      <td data-label="Empresa">
                         <div className="usuarios-avatar-wrapper">
                           <div className="usuarios-avatar" style={{ background: 'var(--color-primary-bg)', color: 'var(--color-primary)', overflow: 'hidden', padding: emp.config?.logo ? 0 : undefined }}>
                             {emp.config?.logo
@@ -159,22 +159,22 @@ export default function Empresas() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="ID / Slug">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                           <Globe size={14} /> {emp.slug}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Base de Datos">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 500 }}>
                           <Database size={14} /> {emp.dbName}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Estado">
                         <span className={`mx-badge ${emp.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
                           {emp.activo ? 'ACTIVA' : 'INACTIVA'}
                         </span>
                       </td>
-                       <td style={{ textAlign: 'right' }}>
+                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
                          <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%' }}>
                            <button className="mx-action-btn edit" onClick={() => openModal(emp)}><Edit size={14} /></button>
                            <button className="mx-action-btn delete" onClick={() => setConfirmDeleteEmpresa(emp)}>

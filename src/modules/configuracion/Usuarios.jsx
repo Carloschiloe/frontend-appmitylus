@@ -296,7 +296,7 @@ export default function Usuarios() {
                     const rol = getRolConfig(u.rol);
                     return (
                       <tr key={u._id}>
-                        <td>
+                        <td data-label="Usuario">
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             <div className="mx-btn-icon sm" style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontWeight: 'var(--weight-bold)' }}>
                               {initials(u.nombre)}
@@ -307,17 +307,17 @@ export default function Usuarios() {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Rol">
                           <span className="mx-badge" style={{ background: rol.bg, color: rol.color }}>
                             <rol.icon size={12} /> {rol.label}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Empresa">
                           <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
                             {getEmpresaNombre(u.empresaId)}
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Estado">
                           <button
                             type="button"
                             className="usuarios-toggle"
@@ -330,12 +330,12 @@ export default function Usuarios() {
                             </span>
                           </button>
                         </td>
-                        <td>
+                        <td data-label="Último acceso">
                           <span className="usuarios-time-ago" title={u.ultimoLogin ? new Date(u.ultimoLogin).toLocaleString('es-CL') : ''}>
                             {timeAgo(u.ultimoLogin)}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td data-label="Acciones" style={{ textAlign: 'right' }}>
                           <div className="mx-table-actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', position: 'relative' }}>
                             <button className="mx-action-btn edit" onClick={(e) => { e.stopPropagation(); setEditingUser(u); setIsModalOpen(true); }}>
                               <Edit size={14} />
