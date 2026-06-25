@@ -1086,7 +1086,8 @@ export default function Calendario() {
             )}
 
             {viewMode === 'week' && (
-              <div className="cal-week-grid">
+              <>
+                <div className="cal-week-grid">
                 {weekDays.map((day) => {
                   const key = dateKey(day);
                   const dayItems = eventsByDay.get(key) || [];
@@ -1104,11 +1105,30 @@ export default function Calendario() {
                       </div>
                       <div className="cal-week-col-events">
                         {dayItems.map((item) => (
-                          <div key={item.id} className={`cal-week-event is-${item.status}`}>
+                          <div
+                            key={item.id}
+                            role="button"
+                            tabIndex={0}
+                            className={`cal-week-event is-${item.status}`}
+                            onClick={() => {
+                              setSelectedDate(item.date);
+                              setMonthDetailsOpen(true);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setSelectedDate(item.date);
+                                setMonthDetailsOpen(true);
+                              }
+                            }}
+                          >
                             <div className="cal-week-event-top">
                               <div className="cal-week-event-heading">
                                 <AgendaKindIcon kind={item.kind} />
-                                <div className="cal-week-event-title">{item.title}</div>
+                                <div className="cal-week-event-copy">
+                                  <span className="cal-week-event-kind">{TYPE_LABELS[item.kind] || 'Contacto'}</span>
+                                  <div className="cal-week-event-title">{item.title}</div>
+                                </div>
                               </div>
                               <AgendaStatus status={item.status} />
                             </div>
@@ -1116,12 +1136,15 @@ export default function Calendario() {
                             {item.contactoNombre && item.contactoNombre !== item.provider && (
                               <div className="cal-week-event-contact">{item.contactoNombre}</div>
                             )}
+                            {item.description && (
+                              <div className="cal-week-event-summary">{item.description}</div>
+                            )}
                             {item.responsible && item.responsible !== '-' && (
                               <div className="cal-week-event-responsible">{item.responsible}</div>
                             )}
-                            <div className="cal-week-event-actions">
+                            <div className="cal-week-event-actions" onClick={(event) => event.stopPropagation()}>
                               {item.status !== 'realizado' && (
-                                <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                                <button type="button" className="cal-icon-action success" onClick={(event) => { event.stopPropagation(); setCompletingItem(item); }} title="Marcar como hecho">
                                   <CheckCircle2 size={13} />
                                 </button>
                               )}
@@ -1131,12 +1154,12 @@ export default function Calendario() {
                                 </button>
                               )}
                               {item.canReprogram && (
-                                <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
+                                <button type="button" className="cal-icon-action" onClick={(event) => { event.stopPropagation(); setReprogrammingItem(item); }} title="Reprogramar">
                                   <RotateCcw size={13} />
                                 </button>
                               )}
                               {item.canDelete && (
-                                <button type="button" className="cal-icon-action danger" onClick={() => setDeletingItem(item)} title="Eliminar">
+                                <button type="button" className="cal-icon-action danger" onClick={(event) => { event.stopPropagation(); setDeletingItem(item); }} title="Eliminar">
                                   <Trash2 size={13} />
                                 </button>
                               )}
@@ -1151,6 +1174,73 @@ export default function Calendario() {
                   );
                 })}
               </div>
+              {monthDetailsOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="cal-aside-backdrop"
+                    aria-label="Cerrar detalle"
+                    onClick={() => setMonthDetailsOpen(false)}
+                  />
+                  <aside className="cal-aside-panel is-drawer">
+                    <div className="cal-aside-header">
+                      <span>Agenda del dia</span>
+                      <h3>{formatLongDate(selectedDate)}</h3>
+                      <p>{selectedDayItems.length ? `${selectedDayItems.length} compromisos` : 'Sin compromisos'}</p>
+                      <button type="button" className="cal-aside-close" onClick={() => setMonthDetailsOpen(false)} title="Cerrar">
+                        <X size={20} />
+                      </button>
+                    </div>
+                    <div className="agenda-aside-list">
+                      {selectedDayItems.length ? selectedDayItems.map((item) => (
+                        <article key={item.id} className={`agenda-mini-card is-${item.status}`}>
+                          <AgendaStatus status={item.status} />
+                          <strong className="agenda-mini-title"><AgendaKindIcon kind={item.kind} /> {item.title}</strong>
+                          <span>{item.provider}</span>
+                          {item.contactoNombre && item.contactoNombre !== item.provider && (
+                            <span>{item.contactoNombre}</span>
+                          )}
+                          {item.description && (
+                            <p className="agenda-mini-summary">{item.description}</p>
+                          )}
+                          {item.responsible && item.responsible !== '-' && (
+                            <span className="agenda-mini-responsible">{item.responsible}</span>
+                          )}
+                          <div className="agenda-mini-actions">
+                            {item.status !== 'realizado' && (
+                              <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
+                                <CheckCircle2 size={14} />
+                              </button>
+                            )}
+                            {item.status === 'realizado' && (
+                              <button type="button" className="cal-icon-action" onClick={() => setEditingRealizadoItem(item)} title="Ver / Editar gestiÃ³n">
+                                <Pencil size={14} />
+                              </button>
+                            )}
+                            {item.canReprogram && (
+                              <button type="button" className="cal-icon-action" onClick={() => setReprogrammingItem(item)} title="Reprogramar">
+                                <RotateCcw size={14} />
+                              </button>
+                            )}
+                            {item.canDelete && (
+                              <button type="button" className="cal-icon-action danger" onClick={() => setDeletingItem(item)} title="Eliminar">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      )) : (
+                        <div className="cal-empty-state">
+                          <CalendarDays size={34} />
+                          <strong>Dia despejado</strong>
+                          <span>No hay compromisos para esta fecha.</span>
+                        </div>
+                      )}
+                    </div>
+                  </aside>
+                </>
+              )}
+              </>
             )}
 
             {viewMode === 'calendar' && (
@@ -1219,6 +1309,9 @@ export default function Calendario() {
                         <span>{item.provider}</span>
                         {item.contactoNombre && item.contactoNombre !== item.provider && (
                           <span>{item.contactoNombre}</span>
+                        )}
+                        {item.description && (
+                          <p className="agenda-mini-summary">{item.description}</p>
                         )}
                         {item.responsible && item.responsible !== '-' && (
                           <span className="agenda-mini-responsible">{item.responsible}</span>
