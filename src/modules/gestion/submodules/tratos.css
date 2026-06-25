@@ -807,3 +807,162 @@
     overflow: visible !important;
   }
 }
+
+@media (max-width: 640px) {
+  .tratos-kpi-grid.disponibilidad-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mx-page > .mx-toolbar:has(.tratos-toolbar-search) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .tratos-month-nav,
+  .tratos-toolbar-search,
+  .tratos-todos-btn,
+  .mx-page > .mx-toolbar:has(.tratos-toolbar-search) > .mx-btn {
+    width: 100%;
+  }
+
+  .tratos-table-card-override {
+    margin: 12px 8px 16px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .tratos-table-wrap-override {
+    overflow: visible !important;
+  }
+
+  .tratos-table-wrap-override .mx-table {
+    display: block;
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .tratos-table-wrap-override thead {
+    display: none;
+  }
+
+  .tratos-table-wrap-override tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tratos-table-wrap-override tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid #dbe6f3;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .tratos-table-wrap-override td {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 4px;
+    padding: 0 !important;
+    border: 0 !important;
+    text-align: left !important;
+    white-space: normal;
+  }
+
+  .tratos-table-wrap-override td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #8aa0ba;
+  }
+
+  .tratos-table-wrap-override td[data-label="Proveedor"],
+  .tratos-table-wrap-override td[data-label="Fechas"],
+  .tratos-table-wrap-override td[data-label="Acciones"] {
+    grid-column: 1 / -1;
+  }
+
+  .tratos-provider-name {
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .tratos-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tratos-actions .mx-action-btn,
+  .tratos-menu-trigger {
+    width: 100%;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .tratos-menu-dropdown {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    top: auto;
+    width: auto;
+    border-radius: 18px;
+    padding: 8px;
+    z-index: 3000;
+  }
+
+  .tratos-menu-item {
+    min-height: 44px;
+    font-size: 0.92rem;
+  }
+
+  .tratos-form-modal,
+  .tratos-share-modal,
+  .tratos-cond-modal,
+  .tratos-saved-modal {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px);
+    overflow: hidden;
+    border-radius: 18px;
+  }
+
+  .tratos-form-modal .mx-modal-body,
+  .tratos-cond-modal-body,
+  .tratos-saved-body {
+    max-height: calc(100dvh - 170px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tratos-form-row,
+  .tratos-condition-row,
+  .tratos-cond-modal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tratos-condition-value,
+  .tratos-condition-control {
+    width: 100%;
+  }
+
+  .tratos-share-actions,
+  .tratos-saved-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

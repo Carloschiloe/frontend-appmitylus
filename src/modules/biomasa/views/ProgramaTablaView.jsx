@@ -136,7 +136,7 @@ export default function ProgramaTablaView({
               const showDaysAlert = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7;
               return (
                 <tr key={p._id} className={`harvest-prog-row${p.estado === 'finalizado' ? ' is-finalizado' : ''}`}>
-                  <td>
+                  <td data-label="Proveedor / Centro">
                     <div className="harvest-prog-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
                     {(p.centroNombre || p.centroCodigo) && (
                       <div className="harvest-prog-centro">{p.centroNombre || p.centroCodigo}</div>
@@ -148,7 +148,7 @@ export default function ProgramaTablaView({
                     })()}
                   </td>
 
-                  <td className="harvest-prog-vol-cell">
+                  <td className="harvest-prog-vol-cell" data-label="Volumen">
                     <div className="harvest-prog-vol-main">
                       {volume.estimated ? fmtTonsInt(volume.estimated) : '—'}
                       {hasDailyAdjustments && <span className="harvest-prog-adj-chip harvest-prog-adj-chip--inline">Ajustes</span>}
@@ -162,7 +162,7 @@ export default function ProgramaTablaView({
                     )}
                   </td>
 
-                  <td className="harvest-prog-period-cell">
+                  <td className="harvest-prog-period-cell" data-label="Período">
                     <div className="harvest-prog-date-range">
                       <span className="harvest-prog-date-main">{fmtDateShort(p.vigenciaDesde)}</span>
                       {p.vigenciaHasta && <><span className="harvest-prog-date-arrow">→</span><span className="harvest-prog-date-main">{fmtDateShort(p.vigenciaHasta)}</span></>}
@@ -176,7 +176,7 @@ export default function ProgramaTablaView({
                     <div className="harvest-prog-date-label">Inicio · Término</div>
                   </td>
 
-                  <td className="harvest-prog-product-cell">
+                  <td className="harvest-prog-product-cell" data-label="Producto">
                     <span className={`prog-product-chip ${getProductClass(p.tipoProducto)}`}>
                       {getProductChipLabel(p.tipoProducto)} <em>{getTipoProductoLabel(p.tipoProducto)}</em>
                     </span>
@@ -189,11 +189,11 @@ export default function ProgramaTablaView({
                     </div>
                   </td>
 
-                  <td>
+                  <td data-label="Estado">
                     <ProgramaEstadoBadge programa={p} />
                   </td>
 
-                  <td className="harvest-prog-actions-cell">
+                  <td className="harvest-prog-actions-cell" data-label="Acciones">
                     <div className="biomasa-action-bar">
                       {p.estado === 'activo' && (
                         <button className="mx-action-btn pause" title="Pausar" onClick={() => { setPauseForm({ pausadoDesde: todayKey(), motivoPausa: '' }); setPauseModal({ id: p._id, proveedorNombre: p.proveedorNombre }); }}><Pause size={14} /></button>

@@ -6068,3 +6068,304 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     height: 13px;
   }
 }
+
+@media (max-width: 640px) {
+  .biomasa-container,
+  .biomasa-content-frame,
+  .tab-content-area {
+    min-width: 0;
+  }
+
+  .biomasa-content-frame {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .disponibilidad-tabs,
+  .prog-sub-nav-bar,
+  .harvest-program-toolbar,
+  .harvest-followup-toolbar,
+  .biomasa-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: stretch !important;
+  }
+
+  .disponibilidad-tabs,
+  .prog-sub-nav,
+  .disp-filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .disponibilidad-tabs::-webkit-scrollbar,
+  .prog-sub-nav::-webkit-scrollbar,
+  .disp-filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .prog-sub-nav {
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .prog-sub-nav-btn {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #dbe6f3;
+    border-radius: 999px;
+    background: #fff;
+  }
+
+  .prog-sub-nav-btn.active {
+    background: #eff4ff;
+    border-color: rgba(10, 92, 255, 0.35);
+  }
+
+  .disp-filter-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .disp-filter-bar__search,
+  .disp-filter-bar__toggle,
+  .disp-filter-bar__cta,
+  .disp-view-selector,
+  .harvest-program-toolbar .mx-btn,
+  .harvest-program-toolbar .mx-btn-icon,
+  .harvest-followup-toolbar .mx-btn,
+  .harvest-followup-toolbar .mx-btn-icon {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .disp-filter-bar__panel {
+    position: static;
+    width: 100%;
+    max-width: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .disp-filter-bar__panel .disponibilidad-filter,
+  .disp-filter-bar__panel .mx-btn {
+    width: 100%;
+  }
+
+  .disponibilidad-table-card,
+  .harvest-program-table-card,
+  .harvest-followup-panel {
+    margin: 12px 8px 16px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .disponibilidad-table-scroll,
+  .harvest-program-table-card .mx-table-wrap,
+  .harvest-followup-table-wrap {
+    overflow: visible !important;
+  }
+
+  .disponibilidad-table,
+  .harvest-prog-table,
+  .harvest-followup-table {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .disponibilidad-table thead,
+  .harvest-prog-table thead,
+  .harvest-followup-table thead {
+    display: none;
+  }
+
+  .disponibilidad-table tbody,
+  .harvest-prog-table tbody,
+  .harvest-followup-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .disponibilidad-table tr,
+  .harvest-prog-table tr,
+  .harvest-followup-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid #dbe6f3;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .disponibilidad-table td,
+  .harvest-prog-table td,
+  .harvest-followup-table td {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 4px;
+    padding: 0 !important;
+    border: 0 !important;
+    text-align: left !important;
+    white-space: normal;
+  }
+
+  .disponibilidad-table td[data-label]::before,
+  .disponibilidad-table .disponibilidad-observation::before,
+  .harvest-prog-table td[data-label]::before,
+  .harvest-followup-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #8aa0ba;
+  }
+
+  .disponibilidad-table .disponibilidad-observation::before {
+    content: "Observación";
+  }
+
+  .disponibilidad-table td[data-label="Proveedor"],
+  .disponibilidad-table td[data-label="Observación"],
+  .disponibilidad-table td[data-label="Acciones"],
+  .disponibilidad-table .disponibilidad-observation,
+  .harvest-prog-table td[data-label="Proveedor / Centro"],
+  .harvest-prog-table td[data-label="Acciones"],
+  .harvest-followup-table td[data-label="Proveedor / Centro"],
+  .harvest-followup-table td[data-label="Última novedad"],
+  .harvest-followup-table td[data-label="Acción"] {
+    grid-column: 1 / -1;
+  }
+
+  .disponibilidad-row-actions,
+  .biomasa-action-bar,
+  .harvest-followup-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    justify-content: stretch;
+  }
+
+  .disponibilidad-row-actions .mx-btn,
+  .disponibilidad-row-actions .mx-btn-icon,
+  .biomasa-action-bar .mx-action-btn,
+  .harvest-followup-actions .mx-btn {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  .disponibilidad-create-trato-button {
+    grid-column: 1 / -1;
+  }
+
+  .harvest-prog-name,
+  .biomasa-prov-name {
+    font-size: 1rem;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .harvest-prog-vol-cell,
+  .harvest-prog-period-cell,
+  .harvest-prog-product-cell {
+    align-items: flex-start;
+  }
+
+  .mx-modal-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    overflow: hidden !important;
+  }
+
+  .mx-modal-overlay .mx-modal,
+  .disponibilidad-modal,
+  .pause-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+  }
+
+  .mx-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 14px !important;
+    background: #fff;
+  }
+
+  .mx-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px !important;
+  }
+
+  .mx-modal-body table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .mx-modal-body input,
+  .mx-modal-body select,
+  .mx-modal-body textarea,
+  .mx-modal-body .mx-input,
+  .mx-modal-body .mx-select,
+  .mx-modal-body .mx-textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .mx-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .mx-modal-footer .mx-btn {
+    width: 100%;
+    min-height: 46px;
+    justify-content: center;
+  }
+
+  .disponibilidad-field-wide,
+  .disponibilidad-modal .mx-form-grid,
+  .disponibilidad-modal .disponibilidad-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

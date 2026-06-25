@@ -334,16 +334,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                       const meta = stateMeta(item.estado || 'disponible');
                       return (
                         <tr key={item._id}>
-                          <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
-                          <td>{item.centroCodigo || 'Sin centro'}</td>
-                          <td>{mesLabel(item.mesKey)}</td>
-                          <td className="disponibilidad-tons">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
-                          <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                          <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
-                          <td>{item.responsable || 'Sin asignar'}</td>
-                          <td><OrigenIcon origen={item.origen || 'otro'} label={optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')} /></td>
+                          <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
+                          <td data-label="Centro">{item.centroCodigo || 'Sin centro'}</td>
+                          <td data-label="Mes">{mesLabel(item.mesKey)}</td>
+                          <td className="disponibilidad-tons" data-label="Toneladas">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
+                          <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
+                          <td data-label="Estado"><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
+                          <td data-label="Responsable">{item.responsable || 'Sin asignar'}</td>
+                          <td data-label="Origen"><OrigenIcon origen={item.origen || 'otro'} label={optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')} /></td>
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
-                          <td>
+                          <td data-label="Acciones">
                             <div className="disponibilidad-row-actions">
                               <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
                               <button type="button" className="mx-btn-icon sm" onClick={() => setDeleteItem(item)} aria-label="Eliminar disponibilidad"><Trash2 size={15} /></button>

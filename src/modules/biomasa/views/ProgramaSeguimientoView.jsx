@@ -117,7 +117,7 @@ export default function ProgramaSeguimientoView({
             <tbody>
               {followupPrograms.map(p => (
                 <tr key={`adj-${p._id}`}>
-                  <td>
+                  <td data-label="Proveedor / Centro">
                     <div className="biomasa-prov-cell">
                       <div className="biomasa-avatar">
                         {p.proveedorNombre.substring(0, 2).toUpperCase()}
@@ -128,23 +128,23 @@ export default function ProgramaSeguimientoView({
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Producto">
                     <span className={`harvest-product-pill ${getProductClass(p.tipoProducto)}`}>
                       {getTipoProductoLabel(p.tipoProducto)}
                     </span>
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="Base" style={{ textAlign: 'center' }}>
                     <span className="harvest-followup-number">{p.camionesDefault || 0} cam</span>
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td data-label="Hoy" style={{ textAlign: 'center' }}>
                     <span className="harvest-followup-number today">{getTodayProgramCamiones(p)} cam</span>
                   </td>
-                  <td>
+                  <td data-label="Última novedad">
                     <div className="harvest-followup-novelty">
                       {getLatestProgramNovelty(p)}
                     </div>
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td data-label="Acción" style={{ textAlign: 'right' }}>
                     <div className="harvest-followup-actions">
                       <button className="mx-btn mx-btn-primary sm" onClick={() => handleOpenAdjustModal(p)}>
                         <Plus size={14} /> Ajustar

@@ -181,7 +181,7 @@ export default function TratosTable({
 
                   return (
                     <tr key={item._id} className="tratos-row">
-                      <td>
+                      <td data-label="Proveedor">
                         <div className="tratos-provider-name">{item.proveedorNombre}</div>
                         {(item.contactoNombre || item.contactoTelefono) && (
                           <div className="tratos-chip-row">
@@ -194,19 +194,19 @@ export default function TratosTable({
                           </div>
                         )}
                       </td>
-                      <td className="tratos-col-centro">
+                      <td className="tratos-col-centro" data-label="Centro">
                         {item.centroCodigo
                           ? <code className="tratos-centro-code">{item.centroCodigo}</code>
                           : <span className="tratos-centro-empty">—</span>}
                       </td>
-                      <td className="tratos-metric-cell">
+                      <td className="tratos-metric-cell" data-label="Tons">
                         <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>
                       </td>
-                      <td className="tratos-metric-cell">
+                      <td className="tratos-metric-cell" data-label="Precio">
                         <div className="tratos-metric-strong">{formatMoney(displayPrecio)}</div>
                         <div className="tratos-metric-label">x kg</div>
                       </td>
-                      <td className="tratos-date-cell">
+                      <td className="tratos-date-cell" data-label="Fechas">
                         <div className="tratos-date-range">
                           {formatDateOnlySafe(displayInicioCosecha) || '—'}
                           <span className="tratos-date-arrow">→</span>
@@ -214,7 +214,7 @@ export default function TratosTable({
                         </div>
                         <div className="tratos-date-label">Inicio → Término est.</div>
                       </td>
-                      <td>
+                      <td data-label="Estado">
                         <span className={`mx-badge mx-badge-${uiEstado === 'acordado' || uiEstado === 'cerrado_ok' ? 'success' : uiEstado === 'rechazado' ? 'danger' : 'info'}`}>
                           {ESTADOS_TRATO.find(e => e.val === uiEstado)?.label || item.estado}
                         </span>
@@ -246,10 +246,10 @@ export default function TratosTable({
                           </Link>
                         )}
                       </td>
-                      <td className="tratos-date-cell" style={{ fontSize: '0.85rem' }}>
+                      <td className="tratos-date-cell" data-label="Responsable" style={{ fontSize: '0.85rem' }}>
                         {item.responsableNombre || 'Sin responsable registrado'}
                       </td>
-                      <td className="tratos-actions-cell">
+                      <td className="tratos-actions-cell" data-label="Acciones">
                         <div className="mx-table-actions-cell tratos-actions">
                           {condiciones.length > 0 && (
                             <button
