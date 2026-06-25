@@ -1071,14 +1071,25 @@ export default function Calendario() {
                   return (
                     <div key={key} className={`cal-week-col${isToday ? ' is-today' : ''}`}>
                       <div className={`cal-week-col-header${isToday ? ' is-today' : ''}`}>
-                        <div className="col-dow">{DOW[(day.getDay() + 6) % 7]}</div>
-                        <div className="col-date">{day.getDate()}</div>
+                        <div>
+                          <div className="col-dow">{DOW[(day.getDay() + 6) % 7]}</div>
+                          <div className="col-date">{day.getDate()}</div>
+                        </div>
+                        <span className={`cal-week-count${dayItems.length ? ' has-items' : ''}`}>
+                          {dayItems.length}
+                        </span>
                       </div>
                       <div className="cal-week-col-events">
                         {dayItems.map((item) => (
                           <div key={item.id} className={`cal-week-event is-${item.status}`}>
-                            <div className="cal-week-event-title">{item.title}</div>
+                            <div className="cal-week-event-top">
+                              <div className="cal-week-event-title">{item.title}</div>
+                              <AgendaStatus status={item.status} />
+                            </div>
                             <div className="cal-week-event-provider">{item.provider}</div>
+                            {item.contactoNombre && item.contactoNombre !== item.provider && (
+                              <div className="cal-week-event-contact">{item.contactoNombre}</div>
+                            )}
                             {item.responsible && item.responsible !== '-' && (
                               <div className="cal-week-event-responsible">{item.responsible}</div>
                             )}
@@ -1143,7 +1154,8 @@ export default function Calendario() {
                           <div className="cal-events-stack">
                             {dayItems.slice(0, 3).map((item) => (
                               <span key={item.id} className={`cal-event-pill is-compact is-${item.status}`}>
-                                {item.provider}
+                                <strong>{item.title}</strong>
+                                <em>{item.provider}</em>
                               </span>
                             ))}
                             {dayItems.length > 3 ? <span className="cal-more-events">+{dayItems.length - 3} mas</span> : null}

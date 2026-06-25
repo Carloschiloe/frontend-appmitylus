@@ -853,20 +853,39 @@
 
 .cal-event-pill {
   min-width: 0;
-  height: 24px;
-  display: block;
-  padding: 0 8px;
+  min-height: 32px;
+  display: grid;
+  gap: 1px;
+  padding: 5px 8px;
   border: 1px solid #bfdbfe;
   border-left: 3px solid #0a5cff;
   border-radius: 6px;
   background: #eff6ff;
   color: #2563eb;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 0.7rem;
   font-weight: 400;
-  line-height: 22px;
+  line-height: 1.15;
+}
+
+.cal-event-pill strong,
+.cal-event-pill em {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-style: normal;
+}
+
+.cal-event-pill strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.cal-event-pill em {
+  color: #64748b;
+  font-size: 0.66rem;
 }
 
 .cal-event-pill.is-overdue {
@@ -1005,7 +1024,10 @@
 
 .cal-week-col-header {
   padding: 10px 8px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
 }
@@ -1033,6 +1055,23 @@
   color: #0a5cff;
 }
 
+.cal-week-count {
+  min-width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cal-week-count.has-items {
+  background: #dbeafe;
+  color: #0a5cff;
+}
+
 .cal-week-col-events {
   flex: 1;
   padding: 8px;
@@ -1047,6 +1086,7 @@
   border: 1px solid #e2e8f0;
   border-left: 3px solid #0a5cff;
   background: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 .cal-week-event.is-overdue {
@@ -1064,11 +1104,19 @@
   background: #f0fdf4;
 }
 
+.cal-week-event-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .cal-week-event-title {
   font-size: 0.78rem;
-  font-weight: 500;
+  font-weight: 700;
   color: #334155;
-  margin-bottom: 2px;
+  margin-bottom: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1076,8 +1124,17 @@
 
 .cal-week-event-provider {
   font-size: 0.71rem;
-  color: #64748b;
-  font-weight: 400;
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-week-event-contact {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
