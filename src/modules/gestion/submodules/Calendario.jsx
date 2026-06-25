@@ -1204,6 +1204,18 @@ export default function Calendario() {
                           {item.description && (
                             <p className="agenda-mini-summary">{item.description}</p>
                           )}
+                          {(item.nextStep || item.nextStepDate || item.status !== 'realizado') && (
+                            <div className="agenda-mini-next">
+                              <div>
+                                <span>Proximo paso</span>
+                                <strong>{item.nextStep || item.title || 'Sin proximo paso'}</strong>
+                              </div>
+                              <div>
+                                <span>Fecha proxima</span>
+                                <strong>{formatShortDate(item.nextStepDate || item.date)}</strong>
+                              </div>
+                            </div>
+                          )}
                           {item.responsible && item.responsible !== '-' && (
                             <span className="agenda-mini-responsible">{item.responsible}</span>
                           )}
@@ -1313,6 +1325,18 @@ export default function Calendario() {
                         )}
                         {item.description && (
                           <p className="agenda-mini-summary">{item.description}</p>
+                        )}
+                        {(item.nextStep || item.nextStepDate || item.status !== 'realizado') && (
+                          <div className="agenda-mini-next">
+                            <div>
+                              <span>Proximo paso</span>
+                              <strong>{item.nextStep || item.title || 'Sin proximo paso'}</strong>
+                            </div>
+                            <div>
+                              <span>Fecha proxima</span>
+                              <strong>{formatShortDate(item.nextStepDate || item.date)}</strong>
+                            </div>
+                          </div>
                         )}
                         {item.responsible && item.responsible !== '-' && (
                           <span className="agenda-mini-responsible">{item.responsible}</span>
