@@ -210,8 +210,14 @@ export default function MuestreoStepAnalisis({
                     <div className={`mu-analysis-percent${value > 0 ? ' active' : ''}`}>
                       {value > 0 ? `${fmtNum(pct, 1)}%` : '—'}
                     </div>
-                    <button type="button" className="mx-btn-icon mu-analysis-icon-btn" onClick={(e) => handleOpenItemPopover(id, e)} title="Observaciones y fotos">
+                    <button
+                      type="button"
+                      className={`mx-btn-icon mu-analysis-icon-btn mu-notes-btn${hasContent ? ' has-content' : ''}`}
+                      onClick={(e) => handleOpenItemPopover(id, e)}
+                      title="Observaciones y fotos"
+                    >
                       <MessageSquare size={12} color={hasContent ? 'var(--color-primary)' : '#b0bec5'} />
+                      <span>{hasContent ? 'Ver notas / fotos' : 'Notas / fotos'}</span>
                     </button>
                   </div>
                 </div>

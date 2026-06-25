@@ -978,6 +978,16 @@
   height: 22px;
 }
 
+.mu-notes-btn span {
+  display: none;
+}
+
+.mu-notes-btn.has-content {
+  color: var(--color-primary);
+  background: rgba(10, 92, 255, 0.08);
+  border-color: rgba(10, 92, 255, 0.2);
+}
+
 .mu-analysis-item:hover .mu-hide-btn {
   opacity: 1;
 }
@@ -2397,6 +2407,37 @@
     max-width: none !important;
   }
 
+  .mu-analysis-item-row {
+    grid-template-columns: minmax(0, 1fr) 92px 52px !important;
+  }
+
+  .mu-analysis-icon-btn.mu-notes-btn {
+    grid-column: 1 / -1;
+    width: 100% !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    border: 1px dashed #cbd5e1 !important;
+    background: #f8fafc !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #64748b;
+  }
+
+  .mu-analysis-icon-btn.mu-notes-btn span {
+    display: inline !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .mu-analysis-icon-btn.mu-notes-btn.has-content {
+    border-style: solid !important;
+    border-color: rgba(10, 92, 255, 0.28) !important;
+    background: rgba(10, 92, 255, 0.08) !important;
+    color: var(--color-primary);
+  }
+
   .mu-item-popover {
     left: 12px !important;
     right: 12px !important;
@@ -2413,6 +2454,10 @@
 
   .muestreos-table-card .mx-table {
     min-width: 700px;
+  }
+
+  .mu-analysis-item-row {
+    grid-template-columns: minmax(0, 1fr) 86px 44px !important;
   }
 
   .mu-share-actions {
