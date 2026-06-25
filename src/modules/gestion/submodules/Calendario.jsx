@@ -1284,12 +1284,24 @@ export default function Calendario() {
                             {dayItems.length ? <span className="cal-day-count">{dayItems.length}</span> : null}
                           </div>
                           <div className="cal-events-stack">
-                            {dayItems.slice(0, 3).map((item) => (
-                              <span key={item.id} className={`cal-event-pill is-compact is-${item.status}`}>
-                                <strong><AgendaKindIcon kind={item.kind} size={12} /> {item.title}</strong>
-                                <em>{item.provider}</em>
-                              </span>
-                            ))}
+                            {dayItems.slice(0, 3).map((item) => {
+                              const displayName = item.provider && item.provider !== 'Sin proveedor'
+                                ? item.provider
+                                : item.contactoNombre || 'Sin proveedor';
+                              return (
+                                <span
+                                  key={item.id}
+                                  className={`cal-event-pill is-compact is-${item.status}`}
+                                  title={`${TYPE_LABELS[item.kind] || 'Contacto'}\nProveedor: ${displayName}\n${item.title || item.description || ''}`}
+                                >
+                                  <span className="cal-event-pill-main">
+                                    <AgendaKindIcon kind={item.kind} size={12} />
+                                    <strong>{displayName}</strong>
+                                  </span>
+                                  <em>{item.title || item.description || 'Sin detalle'}</em>
+                                </span>
+                              );
+                            })}
                             {dayItems.length > 3 ? <span className="cal-more-events">+{dayItems.length - 3} mas</span> : null}
                           </div>
                         </button>
