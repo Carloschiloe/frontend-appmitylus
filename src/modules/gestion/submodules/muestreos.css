@@ -1040,6 +1040,10 @@
   animation: fadeIn 0.15s ease-out;
 }
 
+.mu-item-popover-head {
+  display: none;
+}
+
 .mu-item-popover-textarea {
   width: 100%;
   resize: none;
@@ -1052,10 +1056,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
   align-items: center;
+}
+
+.mu-item-photo-upload span {
+  display: none;
 }
 
 .mu-analysis-item-row.expanded {
@@ -2441,9 +2449,81 @@
   .mu-item-popover {
     left: 12px !important;
     right: 12px !important;
-    bottom: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px) !important;
     top: auto !important;
     width: auto !important;
+    max-height: min(58dvh, 420px) !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px !important;
+    overflow: auto;
+  }
+
+  .mu-item-popover-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .mu-item-popover-head span {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .mu-item-popover-head strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.98rem;
+    color: #0f172a;
+  }
+
+  .mu-item-popover-photos {
+    order: 1;
+    margin: 0 !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mu-item-photo-upload {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-width: 138px;
+    height: 44px !important;
+    padding: 0 14px;
+    gap: 8px;
+    border-radius: 12px !important;
+  }
+
+  .mu-item-photo-upload span {
+    display: inline !important;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #475569;
+  }
+
+  .mu-item-popover .mu-evidence-thumb {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+  }
+
+  .mu-item-popover-textarea {
+    order: 2;
+    min-height: 110px;
+    font-size: 1rem !important;
+    line-height: 1.35;
   }
 }
 
@@ -2458,6 +2538,13 @@
 
   .mu-analysis-item-row {
     grid-template-columns: minmax(0, 1fr) 86px 44px !important;
+  }
+
+  .mu-item-popover {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important;
+    max-height: 54dvh !important;
   }
 
   .mu-share-actions {

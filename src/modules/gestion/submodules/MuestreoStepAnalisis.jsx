@@ -246,16 +246,26 @@ export default function MuestreoStepAnalisis({
         {/* Popover de ítem */}
         {activeItemId && popoverPos && (() => {
           const id = activeItemId;
+          const activeCat = allItems.find((cat) => cat._id === id);
           const legacyFotos = catDetails[id]?.fotos || [];
           const s3Photos = catDetails[id]?.photos || [];
           return (
             <>
               <div className="mu-action-backdrop" onClick={() => { setActiveItemId(null); setPopoverPos(null); }} />
               <div className="mu-item-popover" style={{ top: popoverPos.top, left: popoverPos.left }}>
-                <textarea className="mx-input mu-item-popover-textarea" rows={3} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} autoFocus />
+                <div className="mu-item-popover-head">
+                  <div>
+                    <span>Notas / fotos</span>
+                    <strong>{activeCat?.nombre || 'Ítem'}</strong>
+                  </div>
+                  <button type="button" className="mx-btn-icon" onClick={() => { setActiveItemId(null); setPopoverPos(null); }} title="Cerrar">
+                    <X size={16} />
+                  </button>
+                </div>
                 <div className="mu-item-popover-photos">
-                  <label className="mu-evidence-upload compact" title="Agregar foto">
+                  <label className="mu-evidence-upload compact mu-item-photo-upload" title="Agregar foto">
                     <Camera size={15} color="#64748b" />
+                    <span>Agregar foto</span>
                     <input type="file" multiple accept="image/*" className="mu-hidden-file" onChange={(e) => handleFileUpload(id, e.target.files)} />
                   </label>
                   {legacyFotos.map((foto, index) => (
@@ -265,6 +275,7 @@ export default function MuestreoStepAnalisis({
                     <EvidenceThumb key={`s3-${index}`} src={photo.url} onPreview={setPreviewImage} onRemove={() => removePhoto(id, index, false)} />
                   ))}
                 </div>
+                <textarea className="mx-input mu-item-popover-textarea" rows={3} placeholder="Observaciones de calidad..." value={catDetails[id]?.obs || ''} onChange={(e) => setCatDetails({ ...catDetails, [id]: { ...catDetails[id], obs: e.target.value } })} />
               </div>
             </>
           );
