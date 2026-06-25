@@ -122,25 +122,25 @@ export default function MuestreosTable({
               ) :
               filtered.map((item) => (
                 <tr key={item._id || item.id}>
-                  <td className="mu-date-cell">{formatDate(item.fecha)}</td>
-                  <td>
+                  <td className="mu-date-cell" data-label="Fecha">{formatDate(item.fecha)}</td>
+                  <td data-label="Proveedor / Centro">
                     <div className="mu-provider-name">{item.proveedorNombre || item.proveedor}</div>
                     <div className="mu-center-line">
                       <MapPin size={10} /> {item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}
                     </div>
                   </td>
-                  <td className="mu-text-center"><span className="mx-badge mx-badge-info mu-strong-badge">{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
-                  <td className="mu-text-center mu-strong">{item.uxkg || 0}</td>
-                  <td className="mu-text-center mu-success-strong">
+                  <td className="mu-text-center" data-label="% Rdto."><span className="mx-badge mx-badge-info mu-strong-badge">{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
+                  <td className="mu-text-center mu-strong" data-label="U×Kg">{item.uxkg || 0}</td>
+                  <td className="mu-text-center mu-success-strong" data-label="% Proc.">
                     {item.total > 0 ? (item.procesable / item.total * 100).toFixed(1) : '0.0'}%
                   </td>
-                  <td className="mu-text-center">
+                  <td className="mu-text-center" data-label="% Rechazo">
                     <span className={(item.total > 0 && item.rechazos / item.total > 0.05) ? 'mu-error-text' : ''}>
                       {item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%
                     </span>
                   </td>
-                  <td className="mu-text-center"><QualityBadge item={item} /></td>
-                  <td className="mu-text-right">
+                  <td className="mu-text-center" data-label="Calificación"><QualityBadge item={item} /></td>
+                  <td className="mu-text-right" data-label="Acciones">
                     <MuestreoActions item={item} onShare={onShare} onReport={onReport} onEdit={onEdit} onDelete={onDelete} />
                   </td>
                 </tr>

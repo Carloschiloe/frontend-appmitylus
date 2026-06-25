@@ -6009,3 +6009,62 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 .harvest-prog-view-option:hover { background: var(--color-surface-hover, #f5f8ff); }
 .harvest-prog-view-option.active { color: var(--color-primary); font-weight: 600; background: var(--color-primary-subtle, #eff4ff); }
+
+@media (max-width: 768px) {
+  .mx-content-frame.biomasa-content-frame {
+    overflow: visible;
+  }
+
+  .mx-module-nav.mx-toolbar {
+    margin: 0 -10px 14px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #dbe6f3;
+    background: rgba(255, 255, 255, 0.92);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mx-module-nav.mx-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mx-module-nav .mx-toggle-group {
+    width: max-content;
+    min-width: 100%;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mx-module-nav .mx-toggle-btn {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid #dbe6f3;
+    border-radius: 999px;
+    background: #fff;
+    color: #61738c;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    margin-bottom: 0;
+  }
+
+  .mx-module-nav .mx-toggle-btn.active {
+    background: #eff4ff;
+    border-color: rgba(10, 92, 255, 0.35);
+    color: #0a5cff;
+    box-shadow: 0 10px 24px rgba(10, 92, 255, 0.12);
+  }
+}
+
+@media (max-width: 420px) {
+  .mx-module-nav .mx-toggle-btn {
+    padding: 0 12px;
+    font-size: 0.82rem;
+  }
+
+  .mx-module-nav .mx-toggle-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+}
