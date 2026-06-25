@@ -26,6 +26,7 @@ import {
   Target,
   Trash2,
   User,
+  X,
 } from 'lucide-react';
 import CompletarTareaModal from './CompletarTareaModal';
 import ConfirmModal from './ConfirmModal';
@@ -582,6 +583,7 @@ export default function Calendario() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [range, setRange] = useState('month');
   const [listPeriod, setListPeriod] = useState('month');
+  const [monthDetailsOpen, setMonthDetailsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [nextStepFilter, setNextStepFilter] = useState('all');
@@ -821,6 +823,7 @@ export default function Calendario() {
     const next = new Date(year, month + delta, 1);
     setCurrentDate(next);
     setSelectedDate(next);
+    setMonthDetailsOpen(false);
   }
 
   function changeWeek(delta) {
@@ -838,6 +841,7 @@ export default function Calendario() {
   function viewItemInCalendar(item) {
     setCurrentDate(new Date(item.date.getFullYear(), item.date.getMonth(), 1));
     setSelectedDate(item.date);
+    setMonthDetailsOpen(true);
     setViewMode('calendar');
   }
 
@@ -1145,7 +1149,10 @@ export default function Calendario() {
                           type="button"
                           key={key}
                           className={`cal-day-cell ${isCurrentMonth ? '' : 'is-muted'} ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}`}
-                          onClick={() => setSelectedDate(day)}
+                          onClick={() => {
+                            setSelectedDate(day);
+                            setMonthDetailsOpen(true);
+                          }}
                         >
                           <div className="cal-day-header">
                             <span className="cal-day-number">{day.getDate()}</span>
@@ -1165,11 +1172,22 @@ export default function Calendario() {
                     })}
                   </div>
                 </main>
-                <aside className="cal-aside-panel">
+                {monthDetailsOpen && (
+                  <>
+                    <button
+                      type="button"
+                      className="cal-aside-backdrop"
+                      aria-label="Cerrar detalle"
+                      onClick={() => setMonthDetailsOpen(false)}
+                    />
+                    <aside className="cal-aside-panel is-drawer">
                   <div className="cal-aside-header">
                     <span>Agenda del día</span>
                     <h3>{formatLongDate(selectedDate)}</h3>
                     <p>{selectedDayItems.length ? `${selectedDayItems.length} compromisos` : 'Sin compromisos'}</p>
+                    <button type="button" className="cal-aside-close" onClick={() => setMonthDetailsOpen(false)} title="Cerrar">
+                      <X size={20} />
+                    </button>
                   </div>
                   <div className="agenda-aside-list">
                     {selectedDayItems.length ? selectedDayItems.map((item) => (
@@ -1177,6 +1195,9 @@ export default function Calendario() {
                         <AgendaStatus status={item.status} />
                         <strong>{item.title}</strong>
                         <span>{item.provider}</span>
+                        {item.contactoNombre && item.contactoNombre !== item.provider && (
+                          <span>{item.contactoNombre}</span>
+                        )}
                         {item.responsible && item.responsible !== '-' && (
                           <span className="agenda-mini-responsible">{item.responsible}</span>
                         )}
@@ -1211,7 +1232,9 @@ export default function Calendario() {
                       </div>
                     )}
                   </div>
-                </aside>
+                    </aside>
+                  </>
+                )}
               </div>
             )}
           </>
