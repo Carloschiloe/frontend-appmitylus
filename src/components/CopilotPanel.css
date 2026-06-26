@@ -210,6 +210,38 @@
   letter-spacing: 0.04em;
 }
 
+.copilot-response__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.copilot-speak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(10, 92, 255, 0.16);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #fff;
+  color: #0055e8;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.copilot-speak:hover {
+  background: rgba(10, 92, 255, 0.08);
+}
+
+.copilot-speak.is-speaking {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.24);
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .copilot-response__message {
   margin: 0;
   color: var(--color-text, #10213b);

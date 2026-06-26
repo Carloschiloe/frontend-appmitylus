@@ -12,6 +12,8 @@ import {
   MicOff,
   Send,
   Sparkles,
+  Volume2,
+  VolumeX,
   X,
   Zap,
 } from 'lucide-react';
@@ -234,7 +236,42 @@ function CopilotResult({ response }) {
   return <GenericResult result={result} />;
 }
 
-function CopilotResponseCard({ response, onConfirm, confirming }) {
+function buildSpeechText(response) {
+  const parts = [response?.message];
+  const result = response?.result || {};
+  const intent = response?.command?.intent || '';
+
+  if (intent === 'query_agenda' && Array.isArray(result.items)) {
+    parts.push(`Encontré ${result.items.length} compromisos.`);
+    result.items.slice(0, 3).forEach((item) => {
+      parts.push(`${entityName(item)}: ${fmt(item.proximaAccion || item.resumen)} para ${fmt(item.fechaProgramada || item.fechaProximo)}.`);
+    });
+  }
+
+  if (intent === 'query_muestreos' && result.stats) {
+    parts.push(`Total muestreos: ${formatNumber(result.stats.total)}. Rendimiento promedio: ${formatNumber(result.stats.rendimientoPromedio, '%')}.`);
+  }
+
+  if (intent === 'query_history' && result.counts) {
+    parts.push(`Gestiones: ${formatNumber(result.counts.interacciones)}. Próximos pasos: ${formatNumber(result.counts.proximosPasos)}.`);
+  }
+
+  if (intent === 'query_programa_cosecha' && result.totals) {
+    parts.push(`Camiones: ${formatNumber(result.totals.camiones)}. Días con programa: ${formatNumber(result.totals.diasConPrograma)}.`);
+  }
+
+  return parts.filter(Boolean).join(' ');
+}
+
+function CopilotResponseCard({
+  response,
+  responseId,
+  onConfirm,
+  confirming,
+  onSpeak,
+  speaking,
+  voiceSupported,
+}) {
   if (!response) return null;
   const intent = response.command?.intent || '';
   const requiresConfirmation = response.status === 'needs_confirmation' && response.commandId;
@@ -246,7 +283,20 @@ function CopilotResponseCard({ response, onConfirm, confirming }) {
           {response.status === 'executed' ? <CheckCircle2 size={15} /> : <ClipboardList size={15} />}
           {statusLabel(response.status)}
         </span>
-        {intent && <span className="copilot-response__intent">{formatIntent(intent)}</span>}
+        <div className="copilot-response__tools">
+          {intent && <span className="copilot-response__intent">{formatIntent(intent)}</span>}
+          {voiceSupported && (
+            <button
+              type="button"
+              className={`copilot-speak ${speaking ? 'is-speaking' : ''}`}
+              onClick={() => onSpeak(response, responseId)}
+              title={speaking ? 'Detener lectura' : 'Leer respuesta'}
+            >
+              {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              {speaking ? 'Detener' : 'Leer'}
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="copilot-response__message">{response.message || 'Copilot procesó la solicitud.'}</p>
@@ -283,6 +333,8 @@ export default function CopilotPanel({ queryClient }) {
   const [confirming, setConfirming] = React.useState(false);
   const [listening, setListening] = React.useState(false);
   const [speechSupported, setSpeechSupported] = React.useState(false);
+  const [voiceSupported, setVoiceSupported] = React.useState(false);
+  const [speakingId, setSpeakingId] = React.useState(null);
   const [history, setHistory] = React.useState([]);
   const recognitionRef = React.useRef(null);
   const dictationBaseRef = React.useRef('');
@@ -295,9 +347,11 @@ export default function CopilotPanel({ queryClient }) {
     if (typeof window === 'undefined') return undefined;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     setSpeechSupported(Boolean(SpeechRecognition));
+    setVoiceSupported(Boolean(window.speechSynthesis && window.SpeechSynthesisUtterance));
     return () => {
       recognitionRef.current?.abort?.();
       recognitionRef.current = null;
+      window.speechSynthesis?.cancel?.();
     };
   }, []);
 
@@ -350,6 +404,27 @@ export default function CopilotPanel({ queryClient }) {
 
     recognitionRef.current = recognition;
     recognition.start();
+  }
+
+  function speakResponse(response, responseId) {
+    if (!voiceSupported) return;
+
+    if (speakingId === responseId) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(buildSpeechText(response));
+    utterance.lang = 'es-CL';
+    utterance.rate = 0.96;
+    utterance.pitch = 1;
+    utterance.onend = () => setSpeakingId((current) => (current === responseId ? null : current));
+    utterance.onerror = () => setSpeakingId((current) => (current === responseId ? null : current));
+
+    setSpeakingId(responseId);
+    window.speechSynthesis.speak(utterance);
   }
 
   async function handleSubmit(event) {
@@ -411,6 +486,8 @@ export default function CopilotPanel({ queryClient }) {
   }
 
   function reset() {
+    window.speechSynthesis?.cancel?.();
+    setSpeakingId(null);
     setHistory([]);
     setText('');
   }
@@ -468,9 +545,13 @@ export default function CopilotPanel({ queryClient }) {
                     ) : (
                       <CopilotResponseCard
                         key={item.id}
+                        responseId={item.id}
                         response={item.response}
                         onConfirm={handleConfirm}
                         confirming={confirming && latestResponse?.commandId === item.response?.commandId}
+                        onSpeak={speakResponse}
+                        speaking={speakingId === item.id}
+                        voiceSupported={voiceSupported}
                       />
                     )
                   ))}
