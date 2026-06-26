@@ -17,7 +17,13 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { confirmCopilotCommand, sendCopilotCommand } from '../api/api-copilot';
+import {
+  confirmCopilotCommand,
+  createCopilotSpeech,
+  getCopilotVoiceStatus,
+  sendCopilotCommand,
+  transcribeCopilotAudio,
+} from '../api/api-copilot';
 import { useToast } from '../context/ToastContext.jsx';
 import './CopilotPanel.css';
 
@@ -444,12 +450,18 @@ export default function CopilotPanel({ queryClient }) {
   const [loading, setLoading] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [listening, setListening] = React.useState(false);
+  const [recordingProfessional, setRecordingProfessional] = React.useState(false);
   const [speechSupported, setSpeechSupported] = React.useState(false);
   const [voiceSupported, setVoiceSupported] = React.useState(false);
+  const [professionalVoice, setProfessionalVoice] = React.useState({ enabled: false, checked: false });
   const [speakingId, setSpeakingId] = React.useState(null);
   const [history, setHistory] = React.useState([]);
   const recognitionRef = React.useRef(null);
   const dictationBaseRef = React.useRef('');
+  const mediaRecorderRef = React.useRef(null);
+  const mediaStreamRef = React.useRef(null);
+  const audioChunksRef = React.useRef([]);
+  const audioPlayerRef = React.useRef(null);
 
   const latestResponse = history.findLast?.((item) => item.type === 'assistant')?.response
     || [...history].reverse().find((item) => item.type === 'assistant')?.response
@@ -463,15 +475,100 @@ export default function CopilotPanel({ queryClient }) {
     return () => {
       recognitionRef.current?.abort?.();
       recognitionRef.current = null;
+      mediaRecorderRef.current?.stop?.();
+      mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
       window.speechSynthesis?.cancel?.();
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!open || professionalVoice.checked) return;
+    getCopilotVoiceStatus()
+      .then((data) => setProfessionalVoice({
+        enabled: Boolean(data?.voice?.enabled),
+        checked: true,
+        voice: data?.voice || null,
+      }))
+      .catch(() => setProfessionalVoice({ enabled: false, checked: true }));
+  }, [open, professionalVoice.checked]);
 
   function refreshAppData() {
     queryClient?.invalidateQueries?.();
   }
 
-  function toggleDictation() {
+  function appendDictatedText(transcript) {
+    const clean = String(transcript || '').trim();
+    if (!clean) return;
+    const base = dictationBaseRef.current || text.trim();
+    setText([base, clean].filter(Boolean).join(' '));
+  }
+
+  async function startProfessionalRecording() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      throw new Error('Grabación no disponible en este navegador.');
+    }
+
+    dictationBaseRef.current = text.trim();
+    audioChunksRef.current = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStreamRef.current = stream;
+
+    const options = MediaRecorder.isTypeSupported?.('audio/webm') ? { mimeType: 'audio/webm' } : undefined;
+    const recorder = new MediaRecorder(stream, options);
+    mediaRecorderRef.current = recorder;
+
+    recorder.ondataavailable = (event) => {
+      if (event.data?.size) audioChunksRef.current.push(event.data);
+    };
+
+    recorder.onstop = async () => {
+      setRecordingProfessional(false);
+      stream.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+
+      try {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        if (!blob.size) return;
+        const result = await transcribeCopilotAudio(blob);
+        appendDictatedText(result?.text);
+      } catch (error) {
+        addToast({
+          type: 'warning',
+          title: 'No pude transcribir con voz profesional',
+          message: error?.data?.message || error?.message || 'Puedes intentar nuevamente o escribir la instrucción.',
+        });
+      } finally {
+        audioChunksRef.current = [];
+      }
+    };
+
+    recorder.start();
+    setRecordingProfessional(true);
+  }
+
+  async function toggleDictation() {
+    if (recordingProfessional) {
+      mediaRecorderRef.current?.stop?.();
+      return;
+    }
+
+    if (professionalVoice.enabled) {
+      try {
+        await startProfessionalRecording();
+        return;
+      } catch (error) {
+        addToast({
+          type: 'warning',
+          title: 'Grabación profesional no disponible',
+          message: error?.message || 'Intentaré usar dictado del navegador.',
+        });
+      }
+    }
+
     if (!speechSupported) {
       addToast({
         type: 'warning',
@@ -510,8 +607,7 @@ export default function CopilotPanel({ queryClient }) {
         .map((result) => result?.[0]?.transcript || '')
         .join(' ')
         .trim();
-      const base = dictationBaseRef.current;
-      setText([base, transcript].filter(Boolean).join(' '));
+      appendDictatedText(transcript);
     };
 
     recognitionRef.current = recognition;
@@ -519,23 +615,67 @@ export default function CopilotPanel({ queryClient }) {
   }
 
   function speakResponse(response, responseId) {
-    if (!voiceSupported) return;
+    if (!voiceSupported && !professionalVoice.enabled) return;
 
     if (speakingId === responseId) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
       window.speechSynthesis.cancel();
       setSpeakingId(null);
       return;
     }
 
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(buildSpeechText(response));
+    setSpeakingId(responseId);
+
+    const speechText = buildSpeechText(response);
+    if (professionalVoice.enabled) {
+      createCopilotSpeech(speechText)
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioPlayerRef.current = audio;
+          audio.onended = () => {
+            URL.revokeObjectURL(url);
+            audioPlayerRef.current = null;
+            setSpeakingId((current) => (current === responseId ? null : current));
+          };
+          audio.onerror = () => {
+            URL.revokeObjectURL(url);
+            audioPlayerRef.current = null;
+            fallbackBrowserSpeech(speechText, responseId);
+          };
+          audio.play().catch(() => {
+            URL.revokeObjectURL(url);
+            audioPlayerRef.current = null;
+            fallbackBrowserSpeech(speechText, responseId);
+          });
+        })
+        .catch(() => fallbackBrowserSpeech(speechText, responseId));
+      return;
+    }
+
+    fallbackBrowserSpeech(speechText, responseId);
+  }
+
+  function fallbackBrowserSpeech(speechText, responseId) {
+    if (!window.SpeechSynthesisUtterance) {
+      setSpeakingId(null);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(speechText);
     utterance.lang = 'es-CL';
     utterance.rate = 0.96;
     utterance.pitch = 1;
     utterance.onend = () => setSpeakingId((current) => (current === responseId ? null : current));
     utterance.onerror = () => setSpeakingId((current) => (current === responseId ? null : current));
 
-    setSpeakingId(responseId);
     window.speechSynthesis.speak(utterance);
   }
 
@@ -614,6 +754,10 @@ export default function CopilotPanel({ queryClient }) {
   }
 
   function reset() {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
     window.speechSynthesis?.cancel?.();
     setSpeakingId(null);
     setHistory([]);
@@ -681,7 +825,7 @@ export default function CopilotPanel({ queryClient }) {
                         confirming={confirming && latestResponse?.commandId === item.response?.commandId}
                         onSpeak={speakResponse}
                         speaking={speakingId === item.id}
-                        voiceSupported={voiceSupported}
+                        voiceSupported={voiceSupported || professionalVoice.enabled}
                       />
                     )
                   ))}
@@ -710,12 +854,12 @@ export default function CopilotPanel({ queryClient }) {
               <div className="copilot-compose__actions">
                 <button
                   type="button"
-                  className={`mx-btn mx-btn-outline copilot-dictate ${listening ? 'is-listening' : ''}`}
+                  className={`mx-btn mx-btn-outline copilot-dictate ${listening || recordingProfessional ? 'is-listening' : ''}`}
                   onClick={toggleDictation}
-                  title={speechSupported ? 'Dictar instrucción' : 'Dictado no disponible en este navegador'}
+                  title={professionalVoice.enabled ? 'Dictar con voz profesional' : speechSupported ? 'Dictar instrucción' : 'Dictado no disponible en este navegador'}
                 >
-                  {listening ? <MicOff size={16} /> : <Mic size={16} />}
-                  {listening ? 'Escuchando...' : 'Dictar'}
+                  {listening || recordingProfessional ? <MicOff size={16} /> : <Mic size={16} />}
+                  {recordingProfessional ? 'Grabando...' : listening ? 'Escuchando...' : 'Dictar'}
                 </button>
                 <button type="button" className="mx-btn mx-btn-outline" onClick={reset} disabled={!history.length && !text}>
                   Limpiar

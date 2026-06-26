@@ -114,7 +114,9 @@ async function request(endpoint, options = {}) {
 
     let data;
     const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
+    if (options.responseType === 'blob') {
+      data = await response.blob();
+    } else if (contentType && contentType.includes('application/json')) {
       data = await response.json();
     } else {
       data = await response.text();
