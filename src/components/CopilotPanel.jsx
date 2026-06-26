@@ -263,6 +263,54 @@ function buildSpeechText(response) {
   return parts.filter(Boolean).join(' ');
 }
 
+function commandEntityLabel(command = {}) {
+  const entity = command.entity || {};
+  const payload = command.payload || {};
+  const resolved = command.resolution?.item || command.resolvedEntity || {};
+
+  return entity.providerName
+    || entity.contactName
+    || entity.centerCode
+    || payload.proveedorNombre
+    || payload.contactoNombre
+    || payload.nombre
+    || payload.search
+    || resolved.proveedorNombre
+    || resolved.contactoNombre
+    || resolved.centroCodigo
+    || '';
+}
+
+function ConfirmationPreview({ command }) {
+  const payload = command?.payload || {};
+  const rows = [
+    ['Entidad', commandEntityLabel(command)],
+    ['Acción realizada', payload.tipo || payload.tipoContacto || payload.accionRealizada],
+    ['Fecha gestión', payload.fecha || payload.fechaGestion],
+    ['Resumen', payload.resumen || payload.nota || payload.descripcion],
+    ['Próximo paso', payload.proximoPaso || payload.proximaAccion],
+    ['Fecha próximo paso', payload.fechaProximo || payload.fechaProgramada],
+    ['Teléfono', payload.contactoTelefono || payload.telefono],
+    ['Correo', payload.contactoEmail || payload.email],
+  ].filter(([, value]) => value !== null && value !== undefined && value !== '');
+
+  if (!rows.length) return null;
+
+  return (
+    <div className="copilot-confirm-preview">
+      <span className="copilot-confirm-preview__title">Se guardará esto</span>
+      <dl>
+        {rows.map(([label, value]) => (
+          <React.Fragment key={label}>
+            <dt>{label}</dt>
+            <dd>{fmt(value)}</dd>
+          </React.Fragment>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 function CopilotResponseCard({
   response,
   responseId,
@@ -311,15 +359,18 @@ function CopilotResponseCard({
       <CopilotResult response={response} />
 
       {requiresConfirmation && (
-        <button
-          type="button"
-          className="mx-btn mx-btn-primary copilot-confirm"
-          onClick={() => onConfirm(response.commandId)}
-          disabled={confirming}
-        >
-          {confirming ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
-          {confirming ? 'Confirmando...' : 'Confirmar acción'}
-        </button>
+        <>
+          <ConfirmationPreview command={response.command} />
+          <button
+            type="button"
+            className="mx-btn mx-btn-primary copilot-confirm"
+            onClick={() => onConfirm(response.commandId)}
+            disabled={confirming}
+          >
+            {confirming ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
+            {confirming ? 'Confirmando...' : 'Confirmar acción'}
+          </button>
+        </>
       )}
     </section>
   );
