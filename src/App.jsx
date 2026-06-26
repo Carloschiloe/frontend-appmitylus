@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
 import AppHeader from './components/Layout/AppHeader.jsx';
 import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
+import CopilotPanel from './components/CopilotPanel.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import SupportReportModal from './components/SupportReportModal.jsx';
 import { installGlobalErrorCapture } from './utils/errorReporter.js';
@@ -130,6 +131,7 @@ const MainLayout = ({ children }) => {
           {children}
         </ErrorBoundary>
       </main>
+      <CopilotPanel />
       <QuickCaptureModal />
       <SupportReportModal
         open={supportModal.open}
