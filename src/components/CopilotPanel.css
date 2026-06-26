@@ -281,6 +281,51 @@
   overflow-wrap: anywhere;
 }
 
+.copilot-options {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed rgba(10, 92, 255, 0.22);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(10, 92, 255, 0.04);
+}
+
+.copilot-options__title {
+  color: #0055e8;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copilot-option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 13px;
+  padding: 10px 11px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.copilot-option:hover {
+  border-color: rgba(10, 92, 255, 0.35);
+  box-shadow: 0 10px 24px rgba(10, 92, 255, 0.08);
+}
+
+.copilot-option strong {
+  color: var(--color-text, #10213b);
+  font-size: 0.88rem;
+}
+
+.copilot-option span {
+  color: var(--color-text-subtle, #74839a);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .copilot-response__message {
   margin: 0;
   color: var(--color-text, #10213b);

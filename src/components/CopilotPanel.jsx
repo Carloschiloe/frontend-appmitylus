@@ -311,10 +311,70 @@ function ConfirmationPreview({ command }) {
   );
 }
 
+function optionTitle(option = {}) {
+  if (option.contactoNombre && option.proveedorNombre) return option.contactoNombre;
+  return option.proveedorNombre
+    || option.contactoNombre
+    || option.centroCodigo
+    || option.label
+    || 'Opción';
+}
+
+function optionSubtitle(option = {}) {
+  return [
+    option.proveedorNombre && option.contactoNombre ? option.proveedorNombre : '',
+    option.centroCodigo ? `Centro ${option.centroCodigo}` : '',
+    option.centroComuna,
+    option.telefono,
+  ].filter(Boolean).join(' · ');
+}
+
+function optionSearchLabel(option = {}) {
+  if (option.centroCodigo) return `centro ${option.centroCodigo}`;
+  if (option.contactoNombre && option.proveedorNombre) return `${option.contactoNombre} de ${option.proveedorNombre}`;
+  return option.proveedorNombre || option.contactoNombre || option.label || '';
+}
+
+function buildClarifiedText(response, option, sourceText = '') {
+  const target = optionSearchLabel(option);
+  const intent = response?.command?.intent || '';
+  if (!target) return sourceText;
+
+  if (intent === 'query_history') return `Muéstrame el historial de ${target}`;
+  if (intent === 'query_muestreos') return `Consulta últimos muestreos de ${target}`;
+  if (intent === 'query_programa_cosecha') return `Consulta programa de cosecha de ${target}`;
+  if (intent === 'register_interaction') return `${sourceText}. El proveedor/contacto correcto es ${target}`;
+  return `${sourceText || response?.message || 'Consulta'} ${target}`.trim();
+}
+
+function ClarificationOptions({ response, sourceText, onChoose }) {
+  const options = Array.isArray(response?.options) ? response.options.slice(0, 5) : [];
+  if (response?.status !== 'needs_clarification' || !options.length) return null;
+
+  return (
+    <div className="copilot-options">
+      <span className="copilot-options__title">Elige la coincidencia correcta</span>
+      {options.map((option, index) => (
+        <button
+          type="button"
+          className="copilot-option"
+          key={option.id || option.contactoId || option.proveedorId || option.centroId || index}
+          onClick={() => onChoose(buildClarifiedText(response, option, sourceText))}
+        >
+          <strong>{optionTitle(option)}</strong>
+          <span>{optionSubtitle(option) || option.label || 'Sin detalle adicional'}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function CopilotResponseCard({
   response,
   responseId,
+  sourceText,
   onConfirm,
+  onChooseOption,
   confirming,
   onSpeak,
   speaking,
@@ -357,6 +417,7 @@ function CopilotResponseCard({
       )}
 
       <CopilotResult response={response} />
+      <ClarificationOptions response={response} sourceText={sourceText} onChoose={onChooseOption} />
 
       {requiresConfirmation && (
         <>
@@ -478,9 +539,7 @@ export default function CopilotPanel({ queryClient }) {
     window.speechSynthesis.speak(utterance);
   }
 
-  async function handleSubmit(event) {
-    event?.preventDefault();
-    const clean = text.trim();
+  async function runCommand(clean) {
     if (!clean || loading) return;
 
     setHistory((prev) => [...prev, { type: 'user', text: clean, id: crypto.randomUUID?.() || Date.now() }]);
@@ -489,7 +548,12 @@ export default function CopilotPanel({ queryClient }) {
 
     try {
       const response = await sendCopilotCommand({ text: clean });
-      setHistory((prev) => [...prev, { type: 'assistant', response, id: crypto.randomUUID?.() || Date.now() }]);
+      setHistory((prev) => [...prev, {
+        type: 'assistant',
+        response,
+        sourceText: clean,
+        id: crypto.randomUUID?.() || Date.now(),
+      }]);
 
       if (response.status === 'executed') {
         addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
@@ -505,6 +569,7 @@ export default function CopilotPanel({ queryClient }) {
       setHistory((prev) => [...prev, {
         type: 'assistant',
         id: crypto.randomUUID?.() || Date.now(),
+        sourceText: clean,
         response: {
           status: 'rejected',
           message: error?.data?.message || error?.message || 'No se pudo procesar la solicitud.',
@@ -513,6 +578,18 @@ export default function CopilotPanel({ queryClient }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSubmit(event) {
+    event?.preventDefault();
+    const clean = text.trim();
+    await runCommand(clean);
+  }
+
+  async function handleChooseOption(clarifiedText) {
+    const clean = String(clarifiedText || '').trim();
+    if (!clean) return;
+    await runCommand(clean);
   }
 
   async function handleConfirm(commandId) {
@@ -598,7 +675,9 @@ export default function CopilotPanel({ queryClient }) {
                         key={item.id}
                         responseId={item.id}
                         response={item.response}
+                        sourceText={item.sourceText}
                         onConfirm={handleConfirm}
+                        onChooseOption={handleChooseOption}
                         confirming={confirming && latestResponse?.commandId === item.response?.commandId}
                         onSpeak={speakResponse}
                         speaking={speakingId === item.id}
