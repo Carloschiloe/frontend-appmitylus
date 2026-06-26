@@ -8,6 +8,8 @@ import {
   Clock3,
   History,
   Loader2,
+  Mic,
+  MicOff,
   Send,
   Sparkles,
   X,
@@ -279,14 +281,75 @@ export default function CopilotPanel({ queryClient }) {
   const [text, setText] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+  const [listening, setListening] = React.useState(false);
+  const [speechSupported, setSpeechSupported] = React.useState(false);
   const [history, setHistory] = React.useState([]);
+  const recognitionRef = React.useRef(null);
+  const dictationBaseRef = React.useRef('');
 
   const latestResponse = history.findLast?.((item) => item.type === 'assistant')?.response
     || [...history].reverse().find((item) => item.type === 'assistant')?.response
     || null;
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setSpeechSupported(Boolean(SpeechRecognition));
+    return () => {
+      recognitionRef.current?.abort?.();
+      recognitionRef.current = null;
+    };
+  }, []);
+
   function refreshAppData() {
     queryClient?.invalidateQueries?.();
+  }
+
+  function toggleDictation() {
+    if (!speechSupported) {
+      addToast({
+        type: 'warning',
+        title: 'Dictado no disponible',
+        message: 'Este navegador no permite reconocimiento de voz. Puedes escribir la instrucción normalmente.',
+      });
+      return;
+    }
+
+    if (listening) {
+      recognitionRef.current?.stop?.();
+      setListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    dictationBaseRef.current = text.trim();
+
+    recognition.lang = 'es-CL';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onerror = () => {
+      setListening(false);
+      addToast({
+        type: 'error',
+        title: 'No pude escuchar',
+        message: 'Revisa permisos del micrófono o intenta escribir la instrucción.',
+      });
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result?.[0]?.transcript || '')
+        .join(' ')
+        .trim();
+      const base = dictationBaseRef.current;
+      setText([base, transcript].filter(Boolean).join(' '));
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   }
 
   async function handleSubmit(event) {
@@ -434,6 +497,15 @@ export default function CopilotPanel({ queryClient }) {
                 }}
               />
               <div className="copilot-compose__actions">
+                <button
+                  type="button"
+                  className={`mx-btn mx-btn-outline copilot-dictate ${listening ? 'is-listening' : ''}`}
+                  onClick={toggleDictation}
+                  title={speechSupported ? 'Dictar instrucción' : 'Dictado no disponible en este navegador'}
+                >
+                  {listening ? <MicOff size={16} /> : <Mic size={16} />}
+                  {listening ? 'Escuchando...' : 'Dictar'}
+                </button>
                 <button type="button" className="mx-btn mx-btn-outline" onClick={reset} disabled={!history.length && !text}>
                   Limpiar
                 </button>
