@@ -253,6 +253,107 @@
   line-height: 1.35;
 }
 
+.copilot-result-block {
+  display: grid;
+  gap: 10px;
+}
+
+.copilot-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.copilot-stat-pill {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid rgba(10, 92, 255, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.copilot-stat-pill strong {
+  color: #061a44;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.copilot-stat-pill span {
+  color: var(--color-text-subtle, #74839a);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.copilot-result-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.copilot-result-card {
+  display: grid;
+  gap: 6px;
+  padding: 11px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.copilot-result-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.copilot-result-card strong {
+  min-width: 0;
+  color: var(--color-text, #10213b);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.copilot-result-card__top span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(10, 92, 255, 0.08);
+  color: #0055e8;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.copilot-result-card p {
+  margin: 0;
+  color: var(--color-text, #10213b);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.copilot-result-card small {
+  color: var(--color-text-subtle, #74839a);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.copilot-result-section {
+  display: grid;
+  gap: 8px;
+}
+
+.copilot-result-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-subtle, #74839a);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .copilot-confirm {
   justify-self: stretch;
   justify-content: center;
@@ -352,6 +453,10 @@
     padding: 12px;
   }
 
+  .copilot-stats {
+    grid-template-columns: 1fr;
+  }
+
   .copilot-compose__actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -366,4 +471,3 @@
     display: inline-flex;
   }
 }
-

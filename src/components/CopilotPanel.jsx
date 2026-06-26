@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  Clock3,
+  History,
   Loader2,
   Send,
   Sparkles,
@@ -41,46 +43,193 @@ function formatIntent(intent = '') {
     .replace(/_/g, ' ');
 }
 
-function getResultItems(result = {}) {
-  if (Array.isArray(result.items)) return result.items;
-  if (Array.isArray(result.recent)) return result.recent;
-  if (Array.isArray(result.samples)) return result.samples;
-  if (Array.isArray(result.days)) return result.days;
-  return [];
+function fmt(value, fallback = '-') {
+  if (value === null || value === undefined || value === '') return fallback;
+  return String(value);
 }
 
-function renderItemTitle(item = {}) {
+function formatNumber(value, suffix = '') {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  return `${number.toLocaleString('es-CL', { maximumFractionDigits: 1 })}${suffix}`;
+}
+
+function entityName(item = {}) {
   return item.proveedorNombre
     || item.contactoNombre
     || item.nombre
     || item.providerName
-    || item.fecha
-    || item.fechaProgramada
-    || 'Resultado';
+    || item.centroCodigo
+    || 'Sin proveedor';
 }
 
-function renderItemSubtitle(item = {}) {
-  return [
-    item.proximaAccion || item.resumen || item.tipoContacto || item.tipo,
-    item.fechaProgramada || item.fechaGestion || item.fecha || item.fechaProximo,
-    item.estadoAgenda || item.estado,
-  ].filter(Boolean).join(' · ');
+function StatPill({ label, value }) {
+  return (
+    <div className="copilot-stat-pill">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
 }
 
-function CopilotResult({ result }) {
-  const items = getResultItems(result).slice(0, 5);
+function AgendaResult({ result }) {
+  const items = Array.isArray(result?.items) ? result.items.slice(0, 6) : [];
   if (!items.length) return null;
 
   return (
-    <div className="copilot-result-list">
+    <div className="copilot-result-grid">
       {items.map((item, index) => (
-        <div className="copilot-result-item" key={item.id || item._id || `${renderItemTitle(item)}-${index}`}>
-          <strong>{renderItemTitle(item)}</strong>
-          <span>{renderItemSubtitle(item) || 'Sin detalle adicional'}</span>
+        <div className="copilot-result-card" key={item.id || item._id || `${entityName(item)}-${index}`}>
+          <div className="copilot-result-card__top">
+            <strong>{entityName(item)}</strong>
+            {item.estadoAgenda && <span>{item.estadoAgenda}</span>}
+          </div>
+          <p>{fmt(item.proximaAccion || item.resumen, 'Sin próxima acción')}</p>
+          <small>{fmt(item.fechaProgramada || item.fechaProximo)} · {fmt(item.responsable)}</small>
         </div>
       ))}
     </div>
   );
+}
+
+function MuestreosResult({ result }) {
+  const samples = Array.isArray(result?.samples) ? result.samples.slice(0, 5) : [];
+  const stats = result?.stats || {};
+  if (!samples.length && !Object.keys(stats).length) return null;
+
+  return (
+    <div className="copilot-result-block">
+      <div className="copilot-stats">
+        <StatPill label="muestreos" value={formatNumber(stats.total || samples.length)} />
+        <StatPill label="rend. prom." value={formatNumber(stats.rendimientoPromedio, '%')} />
+        <StatPill label="u×kg prom." value={formatNumber(stats.uxkgPromedio)} />
+      </div>
+      {!!samples.length && (
+        <div className="copilot-result-grid">
+          {samples.map((item, index) => (
+            <div className="copilot-result-card" key={item.id || item._id || `${item.fecha}-${index}`}>
+              <div className="copilot-result-card__top">
+                <strong>{fmt(item.fecha)}</strong>
+                <span>{formatNumber(item.rendimiento, '%')}</span>
+              </div>
+              <p>{entityName(item)}</p>
+              <small>Centro {fmt(item.centroCodigo)} · U×kg {formatNumber(item.uxkg)}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoryResult({ result }) {
+  const recent = Array.isArray(result?.recent) ? result.recent.slice(0, 4) : [];
+  const next = Array.isArray(result?.next) ? result.next.slice(0, 3) : [];
+  if (!recent.length && !next.length) return null;
+
+  return (
+    <div className="copilot-result-block">
+      <div className="copilot-stats">
+        <StatPill label="gestiones" value={formatNumber(result?.counts?.interacciones || recent.length)} />
+        <StatPill label="próx. pasos" value={formatNumber(result?.counts?.proximosPasos || next.length)} />
+        <StatPill label="muestreos" value={formatNumber(result?.counts?.muestreos || 0)} />
+      </div>
+
+      {!!recent.length && (
+        <div className="copilot-result-section">
+          <span className="copilot-result-section__title"><History size={14} /> Últimas gestiones</span>
+          <div className="copilot-result-grid">
+            {recent.map((item, index) => (
+              <div className="copilot-result-card" key={item.id || item._id || `${item.fechaGestion}-${index}`}>
+                <div className="copilot-result-card__top">
+                  <strong>{fmt(item.tipoContacto || item.tipo)}</strong>
+                  <span>{fmt(item.fechaGestion || item.fecha)}</span>
+                </div>
+                <p>{fmt(item.resumen || item.nota || item.proximaAccion, 'Sin resumen')}</p>
+                <small>{fmt(item.responsable)}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!!next.length && (
+        <div className="copilot-result-section">
+          <span className="copilot-result-section__title"><Clock3 size={14} /> Próximos pasos</span>
+          <div className="copilot-result-grid">
+            {next.map((item, index) => (
+              <div className="copilot-result-card" key={item.id || item._id || `${item.fechaProximo}-${index}`}>
+                <div className="copilot-result-card__top">
+                  <strong>{fmt(item.proximaAccion || item.resumen)}</strong>
+                  <span>{fmt(item.fechaProximo || item.fechaProgramada)}</span>
+                </div>
+                <small>{fmt(item.estado || item.estadoAgenda)}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgramaResult({ result }) {
+  const days = Array.isArray(result?.days) ? result.days.slice(0, 5) : [];
+  if (!days.length && !result?.totals) return null;
+
+  return (
+    <div className="copilot-result-block">
+      <div className="copilot-stats">
+        <StatPill label="camiones" value={formatNumber(result?.totals?.camiones)} />
+        <StatPill label="días" value={formatNumber(result?.totals?.diasConPrograma)} />
+        <StatPill label="proveedores" value={formatNumber(result?.totals?.proveedores)} />
+      </div>
+      {!!days.length && (
+        <div className="copilot-result-grid">
+          {days.map((day, index) => (
+            <div className="copilot-result-card" key={day.fecha || index}>
+              <div className="copilot-result-card__top">
+                <strong>{fmt(day.fecha)}</strong>
+                <span>{formatNumber(day.totalCamiones, ' cam.')}</span>
+              </div>
+              <p>{Array.isArray(day.items) && day.items.length ? `${day.items.length} registros programados` : 'Sin registros'}</p>
+              <small>{fmt(day.producto || day.estado)}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GenericResult({ result }) {
+  const items = [result?.item, result?.contact, result?.created, result?.data]
+    .filter(Boolean)
+    .concat(Array.isArray(result?.items) ? result.items : [])
+    .slice(0, 4);
+  if (!items.length) return null;
+
+  return (
+    <div className="copilot-result-grid">
+      {items.map((item, index) => (
+        <div className="copilot-result-card" key={item.id || item._id || index}>
+          <strong>{entityName(item)}</strong>
+          <p>{fmt(item.resumen || item.message || item.descripcion || item.tipoContacto, 'Registro procesado')}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CopilotResult({ response }) {
+  const result = response?.result || {};
+  const intent = response?.command?.intent || '';
+
+  if (intent === 'query_agenda') return <AgendaResult result={result} />;
+  if (intent === 'query_muestreos') return <MuestreosResult result={result} />;
+  if (intent === 'query_history') return <HistoryResult result={result} />;
+  if (intent === 'query_programa_cosecha') return <ProgramaResult result={result} />;
+  return <GenericResult result={result} />;
 }
 
 function CopilotResponseCard({ response, onConfirm, confirming }) {
@@ -107,7 +256,7 @@ function CopilotResponseCard({ response, onConfirm, confirming }) {
         </div>
       )}
 
-      <CopilotResult result={response.result} />
+      <CopilotResult response={response} />
 
       {requiresConfirmation && (
         <button
@@ -124,7 +273,7 @@ function CopilotResponseCard({ response, onConfirm, confirming }) {
   );
 }
 
-export default function CopilotPanel() {
+export default function CopilotPanel({ queryClient }) {
   const { addToast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState('');
@@ -135,6 +284,10 @@ export default function CopilotPanel() {
   const latestResponse = history.findLast?.((item) => item.type === 'assistant')?.response
     || [...history].reverse().find((item) => item.type === 'assistant')?.response
     || null;
+
+  function refreshAppData() {
+    queryClient?.invalidateQueries?.();
+  }
 
   async function handleSubmit(event) {
     event?.preventDefault();
@@ -151,6 +304,7 @@ export default function CopilotPanel() {
 
       if (response.status === 'executed') {
         addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
+        refreshAppData();
         window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
       }
     } catch (error) {
@@ -180,6 +334,7 @@ export default function CopilotPanel() {
       const response = await confirmCopilotCommand(commandId);
       setHistory((prev) => [...prev, { type: 'assistant', response, id: crypto.randomUUID?.() || Date.now() }]);
       addToast({ type: 'success', title: 'Acción confirmada', message: response.message });
+      refreshAppData();
       window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
     } catch (error) {
       addToast({
@@ -298,4 +453,3 @@ export default function CopilotPanel() {
     </>
   );
 }
-

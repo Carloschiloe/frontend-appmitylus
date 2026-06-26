@@ -131,7 +131,7 @@ const MainLayout = ({ children }) => {
           {children}
         </ErrorBoundary>
       </main>
-      <CopilotPanel />
+      <CopilotPanel queryClient={queryClient} />
       <QuickCaptureModal />
       <SupportReportModal
         open={supportModal.open}
