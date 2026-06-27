@@ -584,7 +584,15 @@ export default function CopilotPanel({ queryClient }) {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         if (!blob.size) return;
         const result = await transcribeCopilotAudio(blob);
-        appendDictatedText(result?.text);
+        if (!String(result?.text || '').trim()) {
+          addToast({
+            type: 'warning',
+            title: 'No logré entender lo que dijiste',
+            message: 'Intenta hablar un poco más fuerte y cerca del micrófono, o escribe la instrucción.',
+          });
+          return;
+        }
+        appendDictatedText(result.text);
       } catch (error) {
         addToast({
           type: 'warning',
