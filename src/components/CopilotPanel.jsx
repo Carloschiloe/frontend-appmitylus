@@ -251,36 +251,16 @@ function CopilotResult({ response }) {
   return <GenericResult result={result} />;
 }
 
-function buildResultSpeechDetail(response) {
-  const parts = [response?.message];
-  const result = response?.result || {};
-  const intent = response?.command?.intent || '';
-
-  if (intent === 'query_agenda' && Array.isArray(result.items)) {
-    parts.push(`Encontré ${result.items.length} compromisos.`);
-    result.items.slice(0, 3).forEach((item) => {
-      parts.push(`${entityName(item)}: ${fmt(item.proximaAccion || item.resumen)} para ${fmt(item.fechaProgramada || item.fechaProximo)}.`);
-    });
-  }
-
-  if (intent === 'query_muestreos' && result.stats) {
-    parts.push(`Total muestreos: ${formatNumber(result.stats.total)}. Rendimiento promedio: ${formatNumber(result.stats.rendimientoPromedio, '%')}.`);
-  }
-
-  if (intent === 'query_history' && result.counts) {
-    parts.push(`Gestiones: ${formatNumber(result.counts.interacciones)}. Próximos pasos: ${formatNumber(result.counts.proximosPasos)}.`);
-  }
-
-  if (intent === 'query_programa_cosecha' && result.totals) {
-    parts.push(`Camiones: ${formatNumber(result.totals.camiones)}. Días con programa: ${formatNumber(result.totals.diasConPrograma)}.`);
-  }
-
-  return parts.filter(Boolean).join(' ');
-}
-
+/**
+ * La narrativa del agente ya es una respuesta natural y completa (cuenta que
+ * encontró, con quién, cuántos). Leer ademas el detalle de cada tarjeta encima
+ * duplicaba el contenido y hacia la lectura mucho mas larga de lo necesario.
+ * Solo se cae al mensaje de cada resultado cuando no hay narrativa (ej. al
+ * confirmar una accion, donde no se vuelve a llamar a la IA).
+ */
 function buildTurnSpeechText(turn) {
-  const parts = [turn?.narrative, ...(turn?.results || []).map(buildResultSpeechDetail)];
-  return parts.filter(Boolean).join(' ');
+  if (turn?.narrative) return turn.narrative;
+  return (turn?.results || []).map((response) => response?.message).filter(Boolean).join(' ');
 }
 
 function commandEntityLabel(command = {}) {
@@ -734,7 +714,7 @@ export default function CopilotPanel({ queryClient }) {
     }
     const utterance = new SpeechSynthesisUtterance(speechText);
     utterance.lang = 'es-CL';
-    utterance.rate = 0.96;
+    utterance.rate = 1.1;
     utterance.pitch = 1;
     utterance.onend = () => setSpeakingId((current) => (current === turnId ? null : current));
     utterance.onerror = () => setSpeakingId((current) => (current === turnId ? null : current));
