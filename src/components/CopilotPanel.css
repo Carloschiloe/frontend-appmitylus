@@ -332,6 +332,52 @@
   line-height: 1.45;
 }
 
+.copilot-avatar--sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 92, 255, 0.1);
+  color: #0a5cff;
+  flex: 0 0 auto;
+}
+
+.copilot-turn__narrative {
+  margin: 0;
+  color: var(--color-text, #10213b);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.copilot-turn__error {
+  color: #b91c1c;
+}
+
+.copilot-result-entry {
+  display: grid;
+  gap: 10px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.copilot-result-entry:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.copilot-result-entry--executed .copilot-response__badge {
+  background: rgba(16, 185, 129, 0.12);
+  color: #07804f;
+}
+
+.copilot-result-entry--rejected .copilot-response__badge,
+.copilot-result-entry--needs_clarification .copilot-response__badge {
+  background: rgba(239, 68, 68, 0.10);
+  color: #b91c1c;
+}
+
 .copilot-warnings {
   display: flex;
   gap: 8px;

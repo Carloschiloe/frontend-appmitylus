@@ -18,10 +18,9 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  confirmCopilotCommand,
   createCopilotSpeech,
   getCopilotVoiceStatus,
-  sendCopilotCommand,
+  streamCopilotCommand,
   transcribeCopilotAudio,
 } from '../api/api-copilot';
 import { useToast } from '../context/ToastContext.jsx';
@@ -33,6 +32,8 @@ const EXAMPLES = [
   'Crea contacto Claudio Triviño',
   'Consulta últimos muestreos de Los Palqui',
 ];
+
+const MAX_CONVERSATION_MESSAGES = 16;
 
 function statusLabel(status) {
   switch (status) {
@@ -71,6 +72,13 @@ function entityName(item = {}) {
     || item.providerName
     || item.centroCodigo
     || 'Sin proveedor';
+}
+
+function deriveTurnStatus(results = []) {
+  if (!results.length) return 'draft';
+  if (results.some((r) => r.status === 'rejected' || r.status === 'needs_clarification')) return 'rejected';
+  if (results.every((r) => r.status === 'executed')) return 'executed';
+  return results[0].status || 'draft';
 }
 
 function StatPill({ label, value }) {
@@ -242,7 +250,7 @@ function CopilotResult({ response }) {
   return <GenericResult result={result} />;
 }
 
-function buildSpeechText(response) {
+function buildResultSpeechDetail(response) {
   const parts = [response?.message];
   const result = response?.result || {};
   const intent = response?.command?.intent || '';
@@ -266,6 +274,11 @@ function buildSpeechText(response) {
     parts.push(`Camiones: ${formatNumber(result.totals.camiones)}. Días con programa: ${formatNumber(result.totals.diasConPrograma)}.`);
   }
 
+  return parts.filter(Boolean).join(' ');
+}
+
+function buildTurnSpeechText(turn) {
+  const parts = [turn?.narrative, ...(turn?.results || []).map(buildResultSpeechDetail)];
   return parts.filter(Boolean).join(' ');
 }
 
@@ -375,42 +388,26 @@ function ClarificationOptions({ response, sourceText, onChoose }) {
   );
 }
 
-function CopilotResponseCard({
+function CopilotResultEntry({
   response,
-  responseId,
   sourceText,
   onConfirm,
   onChooseOption,
-  confirming,
-  onSpeak,
-  speaking,
-  voiceSupported,
+  confirmingId,
 }) {
   if (!response) return null;
   const intent = response.command?.intent || '';
   const requiresConfirmation = response.status === 'needs_confirmation' && response.commandId;
+  const isConfirmingThis = confirmingId === response.commandId;
 
   return (
-    <section className={`copilot-response copilot-response--${response.status || 'draft'}`}>
+    <div className={`copilot-result-entry copilot-result-entry--${response.status || 'draft'}`}>
       <div className="copilot-response__head">
         <span className="copilot-response__badge">
           {response.status === 'executed' ? <CheckCircle2 size={15} /> : <ClipboardList size={15} />}
           {statusLabel(response.status)}
         </span>
-        <div className="copilot-response__tools">
-          {intent && <span className="copilot-response__intent">{formatIntent(intent)}</span>}
-          {voiceSupported && (
-            <button
-              type="button"
-              className={`copilot-speak ${speaking ? 'is-speaking' : ''}`}
-              onClick={() => onSpeak(response, responseId)}
-              title={speaking ? 'Detener lectura' : 'Leer respuesta'}
-            >
-              {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-              {speaking ? 'Detener' : 'Leer'}
-            </button>
-          )}
-        </div>
+        {intent && <span className="copilot-response__intent">{formatIntent(intent)}</span>}
       </div>
 
       <p className="copilot-response__message">{response.message || 'Copilot procesó la solicitud.'}</p>
@@ -432,12 +429,68 @@ function CopilotResponseCard({
             type="button"
             className="mx-btn mx-btn-primary copilot-confirm"
             onClick={() => onConfirm(response.commandId)}
-            disabled={confirming}
+            disabled={isConfirmingThis}
           >
-            {confirming ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
-            {confirming ? 'Confirmando...' : 'Confirmar acción'}
+            {isConfirmingThis ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
+            {isConfirmingThis ? 'Confirmando...' : 'Confirmar acción'}
           </button>
         </>
+      )}
+    </div>
+  );
+}
+
+function CopilotTurn({
+  turn,
+  onConfirm,
+  onChooseOption,
+  confirmingId,
+  onSpeak,
+  speaking,
+  voiceSupported,
+}) {
+  const turnStatus = deriveTurnStatus(turn.results);
+  const canSpeak = voiceSupported && (turn.narrative || turn.results.length > 0);
+
+  return (
+    <section className={`copilot-response copilot-response--${turn.error && !turn.results.length ? 'rejected' : turnStatus}`}>
+      <div className="copilot-response__head">
+        <span className="copilot-avatar copilot-avatar--sm"><Bot size={14} /></span>
+        {canSpeak && (
+          <button
+            type="button"
+            className={`copilot-speak ${speaking ? 'is-speaking' : ''}`}
+            onClick={() => onSpeak(turn)}
+            title={speaking ? 'Detener lectura' : 'Leer respuesta'}
+          >
+            {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            {speaking ? 'Detener' : 'Leer'}
+          </button>
+        )}
+      </div>
+
+      {turn.narrative && <p className="copilot-turn__narrative">{turn.narrative}</p>}
+
+      {turn.results.map((response, index) => (
+        <CopilotResultEntry
+          key={response.commandId || `${turn.id}-${index}`}
+          response={response}
+          sourceText={turn.sourceText}
+          onConfirm={onConfirm}
+          onChooseOption={onChooseOption}
+          confirmingId={confirmingId}
+        />
+      ))}
+
+      {turn.streaming && (
+        <div className="copilot-loading">
+          <Loader2 size={15} className="copilot-spin" />
+          {turn.statusMessage || 'Pensando...'}
+        </div>
+      )}
+
+      {turn.error && !turn.streaming && (
+        <p className="copilot-response__message copilot-turn__error">{turn.error}</p>
       )}
     </section>
   );
@@ -448,7 +501,7 @@ export default function CopilotPanel({ queryClient }) {
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const [confirming, setConfirming] = React.useState(false);
+  const [confirmingId, setConfirmingId] = React.useState(null);
   const [listening, setListening] = React.useState(false);
   const [recordingProfessional, setRecordingProfessional] = React.useState(false);
   const [speechSupported, setSpeechSupported] = React.useState(false);
@@ -462,10 +515,8 @@ export default function CopilotPanel({ queryClient }) {
   const mediaStreamRef = React.useRef(null);
   const audioChunksRef = React.useRef([]);
   const audioPlayerRef = React.useRef(null);
-
-  const latestResponse = history.findLast?.((item) => item.type === 'assistant')?.response
-    || [...history].reverse().find((item) => item.type === 'assistant')?.response
-    || null;
+  const conversationRef = React.useRef([]);
+  const streamControllerRef = React.useRef(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -477,6 +528,7 @@ export default function CopilotPanel({ queryClient }) {
       recognitionRef.current = null;
       mediaRecorderRef.current?.stop?.();
       mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+      streamControllerRef.current?.abort?.();
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
         audioPlayerRef.current = null;
@@ -498,6 +550,16 @@ export default function CopilotPanel({ queryClient }) {
 
   function refreshAppData() {
     queryClient?.invalidateQueries?.();
+  }
+
+  function pushConversationMessage(role, content) {
+    const clean = String(content || '').trim();
+    if (!clean) return;
+    conversationRef.current = [...conversationRef.current, { role, content: clean }].slice(-MAX_CONVERSATION_MESSAGES);
+  }
+
+  function patchTurn(turnId, patchFn) {
+    setHistory((prev) => prev.map((item) => (item.id === turnId ? patchFn(item) : item)));
   }
 
   function appendDictatedText(transcript) {
@@ -614,10 +676,10 @@ export default function CopilotPanel({ queryClient }) {
     recognition.start();
   }
 
-  function speakResponse(response, responseId) {
+  function speakTurn(turn) {
     if (!voiceSupported && !professionalVoice.enabled) return;
 
-    if (speakingId === responseId) {
+    if (speakingId === turn.id) {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
         audioPlayerRef.current = null;
@@ -632,9 +694,9 @@ export default function CopilotPanel({ queryClient }) {
       audioPlayerRef.current = null;
     }
     window.speechSynthesis.cancel();
-    setSpeakingId(responseId);
+    setSpeakingId(turn.id);
 
-    const speechText = buildSpeechText(response);
+    const speechText = buildTurnSpeechText(turn);
     if (professionalVoice.enabled) {
       createCopilotSpeech(speechText)
         .then((blob) => {
@@ -644,27 +706,27 @@ export default function CopilotPanel({ queryClient }) {
           audio.onended = () => {
             URL.revokeObjectURL(url);
             audioPlayerRef.current = null;
-            setSpeakingId((current) => (current === responseId ? null : current));
+            setSpeakingId((current) => (current === turn.id ? null : current));
           };
           audio.onerror = () => {
             URL.revokeObjectURL(url);
             audioPlayerRef.current = null;
-            fallbackBrowserSpeech(speechText, responseId);
+            fallbackBrowserSpeech(speechText, turn.id);
           };
           audio.play().catch(() => {
             URL.revokeObjectURL(url);
             audioPlayerRef.current = null;
-            fallbackBrowserSpeech(speechText, responseId);
+            fallbackBrowserSpeech(speechText, turn.id);
           });
         })
-        .catch(() => fallbackBrowserSpeech(speechText, responseId));
+        .catch(() => fallbackBrowserSpeech(speechText, turn.id));
       return;
     }
 
-    fallbackBrowserSpeech(speechText, responseId);
+    fallbackBrowserSpeech(speechText, turn.id);
   }
 
-  function fallbackBrowserSpeech(speechText, responseId) {
+  function fallbackBrowserSpeech(speechText, turnId) {
     if (!window.SpeechSynthesisUtterance) {
       setSpeakingId(null);
       return;
@@ -673,8 +735,8 @@ export default function CopilotPanel({ queryClient }) {
     utterance.lang = 'es-CL';
     utterance.rate = 0.96;
     utterance.pitch = 1;
-    utterance.onend = () => setSpeakingId((current) => (current === responseId ? null : current));
-    utterance.onerror = () => setSpeakingId((current) => (current === responseId ? null : current));
+    utterance.onend = () => setSpeakingId((current) => (current === turnId ? null : current));
+    utterance.onerror = () => setSpeakingId((current) => (current === turnId ? null : current));
 
     window.speechSynthesis.speak(utterance);
   }
@@ -682,41 +744,67 @@ export default function CopilotPanel({ queryClient }) {
   async function runCommand(clean) {
     if (!clean || loading) return;
 
-    setHistory((prev) => [...prev, { type: 'user', text: clean, id: crypto.randomUUID?.() || Date.now() }]);
+    const userId = crypto.randomUUID?.() || Date.now();
+    const assistantId = crypto.randomUUID?.() || `${Date.now()}-a`;
+
+    setHistory((prev) => [
+      ...prev,
+      { type: 'user', text: clean, id: userId },
+      {
+        type: 'assistant',
+        id: assistantId,
+        sourceText: clean,
+        narrative: '',
+        statusMessage: 'Analizando instrucción...',
+        results: [],
+        streaming: true,
+        error: null,
+      },
+    ]);
+    pushConversationMessage('user', clean);
     setText('');
     setLoading(true);
 
-    try {
-      const response = await sendCopilotCommand({ text: clean });
-      setHistory((prev) => [...prev, {
-        type: 'assistant',
-        response,
-        sourceText: clean,
-        id: crypto.randomUUID?.() || Date.now(),
-      }]);
+    const controller = new AbortController();
+    streamControllerRef.current = controller;
 
-      if (response.status === 'executed') {
-        addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
-        refreshAppData();
-        window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
-      }
+    try {
+      await streamCopilotCommand({
+        text: clean,
+        history: conversationRef.current,
+        mode: 'draft',
+        signal: controller.signal,
+        onEvent: (event) => {
+          if (event.type === 'status') {
+            patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
+          } else if (event.type === 'narrative') {
+            patchTurn(assistantId, (item) => ({ ...item, narrative: event.data }));
+            pushConversationMessage('assistant', event.data);
+          } else if (event.type === 'result') {
+            const response = event.data;
+            patchTurn(assistantId, (item) => ({ ...item, results: [...item.results, response] }));
+            if (response.status === 'executed') {
+              refreshAppData();
+              window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+              addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
+            }
+          } else if (event.type === 'error') {
+            patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'Copilot no pudo completar la acción.' }));
+          }
+        },
+      });
     } catch (error) {
+      const message = error?.data?.message || error?.message || 'No se pudo procesar la solicitud.';
+      patchTurn(assistantId, (item) => ({ ...item, error: item.error || message }));
       addToast({
         type: 'error',
         title: 'Copilot no pudo responder',
-        message: error?.data?.message || error?.message || 'Revisa el contexto de empresa e intenta nuevamente.',
+        message,
       });
-      setHistory((prev) => [...prev, {
-        type: 'assistant',
-        id: crypto.randomUUID?.() || Date.now(),
-        sourceText: clean,
-        response: {
-          status: 'rejected',
-          message: error?.data?.message || error?.message || 'No se pudo procesar la solicitud.',
-        },
-      }]);
     } finally {
+      patchTurn(assistantId, (item) => ({ ...item, streaming: false, statusMessage: '' }));
       setLoading(false);
+      streamControllerRef.current = null;
     }
   }
 
@@ -733,27 +821,59 @@ export default function CopilotPanel({ queryClient }) {
   }
 
   async function handleConfirm(commandId) {
-    if (!commandId || confirming) return;
-    setConfirming(true);
+    if (!commandId || confirmingId) return;
+    setConfirmingId(commandId);
+
+    const assistantId = crypto.randomUUID?.() || `${Date.now()}-c`;
+    setHistory((prev) => [
+      ...prev,
+      {
+        type: 'assistant',
+        id: assistantId,
+        sourceText: '',
+        narrative: '',
+        statusMessage: 'Ejecutando acción confirmada...',
+        results: [],
+        streaming: true,
+        error: null,
+      },
+    ]);
 
     try {
-      const response = await confirmCopilotCommand(commandId);
-      setHistory((prev) => [...prev, { type: 'assistant', response, id: crypto.randomUUID?.() || Date.now() }]);
-      addToast({ type: 'success', title: 'Acción confirmada', message: response.message });
-      refreshAppData();
-      window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+      await streamCopilotCommand({
+        mode: 'confirm',
+        commandId,
+        history: conversationRef.current,
+        onEvent: (event) => {
+          if (event.type === 'status') {
+            patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
+          } else if (event.type === 'result') {
+            const response = event.data;
+            patchTurn(assistantId, (item) => ({ ...item, results: [...item.results, response] }));
+            addToast({ type: 'success', title: 'Acción confirmada', message: response.message });
+            refreshAppData();
+            window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+          } else if (event.type === 'error') {
+            patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'No se pudo confirmar la acción.' }));
+          }
+        },
+      });
     } catch (error) {
+      const message = error?.data?.message || error?.message || 'El comando pudo expirar o cambiar de contexto.';
+      patchTurn(assistantId, (item) => ({ ...item, error: item.error || message }));
       addToast({
         type: 'error',
         title: 'No se pudo confirmar',
-        message: error?.data?.message || error?.message || 'El comando pudo expirar o cambiar de contexto.',
+        message,
       });
     } finally {
-      setConfirming(false);
+      patchTurn(assistantId, (item) => ({ ...item, streaming: false, statusMessage: '' }));
+      setConfirmingId(null);
     }
   }
 
   function reset() {
+    streamControllerRef.current?.abort?.();
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
       audioPlayerRef.current = null;
@@ -762,6 +882,7 @@ export default function CopilotPanel({ queryClient }) {
     setSpeakingId(null);
     setHistory([]);
     setText('');
+    conversationRef.current = [];
   }
 
   return (
@@ -815,26 +936,18 @@ export default function CopilotPanel({ queryClient }) {
                         {item.text}
                       </div>
                     ) : (
-                      <CopilotResponseCard
+                      <CopilotTurn
                         key={item.id}
-                        responseId={item.id}
-                        response={item.response}
-                        sourceText={item.sourceText}
+                        turn={item}
                         onConfirm={handleConfirm}
                         onChooseOption={handleChooseOption}
-                        confirming={confirming && latestResponse?.commandId === item.response?.commandId}
-                        onSpeak={speakResponse}
+                        confirmingId={confirmingId}
+                        onSpeak={speakTurn}
                         speaking={speakingId === item.id}
                         voiceSupported={voiceSupported || professionalVoice.enabled}
                       />
                     )
                   ))}
-                  {loading && (
-                    <div className="copilot-loading">
-                      <Loader2 size={17} className="copilot-spin" />
-                      Interpretando instrucción...
-                    </div>
-                  )}
                 </div>
               )}
             </div>
