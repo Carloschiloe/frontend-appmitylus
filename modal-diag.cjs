@@ -51,22 +51,32 @@ async function clickByText(page, sel, opts = {}) {
 }
 
 // Mide si el modal sobresale del sidebar (recorte). El sidebar ocupa 0..navW.
+// OJO: todos los modales de esta app van dentro de un .mx-modal-overlay
+// fixed+inset:0 con su propio z-index por encima del sidebar (ver index.css),
+// asi que SIEMPRE se ven centrados sobre un fondo oscurecido — comparar solo
+// las coordenadas X del modal contra el ancho del sidebar da falsos positivos.
 async function measureModal(page) {
   return page.evaluate(() => {
     const navW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-width')) || 240;
     const modal = document.querySelector('.mx-modal');
     const sidebar = document.querySelector('.mx-sidebar');
     if (!modal) return { found: false };
+    const overlay = modal.closest('.mx-modal-overlay');
+    const overlayIsFullscreenFixed = overlay
+      && getComputedStyle(overlay).position === 'fixed'
+      && overlay.getBoundingClientRect().width >= window.innerWidth - 1;
     const m = modal.getBoundingClientRect();
     const s = sidebar ? sidebar.getBoundingClientRect() : { right: navW };
-    // ¿El borde izquierdo del modal está tapado por el sidebar?
-    const clippedBySidebar = m.left < s.right - 1;
+    // Si el modal vive en un overlay fixed de pantalla completa, el sidebar
+    // queda detras del backdrop oscurecido y nunca esta realmente recortado.
+    const clippedBySidebar = !overlayIsFullscreenFixed && m.left < s.right - 1;
     return {
       found: true,
       modalLeft: Math.round(m.left),
       modalRight: Math.round(m.right),
       modalWidth: Math.round(m.width),
       sidebarRight: Math.round(s.right),
+      overlayIsFullscreenFixed: Boolean(overlayIsFullscreenFixed),
       clippedBySidebar,
     };
   });
@@ -112,7 +122,7 @@ async function captureSet(browser, vp, suffix) {
 
   // Quick Capture (FAB)
   await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' }); await page.waitForTimeout(900);
-  const fab = page.locator('button:has-text("Registrar")').last();
+  const fab = page.locator('button:has-text("Acción rápida")').last();
   try { await fab.waitFor({ state: 'visible', timeout: 6000 }); await fab.click(); await page.waitForTimeout(1200); } catch {}
   await shot(page, `quickcapture-${suffix}`, 'Quick Capture', suffix);
 
