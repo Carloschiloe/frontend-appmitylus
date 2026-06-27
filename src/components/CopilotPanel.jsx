@@ -34,6 +34,7 @@ const EXAMPLES = [
 ];
 
 const MAX_CONVERSATION_MESSAGES = 16;
+const MAX_RECORDING_MS = 15000;
 
 function statusLabel(status) {
   switch (status) {
@@ -498,6 +499,7 @@ export default function CopilotPanel({ queryClient }) {
   const audioPlayerRef = React.useRef(null);
   const conversationRef = React.useRef([]);
   const streamControllerRef = React.useRef(null);
+  const recordingTimeoutRef = React.useRef(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -507,6 +509,7 @@ export default function CopilotPanel({ queryClient }) {
     return () => {
       recognitionRef.current?.abort?.();
       recognitionRef.current = null;
+      if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
       mediaRecorderRef.current?.stop?.();
       mediaStreamRef.current?.getTracks?.().forEach((track) => track.stop());
       streamControllerRef.current?.abort?.();
@@ -569,6 +572,10 @@ export default function CopilotPanel({ queryClient }) {
     };
 
     recorder.onstop = async () => {
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+        recordingTimeoutRef.current = null;
+      }
       setRecordingProfessional(false);
       stream.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
@@ -582,8 +589,9 @@ export default function CopilotPanel({ queryClient }) {
         addToast({
           type: 'warning',
           title: 'No pude transcribir con voz profesional',
-          message: error?.data?.message || error?.message || 'Puedes intentar nuevamente o escribir la instrucción.',
+          message: error?.data?.message || error?.message || 'Probando con el dictado del navegador...',
         });
+        startBrowserDictation();
       } finally {
         audioChunksRef.current = [];
       }
@@ -591,39 +599,22 @@ export default function CopilotPanel({ queryClient }) {
 
     recorder.start();
     setRecordingProfessional(true);
+    // Tope de seguridad: si se olvida tocar de nuevo para detener, no se queda
+    // grabando para siempre sin transcribir nunca.
+    recordingTimeoutRef.current = setTimeout(() => {
+      if (mediaRecorderRef.current?.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    }, MAX_RECORDING_MS);
   }
 
-  async function toggleDictation() {
-    if (recordingProfessional) {
-      mediaRecorderRef.current?.stop?.();
-      return;
-    }
-
-    if (professionalVoice.enabled) {
-      try {
-        await startProfessionalRecording();
-        return;
-      } catch (error) {
-        addToast({
-          type: 'warning',
-          title: 'Grabación profesional no disponible',
-          message: error?.message || 'Intentaré usar dictado del navegador.',
-        });
-      }
-    }
-
+  function startBrowserDictation() {
     if (!speechSupported) {
       addToast({
         type: 'warning',
         title: 'Dictado no disponible',
         message: 'Este navegador no permite reconocimiento de voz. Puedes escribir la instrucción normalmente.',
       });
-      return;
-    }
-
-    if (listening) {
-      recognitionRef.current?.stop?.();
-      setListening(false);
       return;
     }
 
@@ -655,6 +646,34 @@ export default function CopilotPanel({ queryClient }) {
 
     recognitionRef.current = recognition;
     recognition.start();
+  }
+
+  async function toggleDictation() {
+    if (recordingProfessional) {
+      mediaRecorderRef.current?.stop?.();
+      return;
+    }
+
+    if (professionalVoice.enabled) {
+      try {
+        await startProfessionalRecording();
+        return;
+      } catch (error) {
+        addToast({
+          type: 'warning',
+          title: 'Grabación profesional no disponible',
+          message: error?.message || 'Intentaré usar dictado del navegador.',
+        });
+      }
+    }
+
+    if (listening) {
+      recognitionRef.current?.stop?.();
+      setListening(false);
+      return;
+    }
+
+    startBrowserDictation();
   }
 
   function speakTurn(turn) {
