@@ -242,6 +242,13 @@
   background: rgba(239, 68, 68, 0.08);
 }
 
+.copilot-speak.is-loading {
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.28);
+  background: rgba(217, 119, 6, 0.08);
+  opacity: 0.85;
+}
+
 .copilot-confirm-preview {
   display: grid;
   gap: 10px;

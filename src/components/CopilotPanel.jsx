@@ -429,6 +429,7 @@ function CopilotTurn({
   confirmingId,
   onSpeak,
   speaking,
+  speechLoading,
   voiceSupported,
 }) {
   const turnStatus = deriveTurnStatus(turn.results);
@@ -441,12 +442,12 @@ function CopilotTurn({
         {canSpeak && (
           <button
             type="button"
-            className={`copilot-speak ${speaking ? 'is-speaking' : ''}`}
+            className={`copilot-speak ${speaking ? 'is-speaking' : ''} ${speechLoading ? 'is-loading' : ''}`}
             onClick={() => onSpeak(turn)}
-            title={speaking ? 'Detener lectura' : 'Leer respuesta'}
+            title={speechLoading ? 'Generando audio...' : speaking ? 'Detener lectura' : 'Leer respuesta'}
           >
             {speaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            {speaking ? 'Detener' : 'Leer'}
+            {speechLoading ? 'Generando...' : speaking ? 'Detener' : 'Leer'}
           </button>
         )}
       </div>
@@ -490,6 +491,7 @@ export default function CopilotPanel({ queryClient }) {
   const [voiceSupported, setVoiceSupported] = React.useState(false);
   const [professionalVoice, setProfessionalVoice] = React.useState({ enabled: false, checked: false });
   const [speakingId, setSpeakingId] = React.useState(null);
+  const [speechLoadingId, setSpeechLoadingId] = React.useState(null);
   const [history, setHistory] = React.useState([]);
   const recognitionRef = React.useRef(null);
   const dictationBaseRef = React.useRef('');
@@ -694,6 +696,7 @@ export default function CopilotPanel({ queryClient }) {
       }
       window.speechSynthesis.cancel();
       setSpeakingId(null);
+      setSpeechLoadingId(null);
       return;
     }
 
@@ -706,6 +709,7 @@ export default function CopilotPanel({ queryClient }) {
 
     const speechText = buildTurnSpeechText(turn);
     if (professionalVoice.enabled) {
+      setSpeechLoadingId(turn.id);
       createCopilotSpeech(speechText)
         .then((blob) => {
           const url = URL.createObjectURL(blob);
@@ -719,15 +723,22 @@ export default function CopilotPanel({ queryClient }) {
           audio.onerror = () => {
             URL.revokeObjectURL(url);
             audioPlayerRef.current = null;
+            setSpeechLoadingId(null);
             fallbackBrowserSpeech(speechText, turn.id);
           };
-          audio.play().catch(() => {
-            URL.revokeObjectURL(url);
-            audioPlayerRef.current = null;
-            fallbackBrowserSpeech(speechText, turn.id);
-          });
+          audio.play()
+            .then(() => setSpeechLoadingId((current) => (current === turn.id ? null : current)))
+            .catch(() => {
+              URL.revokeObjectURL(url);
+              audioPlayerRef.current = null;
+              setSpeechLoadingId(null);
+              fallbackBrowserSpeech(speechText, turn.id);
+            });
         })
-        .catch(() => fallbackBrowserSpeech(speechText, turn.id));
+        .catch(() => {
+          setSpeechLoadingId(null);
+          fallbackBrowserSpeech(speechText, turn.id);
+        });
       return;
     }
 
@@ -888,6 +899,7 @@ export default function CopilotPanel({ queryClient }) {
     }
     window.speechSynthesis?.cancel?.();
     setSpeakingId(null);
+    setSpeechLoadingId(null);
     setHistory([]);
     setText('');
     conversationRef.current = [];
@@ -952,6 +964,7 @@ export default function CopilotPanel({ queryClient }) {
                         confirmingId={confirmingId}
                         onSpeak={speakTurn}
                         speaking={speakingId === item.id}
+                        speechLoading={speechLoadingId === item.id}
                         voiceSupported={voiceSupported || professionalVoice.enabled}
                       />
                     )
