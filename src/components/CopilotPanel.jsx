@@ -160,11 +160,11 @@ function HistoryResult({ result }) {
             {recent.map((item, index) => (
               <div className="copilot-result-card" key={item.id || item._id || `${item.fechaGestion}-${index}`}>
                 <div className="copilot-result-card__top">
-                  <strong>{fmt(item.tipoContacto || item.tipo)}</strong>
-                  <span>{fmt(item.fechaGestion || item.fecha)}</span>
+                  <strong>{entityName(item)}</strong>
+                  <span>{fmt(item.tipoContacto || item.tipo)}</span>
                 </div>
                 <p>{fmt(item.resumen || item.nota || item.proximaAccion, 'Sin resumen')}</p>
-                <small>{fmt(item.responsable)}</small>
+                <small>{fmt(item.fechaGestion || item.fecha)} · {fmt(item.responsable)}</small>
               </div>
             ))}
           </div>
@@ -178,10 +178,11 @@ function HistoryResult({ result }) {
             {next.map((item, index) => (
               <div className="copilot-result-card" key={item.id || item._id || `${item.fechaProximo}-${index}`}>
                 <div className="copilot-result-card__top">
-                  <strong>{fmt(item.proximaAccion || item.resumen)}</strong>
-                  <span>{fmt(item.fechaProximo || item.fechaProgramada)}</span>
+                  <strong>{entityName(item)}</strong>
+                  <span>{fmt(item.estado || item.estadoAgenda)}</span>
                 </div>
-                <small>{fmt(item.estado || item.estadoAgenda)}</small>
+                <p>{fmt(item.proximaAccion || item.resumen, 'Sin próxima acción')}</p>
+                <small>{fmt(item.fechaProximo || item.fechaProgramada)}</small>
               </div>
             ))}
           </div>
