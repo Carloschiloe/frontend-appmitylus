@@ -51,6 +51,22 @@ const EMPTY_CONFIRM = {
   isDestructive: false,
 };
 
+const PASSWORD_RULE_MESSAGE = 'La contraseña inicial debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un carácter especial. También puedes dejarla vacía para enviar link de activación.';
+
+function isStrongPassword(password) {
+  if (!password) return true;
+  return password.length >= 12
+    && /[A-Z]/.test(password)
+    && /[a-z]/.test(password)
+    && /[0-9]/.test(password)
+    && /[^A-Za-z0-9]/.test(password);
+}
+
+function getApiErrorMessage(error, fallback) {
+  const detail = error?.data?.details?.[0]?.message;
+  return detail || error?.data?.message || error?.data?.error || error?.message || fallback;
+}
+
 export default function Usuarios() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
@@ -97,8 +113,12 @@ export default function Usuarios() {
         addToast({ title: 'Éxito', message: 'Usuario guardado correctamente.', type: 'success' });
       }
     },
-    onError: () => {
-      addToast({ title: 'Error', message: 'No se pudo guardar el usuario.', type: 'error' });
+    onError: (error) => {
+      addToast({
+        title: 'Error',
+        message: getApiErrorMessage(error, 'No se pudo guardar el usuario.'),
+        type: 'error',
+      });
     },
   });
 
@@ -143,6 +163,25 @@ export default function Usuarios() {
     const formData = new FormData(e.target);
     const body = Object.fromEntries(formData.entries());
     body.activo = formData.get('activo') === 'on';
+
+    if (!editingUser) {
+      body.password = String(body.password || '').trim();
+      if (!body.password) {
+        delete body.password;
+      } else if (!isStrongPassword(body.password)) {
+        addToast({
+          title: 'Contraseña inicial inválida',
+          message: PASSWORD_RULE_MESSAGE,
+          type: 'warning',
+        });
+        return;
+      }
+    } else {
+      delete body.password;
+    }
+
+    if (body.empresaId === '') body.empresaId = null;
+
     saveMutation.mutate(body);
   };
 
