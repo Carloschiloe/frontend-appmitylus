@@ -155,6 +155,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   );
   const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, filters), [comparisonItems, filters]);
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
+  const totalesLabel = useMemo(() => {
+    if (filters.anio && filters.mesNum) return `${MESES_NOMBRES[Number(filters.mesNum) - 1]} ${filters.anio}`;
+    if (filters.anio) return filters.anio;
+    return 'Todos';
+  }, [filters.anio, filters.mesNum]);
 
   const providerDirectory = useMemo(
     () => buildDisponibilidadProviders(proveedores, centros),
@@ -350,8 +355,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           <>
             <div className="disp-totales-bar">
               <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
-                <span className="disp-totales-toggle__label">Total</span>
-                <strong className="disp-totales-toggle__value">{fmtTons(totalTons)}</strong>
+                <span className="disp-totales-toggle__label">{totalesLabel}</span>
+                <strong className="disp-totales-toggle__value">{fmtTons(listedTotals.total)}</strong>
                 <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
               </button>
               {showTotales && (
@@ -359,7 +364,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   {kpis.map((kpi) => (
                     <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
                       <span className="disp-status-chip__label">{kpi.label}</span>
-                      <strong className="disp-status-chip__value">{fmtTons(kpi.tons)}</strong>
+                      <strong className="disp-status-chip__value">{fmtTons(listedTotals.totalsByState?.[kpi.value] || 0)}</strong>
                     </span>
                   ))}
                 </div>
