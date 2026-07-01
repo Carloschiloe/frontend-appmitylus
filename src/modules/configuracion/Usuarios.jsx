@@ -260,18 +260,6 @@ export default function Usuarios() {
           <h1>Gestión de Usuarios</h1>
           <p>Control de acceso, roles y permisos de la plataforma.</p>
         </div>
-        <div className="mx-hero-actions">
-          <button
-            className="mx-btn mx-btn-primary"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingUser(null);
-              setIsModalOpen(true);
-            }}
-          >
-            <UserPlus size={18} /> Nuevo Usuario
-          </button>
-        </div>
       </header>
 
       <div className="mx-content-frame usuarios-content-frame">
@@ -300,6 +288,16 @@ export default function Usuarios() {
             <Users size={14} />
             <span>{filteredUsuarios.length} usuario{filteredUsuarios.length !== 1 ? 's' : ''}</span>
           </div>
+          <button
+            className="mx-btn mx-btn-primary usuarios-new-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingUser(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <UserPlus size={18} /> Nuevo Usuario
+          </button>
         </div>
 
         <div className="mx-table-card usuarios-table-card">
