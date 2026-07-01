@@ -38,13 +38,19 @@ import DisponibilidadResumen from './DisponibilidadResumen';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
+const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
 const filterDisponibilidades = (sourceItems, filters) => {
   const providerQuery = filters.proveedor.trim().toLowerCase();
   return sourceItems.filter((item) => {
     const identity = `${item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || ''} ${item.contactoNombre || ''} ${item.contactoTelefono || ''}`.toLowerCase();
+    const itemYear = (item.mesKey || '').slice(0, 4);
+    const itemMonth = (item.mesKey || '').slice(5, 7);
     return (!providerQuery || identity.includes(providerQuery))
       && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
-      && (!filters.estado || (item.estado || 'disponible') === filters.estado);
+      && (!filters.estado || (item.estado || 'disponible') === filters.estado)
+      && (!filters.anio || itemYear === String(filters.anio))
+      && (!filters.mesNum || itemMonth === String(filters.mesNum).padStart(2, '0'));
   });
 };
 
@@ -67,7 +73,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [comparisonItems, setComparisonItems] = useState([]);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
-  const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '' });
+  const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '', anio: '', mesNum: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [showTotales, setShowTotales] = useState(false);
 
@@ -128,6 +134,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       active = false;
     };
   }, [activeTab, addToast, annualReloadKey, annualYear, comparisonYear]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set(items.map((i) => (i.mesKey || '').slice(0, 4)).filter(Boolean));
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [items]);
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
@@ -247,6 +258,26 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             <option value="analisis">Análisis gráfico</option>
           </select>
         </div>
+
+        {activeTab === 'listado' && (
+          <>
+            <div className="disp-view-selector">
+              <span className="disp-view-selector__label">Año</span>
+              <select className="disp-view-selector__select" value={filters.anio} onChange={(e) => setFilters((f) => ({ ...f, anio: e.target.value }))}>
+                <option value="">Todos</option>
+                {availableYears.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div className="disp-view-selector">
+              <span className="disp-view-selector__label">Mes</span>
+              <select className="disp-view-selector__select" value={filters.mesNum} onChange={(e) => setFilters((f) => ({ ...f, mesNum: e.target.value }))}>
+                <option value="">Todos</option>
+                {MESES_NOMBRES.map((nombre, i) => <option key={i + 1} value={i + 1}>{nombre}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+
         <div className="disponibilidad-search-input disp-filter-bar__search">
           <Search size={16} />
           <input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" />
