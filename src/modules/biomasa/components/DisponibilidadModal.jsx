@@ -10,7 +10,6 @@ import {
 } from '../disponibilidad.constants';
 import { mesLabel } from '../utils/fechasChile';
 import { usuariosApi } from '../../../api/api-usuarios';
-import { useAuth } from '../../../context/AuthContext';
 
 const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
 const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
@@ -53,7 +52,6 @@ export default function DisponibilidadModal({
   onClose,
   onSave,
 }) {
-  const { user } = useAuth();
   const [form, setForm] = useState(EMPTY_FORM);
   const [addRow, setAddRow] = useState(EMPTY_ADD_ROW);
   const [providerSearch, setProviderSearch] = useState('');
@@ -87,15 +85,7 @@ export default function DisponibilidadModal({
     setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
     setContactSearch(item?.contactoNombre || '');
     setValidationError('');
-    const myEmpresaId = user?.empresaId?._id || user?.empresaId;
-    usuariosApi.getUsuarios()
-      .then((list) => {
-        const filtered = myEmpresaId
-          ? list.filter((u) => String(u.empresaId) === String(myEmpresaId))
-          : list;
-        setUsuarios(filtered);
-      })
-      .catch(() => {});
+    usuariosApi.getUsuarios().then(setUsuarios).catch(() => {});
   }, [defaultMes, item, open, responsableNombre]);
 
   const selectedProvider = useMemo(
