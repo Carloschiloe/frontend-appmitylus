@@ -221,9 +221,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     setSaving(true);
     try {
       for (const payload of payloads) {
-        const normalizedPayload = modalItem ? payload : { ...payload, responsable: responsableNombre };
-        if (modalItem?._id) await editarDisponibilidad(modalItem._id, normalizedPayload);
-        else await crearDisponibilidad(normalizedPayload);
+        if (modalItem?._id) await editarDisponibilidad(modalItem._id, payload);
+        else await crearDisponibilidad(payload);
       }
       closeModal();
       setAnnualReloadKey((current) => current + 1);

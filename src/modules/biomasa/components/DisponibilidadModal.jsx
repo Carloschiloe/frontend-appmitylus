@@ -9,6 +9,7 @@ import {
   hasDisponibilidadIdentity,
 } from '../disponibilidad.constants';
 import { mesLabel } from '../utils/fechasChile';
+import { usuariosApi } from '../../../api/api-usuarios';
 
 const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
 const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
@@ -21,13 +22,14 @@ const EMPTY_FORM = {
   proveedorKey: '',
   proveedorNombre: '',
   centroId: '',
+  responsable: '',
   // Modo edición (un registro):
   mesKey: '',
   tonsDisponible: '',
-  // Modo creación (lista de disponibilidades):
-  mesesRows: [],
   calibreMin: '',
   calibreMax: '',
+  // Modo creación (lista de disponibilidades):
+  mesesRows: [],
   producto: 'sin_definir',
   estado: 'disponible',
   origen: 'llamada',
@@ -35,7 +37,7 @@ const EMPTY_FORM = {
   motivo: '',
 };
 
-const EMPTY_ADD_ROW = { mesKey: '', tonsDisponible: '' };
+const EMPTY_ADD_ROW = { mesKey: '', tonsDisponible: '', calibreMin: '', calibreMax: '' };
 
 const getCenterCode = (item) => item.codigo || item.centroCodigo || item.code || item.nombre || '';
 
@@ -55,10 +57,11 @@ export default function DisponibilidadModal({
   const [providerSearch, setProviderSearch] = useState('');
   const [contactSearch, setContactSearch] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [usuarios, setUsuarios] = useState([]);
 
   useEffect(() => {
     if (!open) return;
-    setAddRow({ mesKey: defaultMes, tonsDisponible: '' });
+    setAddRow({ mesKey: defaultMes, tonsDisponible: '', calibreMin: '', calibreMax: '' });
     setForm(item ? {
       contactoId: String(item.contactoId || ''),
       contactoNombre: item.contactoNombre || '',
@@ -67,6 +70,7 @@ export default function DisponibilidadModal({
       proveedorKey: item.proveedorKey || item.empresaKey || '',
       proveedorNombre: item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '',
       centroId: String(item.centroId || ''),
+      responsable: item.responsable || responsableNombre,
       mesKey: item.mesKey || defaultMes,
       tonsDisponible: item.tons ?? item.tonsDisponible ?? '',
       mesesRows: [],
@@ -77,11 +81,12 @@ export default function DisponibilidadModal({
       origen: item.origen || 'otro',
       observacion: item.observacion || '',
       motivo: item.motivo || '',
-    } : { ...EMPTY_FORM });
+    } : { ...EMPTY_FORM, responsable: responsableNombre });
     setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
     setContactSearch(item?.contactoNombre || '');
     setValidationError('');
-  }, [defaultMes, item, open]);
+    usuariosApi.getUsuarios().then(setUsuarios).catch(() => {});
+  }, [defaultMes, item, open, responsableNombre]);
 
   const selectedProvider = useMemo(
     () => proveedores.find((p) => form.proveedorKey && p.proveedorKey === String(form.proveedorKey).toLowerCase()),
@@ -170,8 +175,7 @@ export default function DisponibilidadModal({
       proveedorKey: form.proveedorKey,
       proveedorNombre: form.proveedorNombre,
       centroId: form.centroId,
-      calibreMin: form.calibreMin ? Number(form.calibreMin) : null,
-      calibreMax: form.calibreMax ? Number(form.calibreMax) : null,
+      responsable: form.responsable || responsableNombre,
       producto: form.producto,
       estado: item ? form.estado : 'disponible',
       origen: form.origen,
@@ -193,7 +197,13 @@ export default function DisponibilidadModal({
     }
 
     if (item) {
-      onSave([{ ...sharedFields(), mesKey: form.mesKey, tonsDisponible: Number(form.tonsDisponible) }]);
+      onSave([{
+        ...sharedFields(),
+        mesKey: form.mesKey,
+        tonsDisponible: Number(form.tonsDisponible),
+        calibreMin: form.calibreMin ? Number(form.calibreMin) : null,
+        calibreMax: form.calibreMax ? Number(form.calibreMax) : null,
+      }]);
       return;
     }
 
@@ -201,7 +211,13 @@ export default function DisponibilidadModal({
       setValidationError('Agrega al menos una disponibilidad con mes y toneladas.');
       return;
     }
-    onSave(form.mesesRows.map((row) => ({ ...sharedFields(), mesKey: row.mesKey, tonsDisponible: Number(row.tonsDisponible) })));
+    onSave(form.mesesRows.map((row) => ({
+      ...sharedFields(),
+      mesKey: row.mesKey,
+      tonsDisponible: Number(row.tonsDisponible),
+      calibreMin: row.calibreMin ? Number(row.calibreMin) : null,
+      calibreMax: row.calibreMax ? Number(row.calibreMax) : null,
+    })));
   };
 
   return (
@@ -329,41 +345,43 @@ export default function DisponibilidadModal({
               </label>
             </div>
 
-            {/* ── Calibres / Responsable ────────────────────────────────────── */}
-            <label className="mx-form-group">
-              <span className="mx-form-label">Calibre mín. (mm)</span>
-              <select className="mx-select" value={form.calibreMin} onChange={(e) => update('calibreMin', e.target.value)}>
-                <option value="">Sin definir</option>
-                {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </label>
+            {/* ── Calibres (solo edición) / Responsable / Estado ───────────── */}
+            {item && (
+              <>
+                <label className="mx-form-group">
+                  <span className="mx-form-label">Calibre mín. (mm)</span>
+                  <select className="mx-select" value={form.calibreMin} onChange={(e) => update('calibreMin', e.target.value)}>
+                    <option value="">Sin definir</option>
+                    {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </label>
+                <label className="mx-form-group">
+                  <span className="mx-form-label">Calibre máx. (mm)</span>
+                  <select className="mx-select" value={form.calibreMax} onChange={(e) => update('calibreMax', e.target.value)}>
+                    <option value="">Sin definir</option>
+                    {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </label>
+              </>
+            )}
 
             <label className="mx-form-group">
-              <span className="mx-form-label">Calibre máx. (mm)</span>
-              <select className="mx-select" value={form.calibreMax} onChange={(e) => update('calibreMax', e.target.value)}>
-                <option value="">Sin definir</option>
-                {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </label>
-
-            {/* ── Responsable / Estado ──────────────────────────────────────── */}
-            <div className="mx-form-group">
               <span className="mx-form-label">Responsable</span>
-              <div className="disponibilidad-readonly-field"><UserRound size={16} /><strong>{item?.responsable || responsableNombre || 'Sin asignar'}</strong></div>
-            </div>
+              <select className="mx-select" value={form.responsable} onChange={(e) => update('responsable', e.target.value)}>
+                {(!usuarios.length || !usuarios.some((u) => u.nombre === form.responsable)) && (
+                  <option value={form.responsable}>{form.responsable || responsableNombre || 'Sin asignar'}</option>
+                )}
+                {usuarios.map((u) => <option key={u._id} value={u.nombre}>{u.nombre}</option>)}
+              </select>
+            </label>
 
-            {item ? (
+            {item && (
               <label className="mx-form-group">
                 <span className="mx-form-label">Estado</span>
                 <select className="mx-select" value={form.estado} onChange={(e) => update('estado', e.target.value)}>
                   {DISPONIBILIDAD_ESTADOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </label>
-            ) : (
-              <div className="mx-form-group">
-                <span className="mx-form-label">Estado inicial</span>
-                <div className="disponibilidad-initial-state"><CheckCircle2 size={16} /> Disponible</div>
-              </div>
             )}
 
             <label className="mx-form-group disponibilidad-field-wide">
@@ -396,6 +414,7 @@ export default function DisponibilidadModal({
               <div className="mx-form-group disponibilidad-field-wide disp-add-section">
                 <div className="disp-add-section__header">
                   <span className="mx-form-label">Disponibilidades a registrar</span>
+                  <span className="disp-add-section__estado-info"><CheckCircle2 size={13} /> Estado inicial: Disponible</span>
                 </div>
 
                 {/* Fila de entrada */}
@@ -422,6 +441,20 @@ export default function DisponibilidadModal({
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAgregar(); } }}
                     />
                   </div>
+                  <div>
+                    <span className="disp-add-section__sublabel">Cal. mín (mm)</span>
+                    <select className="mx-select" value={addRow.calibreMin} onChange={(e) => setAddRow((r) => ({ ...r, calibreMin: e.target.value }))}>
+                      <option value="">—</option>
+                      {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <span className="disp-add-section__sublabel">Cal. máx (mm)</span>
+                    <select className="mx-select" value={addRow.calibreMax} onChange={(e) => setAddRow((r) => ({ ...r, calibreMax: e.target.value }))}>
+                      <option value="">—</option>
+                      {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                   <div className="disp-add-section__btn-wrap">
                     <span className="disp-add-section__sublabel">&nbsp;</span>
                     <button type="button" className="mx-btn mx-btn-primary disp-add-section__agregar" onClick={handleAgregar}>
@@ -435,7 +468,9 @@ export default function DisponibilidadModal({
                   <div className="disp-added-list">
                     <div className="disp-added-list__header">
                       <span>Mes / Año</span>
-                      <span>Toneladas</span>
+                      <span>Tons</span>
+                      <span>Cal. mín</span>
+                      <span>Cal. máx</span>
                       <span />
                     </div>
                     {form.mesesRows.map((row, index) => (
@@ -457,6 +492,18 @@ export default function DisponibilidadModal({
                             value={row.tonsDisponible}
                             onChange={(e) => updateRow(index, 'tonsDisponible', e.target.value)}
                           />
+                        </div>
+                        <div>
+                          <select className="mx-select" value={row.calibreMin || ''} onChange={(e) => updateRow(index, 'calibreMin', e.target.value)}>
+                            <option value="">—</option>
+                            {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <select className="mx-select" value={row.calibreMax || ''} onChange={(e) => updateRow(index, 'calibreMax', e.target.value)}>
+                            <option value="">—</option>
+                            {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                          </select>
                         </div>
                         <button
                           type="button"
