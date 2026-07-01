@@ -1436,6 +1436,12 @@
   grid-column: 1 / -1;
 }
 
+.disp-form-triple {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
 /* ── Sección agregar disponibilidades (DisponibilidadModal creación) ───── */
 .disp-add-section {
   display: flex;
@@ -6500,6 +6506,10 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   .disponibilidad-modal .mx-form-grid,
   .disponibilidad-modal .disponibilidad-form-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .disp-form-triple {
+    grid-template-columns: 1fr;
   }
 }
 

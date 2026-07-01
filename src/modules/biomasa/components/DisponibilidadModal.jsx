@@ -219,7 +219,7 @@ export default function DisponibilidadModal({
           <div className="mx-modal-body disponibilidad-form-grid">
 
             {/* ── Proveedor ─────────────────────────────────────────────────── */}
-            <div className="mx-form-group disponibilidad-field-wide">
+            <div className="mx-form-group">
               <span className="mx-form-label">Proveedor opcional</span>
               <div className="disponibilidad-provider-search">
                 <Search size={18} />
@@ -253,7 +253,7 @@ export default function DisponibilidadModal({
             </div>
 
             {/* ── Contacto ──────────────────────────────────────────────────── */}
-            <div className="mx-form-group disponibilidad-field-wide">
+            <div className="mx-form-group">
               <span className="mx-form-label">Contacto opcional</span>
               <div className="disponibilidad-provider-search">
                 <Search size={18} />
@@ -304,21 +304,32 @@ export default function DisponibilidadModal({
 
             {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
 
-            {/* ── Centro / Responsable ──────────────────────────────────────── */}
-            <label className="mx-form-group">
-              <span className="mx-form-label">Centro opcional</span>
-              <select className="mx-select" value={form.centroId} onChange={(e) => update('centroId', e.target.value)} disabled={!selectedProvider}>
-                <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
-                {centerOptions.map((c) => <option key={c._id} value={c._id}>{getCenterCode(c)}</option>)}
-              </select>
-            </label>
+            {/* ── Centro / Producto / Origen ────────────────────────────────── */}
+            <div className="disponibilidad-field-wide disp-form-triple">
+              <label className="mx-form-group">
+                <span className="mx-form-label">Centro opcional</span>
+                <select className="mx-select" value={form.centroId} onChange={(e) => update('centroId', e.target.value)} disabled={!selectedProvider}>
+                  <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
+                  {centerOptions.map((c) => <option key={c._id} value={c._id}>{getCenterCode(c)}</option>)}
+                </select>
+              </label>
 
-            <div className="mx-form-group">
-              <span className="mx-form-label">Responsable</span>
-              <div className="disponibilidad-readonly-field"><UserRound size={16} /><strong>{item?.responsable || responsableNombre || 'Sin asignar'}</strong></div>
+              <label className="mx-form-group">
+                <span className="mx-form-label">Producto</span>
+                <select className="mx-select" value={form.producto} onChange={(e) => update('producto', e.target.value)}>
+                  {DISPONIBILIDAD_PRODUCTOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
+
+              <label className="mx-form-group">
+                <span className="mx-form-label">Origen</span>
+                <select className="mx-select" value={form.origen} onChange={(e) => update('origen', e.target.value)}>
+                  {DISPONIBILIDAD_ORIGENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
             </div>
 
-            {/* ── Calibres ──────────────────────────────────────────────────── */}
+            {/* ── Calibres / Responsable ────────────────────────────────────── */}
             <label className="mx-form-group">
               <span className="mx-form-label">Calibre mín. (mm)</span>
               <select className="mx-select" value={form.calibreMin} onChange={(e) => update('calibreMin', e.target.value)}>
@@ -335,13 +346,11 @@ export default function DisponibilidadModal({
               </select>
             </label>
 
-            {/* ── Producto / Estado / Origen ────────────────────────────────── */}
-            <label className="mx-form-group">
-              <span className="mx-form-label">Producto</span>
-              <select className="mx-select" value={form.producto} onChange={(e) => update('producto', e.target.value)}>
-                {DISPONIBILIDAD_PRODUCTOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </label>
+            {/* ── Responsable / Estado ──────────────────────────────────────── */}
+            <div className="mx-form-group">
+              <span className="mx-form-label">Responsable</span>
+              <div className="disponibilidad-readonly-field"><UserRound size={16} /><strong>{item?.responsable || responsableNombre || 'Sin asignar'}</strong></div>
+            </div>
 
             {item ? (
               <label className="mx-form-group">
@@ -356,13 +365,6 @@ export default function DisponibilidadModal({
                 <div className="disponibilidad-initial-state"><CheckCircle2 size={16} /> Disponible</div>
               </div>
             )}
-
-            <label className="mx-form-group">
-              <span className="mx-form-label">Origen</span>
-              <select className="mx-select" value={form.origen} onChange={(e) => update('origen', e.target.value)}>
-                {DISPONIBILIDAD_ORIGENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </label>
 
             <label className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Observación</span>
