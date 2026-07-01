@@ -19,6 +19,7 @@ import {
   Bug,
   CircleHelp,
   FileUp,
+  Truck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -44,6 +45,7 @@ const MENU_STRUCTURE = [
       { label: 'Centros', to: '/centros/directorio', icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa'] },
       { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
       { label: 'Biomasa', to: '/biomasa/status', icon: Droplet, activeFor: ['/biomasa/status', '/biomasa/tratos', '/biomasa/programa', '/biomasa/muestreos'] },
+      { label: 'Fletes', to: '/fletes', icon: Truck },
     ],
   },
   {
