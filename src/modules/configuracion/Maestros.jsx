@@ -14,9 +14,15 @@ import {
   Settings2,
   Truck,
   GripVertical,
+  Download,
+  Upload,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
+import { apiClient } from '../../api/apiClient';
+import { downloadXlsx } from '../../utils/downloadXlsx';
 import { tonsPorCamionDeTipo, kgRefDeTipo } from '../biomasa/utils/programaCalculos';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
@@ -37,7 +43,28 @@ const TIPOS = [
   { id: 'condicion_negociacion', label: 'Acuerdo de Tratos',     short: 'Tratos',       icon: ClipboardList },
   { id: 'responsable',         label: 'Responsables',            short: 'Responsables', icon: Users },
   { id: 'tipo_transporte',     label: 'Tipos de Transporte',     short: 'Transporte',   icon: Truck },
+  { id: 'transportista',       label: 'Transportistas',          short: 'Transportistas', icon: Truck },
 ];
+
+const TIPO_CAMION_OPTIONS = [
+  { value: 'simple', label: 'Simple' },
+  { value: 'con_carro', label: 'Con carro' },
+  { value: 'con_rampa', label: 'Con rampa' },
+  { value: 'tolva_simple', label: 'Tolva simple' },
+  { value: 'tolva_doble', label: 'Tolva doble' },
+];
+
+const TIPO_CAMION_LABELS = TIPO_CAMION_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.label;
+  return acc;
+}, {});
+
+const formatCLP = (value) => {
+  const number = Number(value || 0);
+  return number
+    ? number.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+    : '—';
+};
 
 export default function Maestros() {
   const queryClient = useQueryClient();
@@ -53,6 +80,12 @@ export default function Maestros() {
   const [orderedItems, setOrderedItems] = useState([]);
   const [dragIdx, setDragIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [transportistasImport, setTransportistasImport] = useState({
+    open: false,
+    preview: null,
+    loadingPreview: false,
+    loadingConfirm: false,
+  });
 
   // Prefetch de todas las categorías para carga instantánea
   React.useEffect(() => {
@@ -137,7 +170,15 @@ export default function Maestros() {
     let filtered = rawList;
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      filtered = filtered.filter((m) => m.nombre?.toLowerCase().includes(s));
+      filtered = filtered.filter((m) => (
+        [
+          m.nombre,
+          m.rut,
+          m.comunaOrigen,
+          TIPO_CAMION_LABELS[m.tipoCamion],
+          m.tipoCamion,
+        ].filter(Boolean).join(' ').toLowerCase().includes(s)
+      ));
     }
     if (tipoFilter && tipo === 'categoria-muestreo') {
       filtered = filtered.filter((m) => m.tipoCat === tipoFilter);
@@ -216,6 +257,11 @@ export default function Maestros() {
       body.maxisPorUnidad = body.maxisPorUnidad !== '' ? Number(body.maxisPorUnidad) : null;
       body.kgPorMaxiRef   = body.kgPorMaxiRef   !== '' ? Number(body.kgPorMaxiRef)   : null;
     }
+    if (tipo === 'transportista') {
+      body.precio = body.precio !== '' ? Number(body.precio) : null;
+      body.toneladas = body.toneladas !== '' ? Number(body.toneladas) : null;
+      body.maxisPorCamion = body.maxisPorCamion !== '' ? Number(body.maxisPorCamion) : null;
+    }
     if (body.opcionesRaw) {
       body.opciones = body.opcionesRaw.split('\n').map((s) => s.trim()).filter(Boolean);
       delete body.opcionesRaw;
@@ -227,6 +273,55 @@ export default function Maestros() {
     ...PARAMS_FIJOS,
     ...catMuestreo.map((c) => ({ campo: 'cats', campoId: c._id, nombre: c.nombre, unidad: '%' })),
   ];
+
+  const handleDownloadTransportistas = async () => {
+    try {
+      await downloadXlsx('/exportar/transportistas', `transportistas-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      addToast({ title: 'Error', message: err.message || 'No se pudo descargar el Excel.', type: 'error' });
+    }
+  };
+
+  const handleTemplateTransportistas = async () => {
+    try {
+      await downloadXlsx('/importar/plantilla/transportistas', 'plantilla-transportistas.xlsx');
+    } catch (err) {
+      addToast({ title: 'Error', message: err.message || 'No se pudo descargar la plantilla.', type: 'error' });
+    }
+  };
+
+  const handlePreviewTransportistas = async (file) => {
+    if (!file) return;
+    const form = new FormData();
+    form.append('archivo', file);
+    setTransportistasImport((prev) => ({ ...prev, loadingPreview: true }));
+    try {
+      const preview = await apiClient.post('/importar/transportistas/preview', form);
+      setTransportistasImport((prev) => ({ ...prev, preview, loadingPreview: false }));
+    } catch (err) {
+      setTransportistasImport((prev) => ({ ...prev, loadingPreview: false }));
+      addToast({ title: 'Error', message: err.message || 'No se pudo leer el Excel.', type: 'error' });
+    }
+  };
+
+  const handleConfirmTransportistas = async () => {
+    const preview = transportistasImport.preview;
+    if (!preview?.filas?.length) return;
+    setTransportistasImport((prev) => ({ ...prev, loadingConfirm: true }));
+    try {
+      const result = await apiClient.post('/importar/transportistas/confirmar', { filas: preview.filas });
+      queryClient.invalidateQueries({ queryKey: ['maestros', 'transportista'] });
+      setTransportistasImport({ open: false, preview: null, loadingPreview: false, loadingConfirm: false });
+      addToast({
+        title: 'Éxito',
+        message: `Se procesaron ${result.insertados || 0} transportistas.`,
+        type: 'success',
+      });
+    } catch (err) {
+      setTransportistasImport((prev) => ({ ...prev, loadingConfirm: false }));
+      addToast({ title: 'Error', message: err.message || 'No se pudo confirmar la importación.', type: 'error' });
+    }
+  };
 
   // ── Guard: sin tenant ──────────────────────────────────────────────────────
 
@@ -316,6 +411,16 @@ export default function Maestros() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
+                {tipo === 'transportista' && (
+                  <>
+                    <button className="mx-btn mx-btn-outline" onClick={handleDownloadTransportistas}>
+                      <Download size={16} /> Descargar Excel
+                    </button>
+                    <button className="mx-btn mx-btn-outline" onClick={() => setTransportistasImport({ open: true, preview: null, loadingPreview: false, loadingConfirm: false })}>
+                      <Upload size={16} /> Subir Excel
+                    </button>
+                  </>
+                )}
                 <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
                   <Plus size={16} /> Nuevo
                 </button>
@@ -334,7 +439,9 @@ export default function Maestros() {
               <thead>
                 <tr>
                   {isDragMode && <th className="maestros-drag-th" />}
-                  <th style={{ width: '30%' }}>Nombre / Valor</th>
+                  <th style={{ width: tipo === 'transportista' ? '22%' : '30%' }}>
+                    {tipo === 'transportista' ? 'Transportista' : 'Nombre / Valor'}
+                  </th>
                   {tipo === 'categoria-muestreo' && <th>Tipo Categoría</th>}
                   {tipo === 'regla_calidad' && <th>Configuración</th>}
                   {tipo === 'condicion_negociacion' && <th>Tipo Valor</th>}
@@ -342,6 +449,11 @@ export default function Maestros() {
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
+                  {tipo === 'transportista' && <th>Comuna Origen</th>}
+                  {tipo === 'transportista' && <th>Tipo Camión</th>}
+                  {tipo === 'transportista' && <th style={{ textAlign: 'right' }}>Precio</th>}
+                  {tipo === 'transportista' && <th style={{ textAlign: 'center' }}>Toneladas</th>}
+                  {tipo === 'transportista' && <th style={{ textAlign: 'center' }}>Maxis/Camión</th>}
                   {tipo === 'categoria-muestreo' && !isDragMode && <th style={{ width: '80px', textAlign: 'center' }}>Orden</th>}
                   <th style={{ width: '130px' }}>Estado</th>
                   <th style={{ width: '80px', textAlign: 'right' }}>Acciones</th>
@@ -383,7 +495,12 @@ export default function Maestros() {
                           <GripVertical size={16} />
                         </td>
                       )}
-                      <td><span style={{ fontWeight: 500 }}>{item.nombre}</span></td>
+                      <td>
+                        <span style={{ fontWeight: 500 }}>{item.nombre}</span>
+                        {tipo === 'transportista' && item.rut && (
+                          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>RUT: {item.rut}</div>
+                        )}
+                      </td>
                       {tipo === 'categoria-muestreo' && (
                         <td>
                           <span className={`mx-badge mx-badge-${
@@ -427,6 +544,17 @@ export default function Maestros() {
                           </td>
                         );
                       })()}
+                      {tipo === 'transportista' && <td>{item.comunaOrigen || '—'}</td>}
+                      {tipo === 'transportista' && (
+                        <td>
+                          <span className="mx-badge mx-badge-info">
+                            {TIPO_CAMION_LABELS[item.tipoCamion] || item.tipoCamion || '—'}
+                          </span>
+                        </td>
+                      )}
+                      {tipo === 'transportista' && <td style={{ textAlign: 'right' }}>{formatCLP(item.precio)}</td>}
+                      {tipo === 'transportista' && <td style={{ textAlign: 'center' }}>{item.toneladas != null ? `${item.toneladas} t` : '—'}</td>}
+                      {tipo === 'transportista' && <td style={{ textAlign: 'center' }}>{item.maxisPorCamion ?? '—'}</td>}
                       {tipo === 'categoria-muestreo' && !isDragMode && (
                         <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>
                       )}
@@ -576,6 +704,39 @@ export default function Maestros() {
                   </>
                 )}
 
+                {tipo === 'transportista' && (
+                  <>
+                    <div className="mx-form-group">
+                      <label className="mx-label">RUT</label>
+                      <input name="rut" className="mx-input" defaultValue={editingItem?.rut || ''} placeholder="Ej: 76.123.456-7" />
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Comuna de origen</label>
+                      <input name="comunaOrigen" className="mx-input" defaultValue={editingItem?.comunaOrigen || ''} required placeholder="Ej: Quellón" />
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Tipo de camión</label>
+                      <select name="tipoCamion" className="mx-select" defaultValue={editingItem?.tipoCamion || 'simple'}>
+                        {TIPO_CAMION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Precio</label>
+                      <input name="precio" type="number" min="0" step="1" className="mx-input" defaultValue={editingItem?.precio ?? ''} placeholder="Ej: 180000" />
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Toneladas</label>
+                      <input name="toneladas" type="number" min="0" step="0.1" className="mx-input" defaultValue={editingItem?.toneladas ?? ''} placeholder="Ej: 25" />
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Maxis por camión</label>
+                      <input name="maxisPorCamion" type="number" min="0" step="1" className="mx-input" defaultValue={editingItem?.maxisPorCamion ?? ''} placeholder="Ej: 20" />
+                    </div>
+                  </>
+                )}
+
                 {tipo === 'condicion_negociacion' && (
                   <>
                     <div className="mx-form-group">
@@ -617,6 +778,120 @@ export default function Maestros() {
                 <button type="submit" className="mx-btn mx-btn-primary">Guardar Registro</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {transportistasImport.open && (
+        <div className="mx-modal-overlay">
+          <div className="mx-modal" style={{ maxWidth: '860px' }}>
+            <div className="mx-modal-header">
+              <div>
+                <h2>Subir Transportistas</h2>
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13 }}>
+                  Importa tramos por transportista hacia la planta del tenant actual.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="mx-btn-icon"
+                onClick={() => setTransportistasImport({ open: false, preview: null, loadingPreview: false, loadingConfirm: false })}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mx-modal-body">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={handleTemplateTransportistas}>
+                  <Download size={16} /> Descargar plantilla
+                </button>
+                <label className="mx-btn mx-btn-primary" style={{ cursor: 'pointer' }}>
+                  <Upload size={16} />
+                  {transportistasImport.loadingPreview ? 'Procesando...' : 'Seleccionar Excel'}
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    hidden
+                    onChange={(event) => handlePreviewTransportistas(event.target.files?.[0])}
+                  />
+                </label>
+              </div>
+
+              {transportistasImport.preview && (
+                <>
+                  <div className="maestros-import-summary">
+                    <span><strong>{transportistasImport.preview.resumen?.total || 0}</strong> filas</span>
+                    <span className="ok"><strong>{transportistasImport.preview.resumen?.ok || 0}</strong> ok</span>
+                    <span className="error"><strong>{transportistasImport.preview.resumen?.errores || 0}</strong> errores</span>
+                  </div>
+
+                  {(transportistasImport.preview.resumen?.errores || 0) > 0 && (
+                    <div className="maestros-import-warning">
+                      <AlertTriangle size={16} />
+                      Hay filas con error. Solo se confirmarán las filas válidas.
+                    </div>
+                  )}
+
+                  <div className="maestros-import-preview">
+                    <table className="mx-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Estado</th>
+                          <th>Transportista</th>
+                          <th>RUT</th>
+                          <th>Comuna Origen</th>
+                          <th>Tipo Camión</th>
+                          <th>Precio</th>
+                          <th>Toneladas</th>
+                          <th>Maxis</th>
+                          <th>Detalle</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transportistasImport.preview.filas?.map((fila) => (
+                          <tr key={fila._fila}>
+                            <td>{fila._fila}</td>
+                            <td style={{ color: fila._ok ? '#059669' : '#dc2626' }}>
+                              {fila._ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+                            </td>
+                            <td>{fila.nombre}</td>
+                            <td>{fila.rut || '—'}</td>
+                            <td>{fila.comunaOrigen || '—'}</td>
+                            <td>{TIPO_CAMION_LABELS[fila.tipoCamion] || fila.tipoCamion || '—'}</td>
+                            <td>{formatCLP(fila.precio)}</td>
+                            <td>{fila.toneladas ?? '—'}</td>
+                            <td>{fila.maxisPorCamion ?? '—'}</td>
+                            <td style={{ color: fila._ok ? '#64748b' : '#dc2626', fontSize: 12 }}>
+                              {fila._errores?.join(', ') || ''}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mx-modal-footer">
+              <button
+                type="button"
+                className="mx-btn mx-btn-outline"
+                onClick={() => setTransportistasImport({ open: false, preview: null, loadingPreview: false, loadingConfirm: false })}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="mx-btn mx-btn-primary"
+                onClick={handleConfirmTransportistas}
+                disabled={!transportistasImport.preview || transportistasImport.loadingConfirm || (transportistasImport.preview.resumen?.ok || 0) === 0}
+              >
+                {transportistasImport.loadingConfirm ? 'Importando...' : 'Confirmar importación'}
+              </button>
+            </div>
           </div>
         </div>
       )}

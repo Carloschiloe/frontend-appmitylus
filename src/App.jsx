@@ -29,7 +29,6 @@ const Dashboard = lazy(() => import('./modules/dashboard/Dashboard.jsx'));
 const Biomasa   = lazy(() => import('./modules/biomasa/Biomasa.jsx'));
 const Centros   = lazy(() => import('./modules/centros/Centros.jsx'));
 const Gestion   = lazy(() => import('./modules/gestion/Gestion.jsx'));
-const Fletes    = lazy(() => import('./modules/fletes/Fletes.jsx'));
 const Maestros  = lazy(() => import('./modules/configuracion/Maestros.jsx'));
 const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios.jsx'));
 const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
@@ -332,15 +331,6 @@ export default function App() {
                       description="Debes elegir una empresa en el selector lateral antes de revisar seguimiento, proveedores y agenda."
                     >
                       <Gestion />
-                    </TenantScopedRoute>
-                  } />
-
-                  <Route path="/fletes" element={
-                    <TenantScopedRoute
-                      title="Selecciona una empresa para administrar Fletes"
-                      description="Debes elegir una empresa en el selector lateral antes de revisar transportistas y tarifas."
-                    >
-                      <Fletes />
                     </TenantScopedRoute>
                   } />
 

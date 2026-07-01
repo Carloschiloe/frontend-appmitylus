@@ -446,3 +446,49 @@
 .maestros-row-dragover td {
   border-top: 2px solid var(--color-primary, #0A5CFF);
 }
+
+.maestros-import-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.maestros-import-summary span {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.maestros-import-summary .ok {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.maestros-import-summary .error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.maestros-import-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.maestros-import-preview {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
