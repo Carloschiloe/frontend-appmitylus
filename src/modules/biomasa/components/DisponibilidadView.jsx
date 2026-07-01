@@ -141,6 +141,13 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   }, [items]);
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
+  // Para el Resumen mensual: solo los del mes seleccionado (sin filtros de año/mes del listado)
+  const filteredItemsByMes = useMemo(
+    () => items.filter((item) => item.mesKey === mes
+      && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
+      && (!filters.estado || (item.estado || 'disponible') === filters.estado)),
+    [items, mes, filters.producto, filters.estado]
+  );
   const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
   const annualStateBaseItems = useMemo(
     () => filterDisponibilidades(annualItems, { ...filters, estado: '' }),
@@ -404,7 +411,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             </div>
           </>
         )}
-        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItems} mes={mes} setMes={setMes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
+        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItemsByMes} mes={mes} setMes={setMes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
         {activeTab === 'anual' && (
           <DisponibilidadProyeccionAnual
             items={filteredAnnualItems}
