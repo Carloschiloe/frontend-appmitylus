@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Search, UserRound, X } from 'lucide-react';
+import { CheckCircle2, Minus, Plus, Search, UserRound, X } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
@@ -9,6 +9,9 @@ import {
   hasDisponibilidadIdentity,
 } from '../disponibilidad.constants';
 
+const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
+const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
+
 const EMPTY_FORM = {
   contactoId: '',
   contactoNombre: '',
@@ -17,8 +20,13 @@ const EMPTY_FORM = {
   proveedorKey: '',
   proveedorNombre: '',
   centroId: '',
+  // Usado solo en modo edición (un registro):
   mesKey: '',
   tonsDisponible: '',
+  // Usado en modo creación (múltiples meses):
+  mesesRows: [{ mesKey: '', tonsDisponible: '' }],
+  calibreMin: '',
+  calibreMax: '',
   producto: 'sin_definir',
   estado: 'disponible',
   origen: 'llamada',
@@ -56,12 +64,15 @@ export default function DisponibilidadModal({
       centroId: String(item.centroId || ''),
       mesKey: item.mesKey || defaultMes,
       tonsDisponible: item.tons ?? item.tonsDisponible ?? '',
+      mesesRows: [{ mesKey: item.mesKey || defaultMes, tonsDisponible: String(item.tons ?? item.tonsDisponible ?? '') }],
+      calibreMin: String(item.calibreMin ?? ''),
+      calibreMax: String(item.calibreMax ?? ''),
       producto: item.producto || 'sin_definir',
       estado: item.estado || 'disponible',
       origen: item.origen || 'otro',
       observacion: item.observacion || '',
       motivo: item.motivo || '',
-    } : { ...EMPTY_FORM, mesKey: defaultMes });
+    } : { ...EMPTY_FORM, mesesRows: [{ mesKey: defaultMes, tonsDisponible: '' }] });
     setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
     setContactSearch(item?.contactoNombre || '');
     setValidationError('');
@@ -126,22 +137,69 @@ export default function DisponibilidadModal({
     setValidationError('');
   };
 
+  const addMesRow = () => setForm((f) => ({
+    ...f,
+    mesesRows: [...f.mesesRows, { mesKey: '', tonsDisponible: '' }],
+  }));
+
+  const removeMesRow = (index) => setForm((f) => ({
+    ...f,
+    mesesRows: f.mesesRows.filter((_, i) => i !== index),
+  }));
+
+  const updateMesRow = (index, field, value) => setForm((f) => ({
+    ...f,
+    mesesRows: f.mesesRows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+  }));
+
   const submit = (event) => {
     event.preventDefault();
     if (!hasDisponibilidadIdentity(form)) {
       setValidationError('Debes seleccionar un proveedor o contacto.');
       return;
     }
-    onSave({
-      ...form,
+
+    const sharedFields = {
+      contactoId: form.contactoId,
+      contactoNombre: form.contactoNombre,
+      contactoTelefono: form.contactoTelefono,
+      contactoEmail: form.contactoEmail,
+      proveedorKey: form.proveedorKey,
+      proveedorNombre: form.proveedorNombre,
+      centroId: form.centroId,
+      calibreMin: form.calibreMin ? Number(form.calibreMin) : null,
+      calibreMax: form.calibreMax ? Number(form.calibreMax) : null,
+      producto: form.producto,
       estado: item ? form.estado : 'disponible',
+      origen: form.origen,
+      observacion: form.observacion,
+      motivo: form.motivo,
       empresaKey: form.proveedorKey,
       empresaNombre: form.proveedorNombre,
-      centroCodigo: selectedCenter ? getCenterCode(selectedCenter) : (form.centroId ? item?.centroCodigo || '' : ''),
+      centroCodigo: selectedCenter
+        ? getCenterCode(selectedCenter)
+        : (form.centroId ? item?.centroCodigo || '' : ''),
       comuna: selectedCenter?.comuna || (form.centroId ? item?.comuna || '' : ''),
       areaCodigo: selectedCenter?.areaCodigo || selectedCenter?.area || (form.centroId ? item?.areaCodigo || '' : ''),
-      tonsDisponible: Number(form.tonsDisponible),
-    });
+    };
+
+    if (item) {
+      // Edición: payload único
+      onSave([{ ...sharedFields, mesKey: form.mesKey, tonsDisponible: Number(form.tonsDisponible) }]);
+      return;
+    }
+
+    // Creación: uno por cada fila de mes
+    const validRows = form.mesesRows.filter((r) => r.mesKey && String(r.tonsDisponible).trim());
+    if (!validRows.length) {
+      setValidationError('Debes completar al menos un mes con toneladas.');
+      return;
+    }
+    onSave(validRows.map((row) => ({
+      ...sharedFields,
+      mesKey: row.mesKey,
+      tonsDisponible: Number(row.tonsDisponible),
+    })));
   };
 
   return (
@@ -157,6 +215,7 @@ export default function DisponibilidadModal({
 
         <form className="mx-form" onSubmit={submit}>
           <div className="mx-modal-body disponibilidad-form-grid">
+            {/* Proveedor */}
             <div className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Proveedor opcional</span>
               <div className="disponibilidad-provider-search">
@@ -190,6 +249,7 @@ export default function DisponibilidadModal({
               )}
             </div>
 
+            {/* Contacto */}
             <div className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Contacto opcional</span>
               <div className="disponibilidad-provider-search">
@@ -228,6 +288,7 @@ export default function DisponibilidadModal({
 
             {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
 
+            {/* Centro */}
             <label className="mx-form-group">
               <span className="mx-form-label">Centro opcional</span>
               <select className="mx-select" value={form.centroId} onChange={(event) => update('centroId', event.target.value)} disabled={!selectedProvider}>
@@ -236,21 +297,82 @@ export default function DisponibilidadModal({
               </select>
             </label>
 
+            {/* Responsable */}
             <div className="mx-form-group">
               <span className="mx-form-label">Responsable</span>
               <div className="disponibilidad-readonly-field"><UserRound size={16} /><strong>{item?.responsable || responsableNombre || 'Sin asignar'}</strong></div>
             </div>
 
+            {/* Meses disponibles */}
+            {item ? (
+              // Modo edición: campo único de mes + toneladas
+              <>
+                <label className="mx-form-group">
+                  <span className="mx-form-label">Mes/Año disponible</span>
+                  <input className="mx-input" type="month" value={form.mesKey} onChange={(event) => update('mesKey', event.target.value)} required />
+                </label>
+                <label className="mx-form-group">
+                  <span className="mx-form-label">Toneladas</span>
+                  <input className="mx-input" type="number" min="0.01" step="0.01" value={form.tonsDisponible} onChange={(event) => update('tonsDisponible', event.target.value)} required />
+                </label>
+              </>
+            ) : (
+              // Modo creación: lista de filas mes + toneladas
+              <div className="mx-form-group disponibilidad-field-wide">
+                <span className="mx-form-label">Meses disponibles</span>
+                <div className="disp-meses-list">
+                  {form.mesesRows.map((row, index) => (
+                    <div key={index} className="disp-mes-row">
+                      <input
+                        className="mx-input"
+                        type="month"
+                        value={row.mesKey}
+                        onChange={(e) => updateMesRow(index, 'mesKey', e.target.value)}
+                        required
+                        placeholder="Mes/Año"
+                      />
+                      <input
+                        className="mx-input"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={row.tonsDisponible}
+                        onChange={(e) => updateMesRow(index, 'tonsDisponible', e.target.value)}
+                        required
+                        placeholder="Toneladas"
+                      />
+                      {form.mesesRows.length > 1 && (
+                        <button type="button" className="mx-btn-icon sm disp-mes-remove" onClick={() => removeMesRow(index)} aria-label="Quitar mes">
+                          <Minus size={15} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" className="mx-btn mx-btn-outline sm disp-add-mes-btn" onClick={addMesRow}>
+                    <Plus size={15} /> Agregar mes
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Calibres */}
             <label className="mx-form-group">
-              <span className="mx-form-label">Mes/Año disponible</span>
-              <input className="mx-input" type="month" value={form.mesKey} onChange={(event) => update('mesKey', event.target.value)} required />
+              <span className="mx-form-label">Calibre mín. (mm)</span>
+              <select className="mx-select" value={form.calibreMin} onChange={(event) => update('calibreMin', event.target.value)}>
+                <option value="">Sin definir</option>
+                {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
             </label>
 
             <label className="mx-form-group">
-              <span className="mx-form-label">Toneladas</span>
-              <input className="mx-input" type="number" min="0.01" step="0.01" value={form.tonsDisponible} onChange={(event) => update('tonsDisponible', event.target.value)} required />
+              <span className="mx-form-label">Calibre máx. (mm)</span>
+              <select className="mx-select" value={form.calibreMax} onChange={(event) => update('calibreMax', event.target.value)}>
+                <option value="">Sin definir</option>
+                {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
             </label>
 
+            {/* Producto */}
             <label className="mx-form-group">
               <span className="mx-form-label">Producto</span>
               <select className="mx-select" value={form.producto} onChange={(event) => update('producto', event.target.value)}>
@@ -258,6 +380,7 @@ export default function DisponibilidadModal({
               </select>
             </label>
 
+            {/* Estado */}
             {item ? (
               <label className="mx-form-group">
                 <span className="mx-form-label">Estado</span>
@@ -272,6 +395,7 @@ export default function DisponibilidadModal({
               </div>
             )}
 
+            {/* Origen */}
             <label className="mx-form-group">
               <span className="mx-form-label">Origen</span>
               <select className="mx-select" value={form.origen} onChange={(event) => update('origen', event.target.value)}>
@@ -279,11 +403,13 @@ export default function DisponibilidadModal({
               </select>
             </label>
 
+            {/* Observación */}
             <label className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Observación</span>
               <textarea className="mx-input" rows={3} value={form.observacion} onChange={(event) => update('observacion', event.target.value)} placeholder="Información relevante entregada por el proveedor o contacto" />
             </label>
 
+            {/* Motivo (solo para perdido/descartado) */}
             {['perdido', 'descartado'].includes(form.estado) && (
               <label className="mx-form-group disponibilidad-field-wide">
                 <span className="mx-form-label">Motivo</span>
@@ -293,7 +419,9 @@ export default function DisponibilidadModal({
           </div>
           <div className="mx-modal-footer">
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving}>{saving ? 'Guardando...' : item ? 'Guardar cambios' : 'Registrar disponibilidad'}</button>
+            <button type="submit" className="mx-btn mx-btn-primary" disabled={saving}>
+              {saving ? 'Guardando...' : item ? 'Guardar cambios' : (form.mesesRows.length > 1 ? `Registrar ${form.mesesRows.length} disponibilidades` : 'Registrar disponibilidad')}
+            </button>
           </div>
         </form>
       </div>

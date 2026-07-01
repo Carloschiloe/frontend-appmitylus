@@ -1417,6 +1417,43 @@
   grid-column: 1 / -1;
 }
 
+/* ── Lista multi-mes en DisponibilidadModal ─────────────────────────────── */
+.disp-meses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.disp-mes-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.disp-mes-row input {
+  min-width: 0;
+}
+
+.disp-mes-remove {
+  flex-shrink: 0;
+  color: var(--color-danger, #dc2626);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.disp-mes-remove:hover {
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.disp-add-mes-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
 @media (max-width: 1050px) {
   .disponibilidad-kpi-grid {
     grid-template-columns: repeat(3, minmax(130px, 1fr));

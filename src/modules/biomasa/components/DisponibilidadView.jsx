@@ -194,19 +194,26 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     setModalItem(null);
   };
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payloads) => {
     setSaving(true);
     try {
-      const normalizedPayload = modalItem ? payload : { ...payload, responsable: responsableNombre };
-      if (modalItem?._id) await editarDisponibilidad(modalItem._id, normalizedPayload);
-      else await crearDisponibilidad(normalizedPayload);
+      for (const payload of payloads) {
+        const normalizedPayload = modalItem ? payload : { ...payload, responsable: responsableNombre };
+        if (modalItem?._id) await editarDisponibilidad(modalItem._id, normalizedPayload);
+        else await crearDisponibilidad(normalizedPayload);
+      }
       closeModal();
       setAnnualReloadKey((current) => current + 1);
-      if (payload.mesKey !== mes) setMes(payload.mesKey);
+      const first = payloads[0];
+      if (payloads.length === 1 && first.mesKey !== mes) setMes(first.mesKey);
       else await reload();
       addToast({
-        title: modalItem ? 'Disponibilidad actualizada' : 'Disponibilidad registrada',
-        message: `${payload.proveedorNombre || payload.contactoNombre}: ${fmtTons(payload.tonsDisponible)} para ${mesLabel(payload.mesKey)}.`,
+        title: modalItem
+          ? 'Disponibilidad actualizada'
+          : (payloads.length > 1 ? `${payloads.length} disponibilidades registradas` : 'Disponibilidad registrada'),
+        message: payloads.length === 1
+          ? `${first.proveedorNombre || first.contactoNombre}: ${fmtTons(first.tonsDisponible)} para ${mesLabel(first.mesKey)}.`
+          : `${first.proveedorNombre || first.contactoNombre}: ${payloads.map((p) => mesLabel(p.mesKey)).join(', ')}.`,
         type: 'success',
       });
     } catch (error) {
