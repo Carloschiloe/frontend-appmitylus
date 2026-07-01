@@ -1,10 +1,16 @@
 /* src/modules/configuracion/importar.css */
 
 .importar-page {
-  padding: 12px var(--page-padding, 16px) 40px;
+  padding: 72px var(--page-padding, 16px) 40px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .importar-page {
+    padding-top: 18px;
+  }
 }
 
 .importar-steps {

@@ -80,19 +80,22 @@
   align-items: center;
   gap: 8px;
   padding: 5px 10px 5px 6px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(0, 18, 51, 0.72);
+  border: 1px solid rgba(234, 244, 255, 0.18);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   color: #EAF4FF;
-  transition: background 0.18s, border-color 0.18s;
+  box-shadow: 0 8px 22px rgba(0, 18, 51, 0.16);
+  backdrop-filter: blur(8px);
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
 
 .mx-ahu-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 31, 82, 0.84);
+  border-color: rgba(234, 244, 255, 0.28);
+  box-shadow: 0 10px 26px rgba(0, 18, 51, 0.22);
 }
 
 .mx-ahu-avatar {
@@ -113,6 +116,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #EAF4FF;
+  text-shadow: 0 1px 1px rgba(0, 18, 51, 0.35);
 }
 
 .mx-ahu-chevron {
