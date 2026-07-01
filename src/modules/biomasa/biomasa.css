@@ -1417,41 +1417,118 @@
   grid-column: 1 / -1;
 }
 
-/* ── Lista multi-mes en DisponibilidadModal ─────────────────────────────── */
-.disp-meses-list {
+/* ── Sección agregar disponibilidades (DisponibilidadModal creación) ───── */
+.disp-add-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.disp-mes-row {
+.disp-add-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.disp-add-section__sublabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.disp-add-section__input-row {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
+  align-items: end;
 }
 
-.disp-mes-row input {
-  min-width: 0;
+.disp-add-section__btn-wrap {
+  display: flex;
+  flex-direction: column;
 }
 
-.disp-mes-remove {
-  flex-shrink: 0;
-  color: var(--color-danger, #dc2626);
-  border-color: rgba(220, 38, 38, 0.3);
-}
-
-.disp-mes-remove:hover {
-  background: rgba(220, 38, 38, 0.06);
-}
-
-.disp-add-mes-btn {
-  align-self: flex-start;
-  margin-top: 2px;
+.disp-add-section__agregar {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+.disp-add-section__empty {
+  padding: 14px 16px;
+  border: 1px dashed var(--color-border, #cbd5e1);
+  border-radius: 8px;
   font-size: 13px;
+  color: var(--color-text-muted, #64748b);
+  text-align: center;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+/* Lista de disponibilidades agregadas */
+.disp-added-list {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.disp-added-list__header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 36px;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg-subtle, #f1f5f9);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #64748b);
+}
+
+.disp-added-list__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: #fff;
+}
+
+.disp-added-list__row:hover {
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+.disp-added-list__mes input,
+.disp-added-list__tons input {
+  width: 100%;
+  font-size: 13px;
+  padding: 5px 8px;
+}
+
+.disp-added-list__remove {
+  color: var(--color-danger, #dc2626);
+  border-color: rgba(220, 38, 38, 0.25);
+  justify-self: center;
+}
+
+.disp-added-list__remove:hover {
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.disp-added-list__total {
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-subtle, #f1f5f9);
+  font-size: 13px;
+  color: var(--color-text-muted, #64748b);
+  text-align: right;
 }
 
 @media (max-width: 1050px) {
