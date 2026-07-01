@@ -49,7 +49,9 @@ export function useBiomasaData(mes, viewContext = {}) {
       const keys = [];
 
       if (isStatusView && statusSubTab === 'disponibilidad') {
-        promises.push(getDisponibilidades({ mesKey: mes }));
+        // Listado muestra TODOS los registros (no solo el mes activo).
+        // El "Resumen mensual" filtra client-side por mes sobre este mismo array.
+        promises.push(getDisponibilidades({ from: '2020-01', to: '2035-12' }));
         keys.push('disp');
         promises.push(getAsignaciones({ mesKey: mes }));
         keys.push('asig');
