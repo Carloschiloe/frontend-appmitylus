@@ -109,7 +109,23 @@ export default function DisponibilidadModal({
   };
   const selectProvider = (provider) => {
     setProviderSearch(provider.proveedorNombre);
-    setForm((f) => ({ ...f, proveedorKey: provider.proveedorKey, proveedorNombre: provider.proveedorNombre, centroId: '' }));
+    // Auto-rellena el contacto si el proveedor tiene uno asociado en la BD
+    const linkedContact = provider.contactoId
+      ? contactos.find((c) => c.contactoId === String(provider.contactoId))
+      : null;
+    setForm((f) => ({
+      ...f,
+      proveedorKey: provider.proveedorKey,
+      proveedorNombre: provider.proveedorNombre,
+      centroId: '',
+      ...(linkedContact ? {
+        contactoId: linkedContact.contactoId,
+        contactoNombre: linkedContact.contactoNombre,
+        contactoTelefono: linkedContact.contactoTelefono,
+        contactoEmail: linkedContact.contactoEmail,
+      } : {}),
+    }));
+    if (linkedContact) setContactSearch(linkedContact.contactoNombre);
     setValidationError('');
   };
   const clearContact = () => {
@@ -244,14 +260,21 @@ export default function DisponibilidadModal({
                 <input
                   value={contactSearch}
                   onChange={(e) => {
-                    setContactSearch(e.target.value);
-                    if (form.contactoNombre && e.target.value.trim() !== form.contactoNombre) {
-                      setForm((f) => ({ ...f, contactoId: '', contactoNombre: '', contactoTelefono: '', contactoEmail: '' }));
+                    const val = e.target.value;
+                    setContactSearch(val);
+                    if (form.contactoId) {
+                      // Tenía contacto seleccionado de la BD — limpiar selección y usar como texto libre
+                      setForm((f) => ({ ...f, contactoId: '', contactoNombre: val, contactoTelefono: '', contactoEmail: '' }));
+                    } else {
+                      // Sin selección formal — texto libre directo
+                      setForm((f) => ({ ...f, contactoNombre: val }));
                     }
                   }}
-                  placeholder="Buscar nombre, teléfono, email o empresa..."
+                  placeholder="Buscar o escribir nombre del contacto..."
                 />
-                {form.contactoNombre && <button type="button" className="disponibilidad-search-clear" onClick={clearContact} aria-label="Quitar contacto"><X size={15} /></button>}
+                {(form.contactoNombre || contactSearch) && (
+                  <button type="button" className="disponibilidad-search-clear" onClick={clearContact} aria-label="Quitar contacto"><X size={15} /></button>
+                )}
               </div>
               {showContactResults && (
                 <div className="disponibilidad-provider-results">
@@ -265,10 +288,16 @@ export default function DisponibilidadModal({
                     ))}
                 </div>
               )}
-              {form.contactoNombre && (
+              {form.contactoNombre && form.contactoId && (
                 <div className="disponibilidad-contact-selected">
                   <UserRound size={16} />
                   <span><strong>{form.contactoNombre}</strong>{form.contactoTelefono || form.contactoEmail ? ` · ${form.contactoTelefono || form.contactoEmail}` : ''}</span>
+                </div>
+              )}
+              {form.contactoNombre && !form.contactoId && (
+                <div className="disponibilidad-contact-freetext">
+                  <UserRound size={16} />
+                  <span><strong>{form.contactoNombre}</strong> <em>· ingresado manualmente</em></span>
                 </div>
               )}
             </div>
