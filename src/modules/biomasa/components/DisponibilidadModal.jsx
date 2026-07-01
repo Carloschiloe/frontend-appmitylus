@@ -162,8 +162,8 @@ export default function DisponibilidadModal({
       setValidationError('Completa el mes y las toneladas antes de agregar.');
       return;
     }
-    setForm((f) => ({ ...f, mesesRows: [...f.mesesRows, { mesKey: addRow.mesKey, tonsDisponible: addRow.tonsDisponible }] }));
-    setAddRow({ mesKey: '', tonsDisponible: '' });
+    setForm((f) => ({ ...f, mesesRows: [...f.mesesRows, { mesKey: addRow.mesKey, tonsDisponible: addRow.tonsDisponible, calibreMin: addRow.calibreMin, calibreMax: addRow.calibreMax }] }));
+    setAddRow({ mesKey: '', tonsDisponible: '', calibreMin: '', calibreMax: '' });
     setValidationError('');
   };
 
