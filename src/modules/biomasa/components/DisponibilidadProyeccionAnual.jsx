@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, Eye, Pencil, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Eye, Pencil, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -27,6 +27,7 @@ export default function DisponibilidadProyeccionAnual({
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [productFilter, setProductFilter] = useState('');
+  const [showPastMonths, setShowPastMonths] = useState(false);
 
   const availableProducts = useMemo(
     () => DISPONIBILIDAD_PRODUCTOS.filter((p) => items.some((i) => (i.producto || 'sin_definir') === p.value)),
@@ -38,14 +39,17 @@ export default function DisponibilidadProyeccionAnual({
     [items, productFilter]
   );
 
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
   const { rows, annualTotal } = buildDisponibilidadAnnualProjection(filteredItems, year);
+  const pastRows = rows.filter((r) => r.monthKey < currentMonthKey);
+  const currentFutureRows = rows.filter((r) => r.monthKey >= currentMonthKey);
+  const pastTotal = pastRows.reduce((sum, r) => sum + r.total, 0);
   const {
     totalsByState: kpiTotalsByState,
     annualTotal: kpiAnnualTotal,
   } = buildDisponibilidadAnnualProjection(stateBaseItems || items, year);
-
-  const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   const selectedDetail = useMemo(
     () => buildDisponibilidadMonthDetail(filteredItems, selectedMonth),
@@ -110,7 +114,43 @@ export default function DisponibilidadProyeccionAnual({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {pastRows.length > 0 && (
+                <tr className="disp-annual-row--past-toggle">
+                  <td colSpan={DISPONIBILIDAD_ESTADOS.length + 4}>
+                    <button type="button" className="disp-annual-past-btn" onClick={() => setShowPastMonths((v) => !v)}>
+                      {showPastMonths
+                        ? <><ChevronUp size={15} /> Ocultar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}</>
+                        : <><ChevronDown size={15} /> Mostrar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}{pastTotal > 0 ? ` · ${fmtTons(pastTotal)}` : ''}</>
+                      }
+                    </button>
+                  </td>
+                </tr>
+              )}
+              {showPastMonths && pastRows.map((row) => (
+                <tr key={row.monthKey} className="disp-annual-row--past">
+                  <td className="disponibilidad-annual-month">
+                    <strong>{mesLabel(row.monthKey)}</strong>
+                  </td>
+                  {DISPONIBILIDAD_ESTADOS.map((state) => (
+                    <td key={state.value} className={row.stateTons[state.value] > 0 ? `disp-annual-cell--${state.tone}` : 'disp-annual-cell--zero'}>
+                      {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
+                    </td>
+                  ))}
+                  <td className="disponibilidad-tons">{fmtTons(row.total)}</td>
+                  <td className="disp-annual-pct-cell">
+                    <span className="disp-annual-pct-bar-track">
+                      <span className="disp-annual-pct-bar-fill" style={{ width: `${annualTotal > 0 ? (row.total / annualTotal) * 100 : 0}%` }} />
+                    </span>
+                    <span className="disp-annual-pct-label">{annualTotal > 0 ? Math.round((row.total / annualTotal) * 100) : 0}%</span>
+                  </td>
+                  <td>
+                    <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
+                      <Eye size={14} /> Ver proveedores
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {currentFutureRows.map((row) => (
                 <tr key={row.monthKey} className={row.monthKey === currentMonthKey ? 'disp-annual-row--current' : undefined}>
                   <td className="disponibilidad-annual-month">
                     <strong>{mesLabel(row.monthKey)}</strong>

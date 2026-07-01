@@ -729,6 +729,38 @@
 .disp-annual-row--current { background: #eff6ff; }
 .disp-annual-row--current td { font-weight: 500; }
 
+/* Filas meses pasados */
+.disp-annual-row--past td { color: #94a3b8; }
+.disp-annual-row--past .disponibilidad-tons { color: #94a3b8; }
+.disp-annual-row--past .disp-annual-cell--blue,
+.disp-annual-row--past .disp-annual-cell--yellow,
+.disp-annual-row--past .disp-annual-cell--green { color: #94a3b8; font-weight: 400; }
+
+/* Fila toggle de meses pasados */
+.disp-annual-row--past-toggle td {
+  padding: 0;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+.disp-annual-past-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.disp-annual-past-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
 /* Columna % año */
 .disp-annual-pct-cell {
   display: flex;
