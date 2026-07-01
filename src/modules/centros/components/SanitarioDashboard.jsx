@@ -48,6 +48,8 @@ const sanitarioViewCache = {
   tiposAnalisis: [],
 };
 
+const MRSAT_SYNC_TIMEOUT_MS = 180000;
+
 export default function SanitarioDashboard() {
   const { addToast } = useToast();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
@@ -166,10 +168,19 @@ export default function SanitarioDashboard() {
     if (!selectedTenantDb || syncing) return;
     setSyncing(true);
     try {
-      await apiClient.post('/sanitario/sync/mrsat', {});
+      await apiClient.post('/sanitario/sync/mrsat', {}, { timeoutMs: MRSAT_SYNC_TIMEOUT_MS });
       await loadData(undefined);
       addToast({ title: 'Datos actualizados', message: 'Estado sanitario sincronizado desde mrSAT.', type: 'success' });
     } catch (err) {
+      if (err?.name === 'AbortError') {
+        await loadData(undefined);
+        addToast({
+          title: 'Sincronizacion en curso',
+          message: 'mrSAT tardo mas de lo esperado. Actualice la tabla con la ultima informacion disponible; si faltan datos, vuelve a intentar en unos segundos.',
+          type: 'warning',
+        });
+        return;
+      }
       addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo completar la sincronización.', type: 'error' });
     } finally {
       setSyncing(false);
