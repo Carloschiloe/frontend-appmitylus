@@ -19,12 +19,14 @@ export default function TenantSelector() {
   const handleSelect = (dbName) => {
     if (dbName === selectedDb) {
       localStorage.removeItem('selected_tenant_db');
+      localStorage.removeItem('selected_tenant_id');
       localStorage.removeItem('selected_tenant_nombre');
       localStorage.removeItem('selected_tenant_logo');
       setSelectedDb('');
     } else {
       const emp = empresas.find(e => e.dbName === dbName);
       localStorage.setItem('selected_tenant_db', dbName);
+      localStorage.setItem('selected_tenant_id', emp?._id || '');
       localStorage.setItem('selected_tenant_nombre', emp?.nombre || '');
       localStorage.setItem('selected_tenant_logo', emp?.config?.logo || '');
       setSelectedDb(dbName);
