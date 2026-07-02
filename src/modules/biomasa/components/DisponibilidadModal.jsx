@@ -333,29 +333,32 @@ export default function DisponibilidadModal({
 
             {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
 
-            {/* ── Centro + Producto ─────────────────────────────────────────── */}
-            <div className="mx-form-group">
-              <span className="mx-form-label">Centro opcional</span>
-              <div className="disp-centro-row">
+            {/* ── Centro / Chip comuna / Producto ───────────────────────────── */}
+            <div className="disponibilidad-field-wide disp-centro-producto-row">
+              <label className="mx-form-group">
+                <span className="mx-form-label">Centro opcional</span>
                 <select className="mx-select" value={form.centroId} onChange={(e) => update('centroId', e.target.value)} disabled={!selectedProvider}>
                   <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
                   {centerOptions.map((c) => <option key={c._id} value={c._id}>{getCenterCode(c)}</option>)}
                 </select>
+              </label>
+
+              <div className="disp-centro-chip-col">
                 {(selectedCenter?.comuna || (form.centroId && item?.comuna)) && (
-                  <div className="disponibilidad-provider-selected disp-centro-chip">
+                  <div className="disponibilidad-provider-selected">
                     <CheckCircle2 size={16} />
                     <span><strong>{selectedCenter?.comuna || item?.comuna}</strong></span>
                   </div>
                 )}
               </div>
-            </div>
 
-            <label className="mx-form-group">
-              <span className="mx-form-label">Producto</span>
-              <select className="mx-select" value={form.producto} onChange={(e) => update('producto', e.target.value)}>
-                {DISPONIBILIDAD_PRODUCTOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </label>
+              <label className="mx-form-group">
+                <span className="mx-form-label">Producto</span>
+                <select className="mx-select" value={form.producto} onChange={(e) => update('producto', e.target.value)}>
+                  {DISPONIBILIDAD_PRODUCTOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
+            </div>
 
             {/* ── Calibres (solo edición) / Responsable / Estado ───────────── */}
             {item && (
