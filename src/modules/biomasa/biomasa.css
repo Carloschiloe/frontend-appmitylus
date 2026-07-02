@@ -7517,6 +7517,18 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-radius: var(--radius-card);
   padding: 14px;
   min-width: 296px;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.disp-sim-month--clickable {
+  cursor: pointer;
+}
+.disp-sim-month--clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  border-color: var(--color-primary);
+}
+.disp-sim-month--clickable:hover .disp-sim-month-title {
+  color: var(--color-primary);
 }
 
 .disp-sim-month-title {

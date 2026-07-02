@@ -132,9 +132,13 @@ function fmtDateKey(key) {
   return `${d}/${m}/${y}`;
 }
 
-function MonthGrid({ year, month, firstDow, days, expanded = false }) {
+function MonthGrid({ year, month, firstDow, days, expanded = false, onClick }) {
   return (
-    <div className={`disp-sim-month${expanded ? ' disp-sim-month--expanded' : ''}`}>
+    <div
+      className={`disp-sim-month${expanded ? ' disp-sim-month--expanded' : ''}${onClick ? ' disp-sim-month--clickable' : ''}`}
+      onClick={onClick}
+      title={onClick ? `Ver ${MONTHS_ES[month - 1]} ${year} en detalle` : undefined}
+    >
       <div className="disp-sim-month-title">{MONTHS_ES[month - 1]} {year}</div>
       <div className="disp-sim-month-grid">
         {DIAS_SEMANA.map(({ label }) => (
@@ -296,14 +300,14 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               const isOp = !isBeforeStart && diasOp.includes(dow);
               return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'exhausted' : 'rest' };
             }) };
-        return <MonthGrid key={ms.mk} year={ms.y} month={ms.m} firstDow={firstDow} days={days} />;
+        return <MonthGrid key={ms.mk} year={ms.y} month={ms.m} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(ms.mk)} />;
       });
     }
 
     // Default: continuous simulation
     if (simulation) {
       return simulation.monthsData.map(({ year, month, firstDow, days }) => (
-        <MonthGrid key={`${year}-${month}`} year={year} month={month + 1} firstDow={firstDow} days={days} />
+        <MonthGrid key={`${year}-${month}`} year={year} month={month + 1} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(`${year}-${String(month + 1).padStart(2, '0')}`)} />
       ));
     }
 
