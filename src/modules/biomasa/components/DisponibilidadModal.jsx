@@ -333,7 +333,7 @@ export default function DisponibilidadModal({
 
             {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
 
-            {/* ── Centro / Producto / Origen ────────────────────────────────── */}
+            {/* ── Centro / Producto / Comuna ────────────────────────────────── */}
             <div className="disponibilidad-field-wide disp-form-triple">
               <label className="mx-form-group">
                 <span className="mx-form-label">Centro opcional</span>
@@ -350,12 +350,12 @@ export default function DisponibilidadModal({
                 </select>
               </label>
 
-              <label className="mx-form-group">
-                <span className="mx-form-label">Origen</span>
-                <select className="mx-select" value={form.origen} onChange={(e) => update('origen', e.target.value)}>
-                  {DISPONIBILIDAD_ORIGENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </label>
+              <div className="mx-form-group">
+                <span className="mx-form-label">Comuna</span>
+                <div className="disp-comuna-info">
+                  {selectedCenter?.comuna || (form.centroId && item?.comuna) || <span className="disp-comuna-placeholder">—</span>}
+                </div>
+              </div>
             </div>
 
             {/* ── Calibres (solo edición) / Responsable / Estado ───────────── */}
@@ -385,6 +385,13 @@ export default function DisponibilidadModal({
                   <option value={form.responsable}>{form.responsable || responsableNombre || 'Sin asignar'}</option>
                 )}
                 {usuarios.map((u) => <option key={u._id} value={u.nombre}>{u.nombre}</option>)}
+              </select>
+            </label>
+
+            <label className="mx-form-group">
+              <span className="mx-form-label">Origen</span>
+              <select className="mx-select" value={form.origen} onChange={(e) => update('origen', e.target.value)}>
+                {DISPONIBILIDAD_ORIGENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </label>
 
