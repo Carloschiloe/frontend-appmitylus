@@ -861,9 +861,23 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  overflow-y: auto;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
+}
+
+.disponibilidad-month-body .disponibilidad-table-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.disponibilidad-month-body .disponibilidad-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .disponibilidad-month-modal .mx-modal-title {
