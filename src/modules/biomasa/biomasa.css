@@ -5670,6 +5670,44 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.disp-status-chip:hover {
+  background: var(--color-surface-hover, #f1f5f9);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.disp-status-chip--active {
+  background: var(--color-primary-light, #eff6ff);
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+}
+.disp-status-chip--active .disp-status-chip__label {
+  color: var(--color-primary, #2563eb);
+}
+.disp-status-chip__x {
+  opacity: 0.6;
+  margin-left: -2px;
+}
+
+.disp-clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.disp-clear-filters-btn:hover {
+  color: var(--color-danger, #dc2626);
+  border-color: var(--color-danger, #dc2626);
 }
 
 .disp-status-chip__label {

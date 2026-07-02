@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users } from 'lucide-react';
+import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
 
 const ORIGEN_ICON = {
   llamada:  Phone,
@@ -306,6 +306,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           <Search size={16} />
           <input value={filters.proveedor} onChange={(event) => setFilters((current) => ({ ...current, proveedor: event.target.value }))} placeholder="Buscar proveedor o contacto" />
         </div>
+        {(filters.proveedor || filters.producto || filters.estado || filters.anio || filters.mesNum || filters.responsable) && (
+          <button type="button" className="disp-clear-filters-btn" title="Limpiar filtros" onClick={() => setFilters({ proveedor: '', producto: '', estado: '', anio: '', mesNum: '', responsable: '' })}>
+            <X size={14} /> Limpiar
+          </button>
+        )}
         <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}${(filters.producto || filters.estado) ? ' has-active' : ''}`} onClick={() => setShowFilters((v) => !v)}>
           Filtros {showFilters ? '▲' : '▼'}
         </button>
@@ -373,12 +378,21 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
               </button>
               {showTotales && (
                 <div className="disp-totales-chips">
-                  {kpis.map((kpi) => (
-                    <span key={kpi.value} className={`disp-status-chip disp-status-chip--${kpi.tone}`}>
-                      <span className="disp-status-chip__label">{kpi.label}</span>
-                      <strong className="disp-status-chip__value">{fmtTons(listedTotals.totalsByState?.[kpi.value] || 0)}</strong>
-                    </span>
-                  ))}
+                  {kpis.map((kpi) => {
+                    const isActive = filters.estado === kpi.value;
+                    return (
+                      <button
+                        key={kpi.value}
+                        type="button"
+                        onClick={() => setFilters((f) => ({ ...f, estado: isActive ? '' : kpi.value }))}
+                        className={`disp-status-chip disp-status-chip--${kpi.tone}${isActive ? ' disp-status-chip--active' : ''}`}
+                      >
+                        <span className="disp-status-chip__label">{kpi.label}</span>
+                        <strong className="disp-status-chip__value">{fmtTons(listedTotals.totalsByState?.[kpi.value] || 0)}</strong>
+                        {isActive && <X size={11} className="disp-status-chip__x" />}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
