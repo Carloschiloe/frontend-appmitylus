@@ -708,6 +708,14 @@
   letter-spacing: 0.04em;
   margin-right: 4px;
 }
+
+.disp-annual-chips-label--section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+  margin-right: 0;
+}
 .disp-annual-chip {
   padding: 4px 12px;
   border-radius: 999px;

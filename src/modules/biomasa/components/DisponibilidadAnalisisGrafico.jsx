@@ -53,6 +53,18 @@ export default function DisponibilidadAnalisisGrafico({
     [items]
   );
 
+  const availableProviders = useMemo(() => {
+    const map = new Map();
+    items.forEach((item) => {
+      const name = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
+      if (!name) return;
+      const entry = map.get(name) || { name, total: 0 };
+      entry.total += Number(item.tons || item.tonsDisponible || 0);
+      map.set(name, entry);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 8);
+  }, [items]);
+
   const pastRows = primary.rows.filter((r) => r.monthKey < currentMonthKey);
   const visibleRows = showPastMonths ? primary.rows : primary.rows.filter((r) => r.monthKey >= currentMonthKey);
 
@@ -149,13 +161,34 @@ export default function DisponibilidadAnalisisGrafico({
             })}
           </div>
           </div>
-          {availableProducts.length > 0 && (
+          {(availableProducts.length > 0 || availableProviders.length > 1) && (
             <div className="disp-analysis-product-pills-side">
-              <span className="disp-annual-chips-label">Producto</span>
-              <button type="button" className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`} onClick={() => onProductFilterChange('')}>Todos</button>
-              {availableProducts.map((p) => (
-                <button key={p.value} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>{p.label}</button>
-              ))}
+              {availableProducts.length > 0 && (
+                <>
+                  <span className="disp-annual-chips-label">Producto</span>
+                  <button type="button" className={`disp-annual-chip${!productFilter ? ' is-active' : ''}`} onClick={() => onProductFilterChange('')}>Todos</button>
+                  {availableProducts.map((p) => (
+                    <button key={p.value} type="button" className={`disp-annual-chip${productFilter === p.value ? ' is-active' : ''}`} onClick={() => onProductFilterChange(p.value)}>{p.label}</button>
+                  ))}
+                </>
+              )}
+              {availableProviders.length > 1 && (
+                <>
+                  <span className="disp-annual-chips-label disp-annual-chips-label--section">Proveedor</span>
+                  <button type="button" className={`disp-annual-chip${!providerFilter ? ' is-active' : ''}`} onClick={() => onProviderFilterChange('')}>Todos</button>
+                  {availableProviders.map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      className={`disp-annual-chip${providerFilter === p.name ? ' is-active' : ''}`}
+                      title={`${p.name} · ${fmtTons(p.total)}`}
+                      onClick={() => onProviderFilterChange(providerFilter === p.name ? '' : p.name)}
+                    >
+                      {p.name.length > 22 ? `${p.name.slice(0, 20)}…` : p.name}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </div>
