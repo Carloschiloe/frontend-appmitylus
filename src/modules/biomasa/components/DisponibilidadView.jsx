@@ -239,9 +239,9 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const handleSave = async (payloads) => {
     setSaving(true);
     try {
-      for (const payload of payloads) {
-        if (modalItem?._id) await editarDisponibilidad(modalItem._id, payload);
-        else await crearDisponibilidad(payload);
+      for (let i = 0; i < payloads.length; i++) {
+        if (modalItem?._id && i === 0) await editarDisponibilidad(modalItem._id, payloads[i]);
+        else await crearDisponibilidad(payloads[i]);
       }
       closeModal();
       setAnnualReloadKey((current) => current + 1);
@@ -250,7 +250,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       else await reload();
       addToast({
         title: modalItem
-          ? 'Disponibilidad actualizada'
+          ? (payloads.length > 1 ? `Actualizado + ${payloads.length - 1} nuevo${payloads.length - 1 !== 1 ? 's' : ''} registrado${payloads.length - 1 !== 1 ? 's' : ''}` : 'Disponibilidad actualizada')
           : (payloads.length > 1 ? `${payloads.length} disponibilidades registradas` : 'Disponibilidad registrada'),
         message: payloads.length === 1
           ? `${first.proveedorNombre || first.contactoNombre}: ${fmtTons(first.tonsDisponible)} para ${mesLabel(first.mesKey)}.`

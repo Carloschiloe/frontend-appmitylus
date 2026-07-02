@@ -77,11 +77,16 @@ export default function DisponibilidadModal({
       proveedorNombre: item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '',
       centroId: String(item.centroId || ''),
       responsable: item.responsable || responsableNombre,
-      mesKey: item.mesKey || defaultMes,
-      tonsDisponible: item.tons ?? item.tonsDisponible ?? '',
-      mesesRows: [],
-      calibreMin: String(item.calibreMin ?? ''),
-      calibreMax: String(item.calibreMax ?? ''),
+      mesKey: '',
+      tonsDisponible: '',
+      mesesRows: [{
+        mesKey: item.mesKey || defaultMes,
+        tonsDisponible: String(item.tons ?? item.tonsDisponible ?? ''),
+        calibreMin: String(item.calibreMin ?? ''),
+        calibreMax: String(item.calibreMax ?? ''),
+      }],
+      calibreMin: '',
+      calibreMax: '',
       producto: item.producto || 'sin_definir',
       estado: item.estado || 'disponible',
       origen: item.origen || 'otro',
@@ -243,24 +248,15 @@ export default function DisponibilidadModal({
       setValidationError('Debes seleccionar un proveedor o contacto.');
       return;
     }
-
-    if (item) {
-      onSave([{
-        ...sharedFields(),
-        mesKey: form.mesKey,
-        tonsDisponible: Number(form.tonsDisponible),
-        calibreMin: form.calibreMin ? Number(form.calibreMin) : null,
-        calibreMax: form.calibreMax ? Number(form.calibreMax) : null,
-      }]);
-      return;
-    }
-
     if (!form.mesesRows.length) {
       setValidationError('Agrega al menos una disponibilidad con mes y toneladas.');
       return;
     }
-    onSave(form.mesesRows.map((row) => ({
+    onSave(form.mesesRows.map((row, index) => ({
       ...sharedFields(),
+      // En edición: el estado del form aplica solo al primer registro (el que se edita)
+      // Los nuevos registros añadidos arrancan como 'disponible'
+      estado: item && index > 0 ? 'disponible' : sharedFields().estado,
       mesKey: row.mesKey,
       tonsDisponible: Number(row.tonsDisponible),
       calibreMin: row.calibreMin ? Number(row.calibreMin) : null,
@@ -444,26 +440,6 @@ export default function DisponibilidadModal({
               </div>
             )}
 
-            {/* ── Calibres (solo edición) / Responsable / Estado ───────────── */}
-            {item && (
-              <>
-                <label className="mx-form-group">
-                  <span className="mx-form-label">Calibre mín. (mm)</span>
-                  <select className="mx-select" value={form.calibreMin} onChange={(e) => update('calibreMin', e.target.value)}>
-                    <option value="">Sin definir</option>
-                    {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </label>
-                <label className="mx-form-group">
-                  <span className="mx-form-label">Calibre máx. (mm)</span>
-                  <select className="mx-select" value={form.calibreMax} onChange={(e) => update('calibreMax', e.target.value)}>
-                    <option value="">Sin definir</option>
-                    {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </label>
-              </>
-            )}
-
             <label className="mx-form-group">
               <span className="mx-form-label">Responsable</span>
               <select className="mx-select" value={form.responsable} onChange={(e) => update('responsable', e.target.value)}>
@@ -483,7 +459,7 @@ export default function DisponibilidadModal({
 
             {item && (
               <label className="mx-form-group">
-                <span className="mx-form-label">Estado</span>
+                <span className="mx-form-label">Estado del registro editado</span>
                 <select className="mx-select" value={form.estado} onChange={(e) => update('estado', e.target.value)}>
                   {DISPONIBILIDAD_ESTADOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -503,24 +479,14 @@ export default function DisponibilidadModal({
             )}
 
             {/* ── Sección de mes + toneladas ─────────────────────────────────── */}
-            {item ? (
-              // Edición: campos simples
-              <>
-                <label className="mx-form-group">
-                  <span className="mx-form-label">Mes/Año disponible</span>
-                  <input className="mx-input" type="month" value={form.mesKey} onChange={(e) => update('mesKey', e.target.value)} required />
-                </label>
-                <label className="mx-form-group">
-                  <span className="mx-form-label">Toneladas</span>
-                  <input className="mx-input" type="number" min="0.01" step="0.01" value={form.tonsDisponible} onChange={(e) => update('tonsDisponible', e.target.value)} required />
-                </label>
-              </>
-            ) : (
-              // Creación: agregar por mes
+            {(() => {
+              // Sección unificada: tanto para crear como editar
+              const isEdit = Boolean(item);
+              return (
               <div className="mx-form-group disponibilidad-field-wide disp-add-section">
                 <div className="disp-add-section__header">
-                  <span className="mx-form-label">Disponibilidades a registrar</span>
-                  <span className="disp-add-section__estado-info"><CheckCircle2 size={13} /> Estado inicial: Disponible</span>
+                  <span className="mx-form-label">{isEdit ? 'Meses / disponibilidades' : 'Disponibilidades a registrar'}</span>
+                  {!isEdit && <span className="disp-add-section__estado-info"><CheckCircle2 size={13} /> Estado inicial: Disponible</span>}
                 </div>
 
                 {/* Fila de entrada */}
@@ -633,7 +599,8 @@ export default function DisponibilidadModal({
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
           </div>
 
           <div className="mx-modal-footer">
@@ -642,7 +609,9 @@ export default function DisponibilidadModal({
               {saving
                 ? 'Guardando...'
                 : item
-                  ? 'Guardar cambios'
+                  ? form.mesesRows.length > 1
+                    ? `Guardar cambios + ${form.mesesRows.length - 1} nuevo${form.mesesRows.length - 1 !== 1 ? 's' : ''}`
+                    : 'Guardar cambios'
                   : form.mesesRows.length > 0
                     ? `Registrar ${form.mesesRows.length} disponibilidad${form.mesesRows.length !== 1 ? 'es' : ''}`
                     : 'Registrar disponibilidad'}
