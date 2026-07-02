@@ -229,7 +229,7 @@ export default function DisponibilidadModal({
       centroCodigo,
       comuna,
       areaCodigo,
-      centroOrigenId: form.centroOrigenId || null,
+      centroOrigenId: form.centroOrigenId || '',
       centroOrigenCodigo: form.centroOrigenCodigo || '',
       centroOrigenComuna: form.centroOrigenComuna || '',
       centroOrigenProveedor: form.centroOrigenProveedor || '',
