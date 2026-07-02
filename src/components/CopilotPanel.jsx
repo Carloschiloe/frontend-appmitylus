@@ -11,7 +11,6 @@ import {
   Mic,
   MicOff,
   Send,
-  Sparkles,
   Volume2,
   VolumeX,
   X,
@@ -524,6 +523,12 @@ export default function CopilotPanel({ queryClient }) {
   }, []);
 
   React.useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('mitynex:copilot-open', handler);
+    return () => window.removeEventListener('mitynex:copilot-open', handler);
+  }, []);
+
+  React.useEffect(() => {
     if (!open || professionalVoice.checked) return;
     getCopilotVoiceStatus()
       .then((data) => setProfessionalVoice({
@@ -907,17 +912,6 @@ export default function CopilotPanel({ queryClient }) {
 
   return (
     <>
-      <button
-        type="button"
-        className="copilot-fab"
-        onClick={() => setOpen(true)}
-        title="Mitynex Copilot"
-        aria-label="Abrir Mitynex Copilot"
-      >
-        <Sparkles size={18} />
-        <span>Copilot</span>
-      </button>
-
       {open && (
         <div className="copilot-overlay" role="dialog" aria-modal="true" aria-label="Mitynex Copilot">
           <aside className="copilot-panel">

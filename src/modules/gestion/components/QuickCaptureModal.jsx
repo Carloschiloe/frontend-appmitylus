@@ -17,7 +17,6 @@ import {
   Users,
   FileText,
   Truck,
-  Zap,
   UserPlus,
   Inbox,
 } from 'lucide-react';
@@ -465,26 +464,6 @@ export default function QuickCaptureModal() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mx-btn mx-btn-primary"
-        title="Acción rápida — registrar gestión con proveedor"
-        aria-label="Acción rápida"
-        style={{
-          position: 'fixed',
-          right: '24px',
-          bottom: '24px',
-          zIndex: 60,
-          borderRadius: '999px',
-          padding: '12px 20px',
-          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.24)',
-          gap: '8px',
-        }}
-      >
-        <Zap size={17} /> <span className="qc-fab-label">Acción rápida</span>
-      </button>
-
       {open && (
         <div className="mx-modal-overlay">
           <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
