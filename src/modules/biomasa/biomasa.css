@@ -6940,6 +6940,13 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   }
 }
 
+.disp-calibre-cell {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .dir-badge-comercializadora {
   display: inline-flex;
   align-items: center;
