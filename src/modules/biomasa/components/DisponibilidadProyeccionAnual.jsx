@@ -107,15 +107,13 @@ export default function DisponibilidadProyeccionAnual({
               <tr>
                 <th>Mes</th>
                 {DISPONIBILIDAD_ESTADOS.map((state) => <th key={state.value}>{state.label}</th>)}
-                <th>Total mes</th>
-                <th>% año</th>
-                <th>Detalle</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {pastRows.length > 0 && (
                 <tr className="disp-annual-row--past-toggle">
-                  <td colSpan={DISPONIBILIDAD_ESTADOS.length + 4}>
+                  <td colSpan={DISPONIBILIDAD_ESTADOS.length + 2}>
                     <button type="button" className="disp-annual-past-btn" onClick={() => setShowPastMonths((v) => !v)}>
                       {showPastMonths
                         ? <><ChevronUp size={15} /> Ocultar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}</>
@@ -135,13 +133,6 @@ export default function DisponibilidadProyeccionAnual({
                       {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
                     </td>
                   ))}
-                  <td className="disponibilidad-tons">{fmtTons(row.total)}</td>
-                  <td className="disp-annual-pct-cell">
-                    <span className="disp-annual-pct-bar-track">
-                      <span className="disp-annual-pct-bar-fill" style={{ width: `${annualTotal > 0 ? (row.total / annualTotal) * 100 : 0}%` }} />
-                    </span>
-                    <span className="disp-annual-pct-label">{annualTotal > 0 ? Math.round((row.total / annualTotal) * 100) : 0}%</span>
-                  </td>
                   <td>
                     <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
                       <Eye size={14} /> Ver proveedores
@@ -159,13 +150,6 @@ export default function DisponibilidadProyeccionAnual({
                       {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
                     </td>
                   ))}
-                  <td className="disponibilidad-tons">{fmtTons(row.total)}</td>
-                  <td className="disp-annual-pct-cell">
-                    <span className="disp-annual-pct-bar-track">
-                      <span className="disp-annual-pct-bar-fill" style={{ width: `${annualTotal > 0 ? (row.total / annualTotal) * 100 : 0}%` }} />
-                    </span>
-                    <span className="disp-annual-pct-label">{annualTotal > 0 ? Math.round((row.total / annualTotal) * 100) : 0}%</span>
-                  </td>
                   <td>
                     <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
                       <Eye size={14} /> Ver proveedores
