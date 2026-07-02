@@ -162,12 +162,17 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       && (!filters.estado || (item.estado || 'disponible') === filters.estado)),
     [items, mes, filters.producto, filters.estado]
   );
-  const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, filters), [annualItems, filters]);
-  const annualStateBaseItems = useMemo(
-    () => filterDisponibilidades(annualItems, { ...filters, estado: '' }),
-    [annualItems, filters]
+  // Para vistas anuales: solo proveedor/producto/estado/responsable — sin anio/mesNum (tienen su propia selección de año)
+  const annualFilters = useMemo(
+    () => ({ ...filters, anio: '', mesNum: '' }),
+    [filters]
   );
-  const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, filters), [comparisonItems, filters]);
+  const filteredAnnualItems = useMemo(() => filterDisponibilidades(annualItems, annualFilters), [annualItems, annualFilters]);
+  const annualStateBaseItems = useMemo(
+    () => filterDisponibilidades(annualItems, { ...annualFilters, estado: '' }),
+    [annualItems, annualFilters]
+  );
+  const filteredComparisonItems = useMemo(() => filterDisponibilidades(comparisonItems, annualFilters), [comparisonItems, annualFilters]);
   const listedTotals = useMemo(() => buildDisponibilidadTotals(filteredItems), [filteredItems]);
   const totalesLabel = useMemo(() => {
     if (filters.anio && filters.mesNum) return `${MESES_NOMBRES[Number(filters.mesNum) - 1]} ${filters.anio}`;
