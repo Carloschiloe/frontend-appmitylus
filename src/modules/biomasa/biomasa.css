@@ -1498,21 +1498,6 @@
   font-weight: 500;
 }
 
-.disp-comuna-info {
-  height: 38px;
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-  background: var(--color-bg-subtle, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--color-text, #1e293b);
-}
-
-.disp-comuna-placeholder {
-  color: var(--color-text-muted, #94a3b8);
-}
 
 .disp-add-section__sublabel {
   display: block;
