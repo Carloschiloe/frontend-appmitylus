@@ -6882,3 +6882,16 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     justify-content: center !important;
   }
 }
+
+.dir-badge-comercializadora {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(8, 145, 178, 0.12);
+  color: #0891b2;
+  border: 1px solid rgba(8, 145, 178, 0.25);
+}

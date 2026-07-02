@@ -384,7 +384,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                       return (
                         <tr key={item._id}>
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
-                          <td data-label="Centro">{item.centroCodigo || 'Sin centro'}</td>
+                          <td data-label="Centro">
+                            {item.tipo === 'comercializadora' || item.centroOrigenCodigo
+                              ? <><span className="dir-badge-comercializadora">Comercializadora</span>{item.centroOrigenCodigo ? <span style={{marginLeft:4}}>{item.centroOrigenCodigo}</span> : null}</>
+                              : (item.centroCodigo || 'Sin centro')}
+                          </td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
                           <td className="disponibilidad-tons" data-label="Toneladas">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
                           <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>

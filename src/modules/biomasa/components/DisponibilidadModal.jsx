@@ -233,6 +233,7 @@ export default function DisponibilidadModal({
       centroOrigenCodigo: form.centroOrigenCodigo || '',
       centroOrigenComuna: form.centroOrigenComuna || '',
       centroOrigenProveedor: form.centroOrigenProveedor || '',
+      tipo: showCentroOrigen ? 'comercializadora' : '',
     };
   };
 
