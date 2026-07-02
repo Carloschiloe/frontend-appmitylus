@@ -50,7 +50,8 @@ const filterDisponibilidades = (sourceItems, filters) => {
       && (!filters.producto || (item.producto || 'sin_definir') === filters.producto)
       && (!filters.estado || (item.estado || 'disponible') === filters.estado)
       && (!filters.anio || itemYear === String(filters.anio))
-      && (!filters.mesNum || itemMonth === String(filters.mesNum).padStart(2, '0'));
+      && (!filters.mesNum || itemMonth === String(filters.mesNum).padStart(2, '0'))
+      && (!filters.responsable || (item.responsable || '') === filters.responsable);
   });
 };
 
@@ -73,7 +74,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [comparisonItems, setComparisonItems] = useState([]);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
-  const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '', anio: '', mesNum: '' });
+  const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '', anio: '', mesNum: '', responsable: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [showTotales, setShowTotales] = useState(false);
 
@@ -138,6 +139,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const availableYears = useMemo(() => {
     const years = new Set(items.map((i) => (i.mesKey || '').slice(0, 4)).filter(Boolean));
     return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [items]);
+
+  const availableResponsables = useMemo(() => {
+    const names = new Set(items.map((i) => i.responsable || '').filter(Boolean));
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [items]);
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
@@ -286,6 +292,13 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                 {MESES_NOMBRES.map((nombre, i) => <option key={i + 1} value={i + 1}>{nombre}</option>)}
               </select>
             </div>
+            <div className="disp-view-selector">
+              <span className="disp-view-selector__label">Responsable</span>
+              <select className="disp-view-selector__select" value={filters.responsable} onChange={(e) => setFilters((f) => ({ ...f, responsable: e.target.value }))}>
+                <option value="">Todos</option>
+                {availableResponsables.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
           </>
         )}
 
@@ -375,7 +388,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   <thead>
                     <tr>
                       <th>Proveedor</th><th>Centro</th><th>Mes</th><th>Toneladas</th><th>Producto</th>
-                      <th>Responsable</th><th>Observación</th><th>Acciones</th>
+                      <th>Observación</th><th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -391,7 +404,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                             <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
                           </td>
                           <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                          <td data-label="Responsable">{item.responsable || 'Sin asignar'}</td>
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                           <td data-label="Acciones">
                             <div className="disponibilidad-row-actions">
@@ -408,7 +420,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                       );
                     })}
                     {!loading && filteredItems.length === 0 && (
-                      <tr><td colSpan={8} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
+                      <tr><td colSpan={7} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
                     )}
                   </tbody>
                 </table>
