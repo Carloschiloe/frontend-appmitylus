@@ -164,7 +164,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const [incluirSemiCerrado, setIncluirSemiCerrado] = useState(true);
   const [tipoTransporteId, setTipoTransporteId] = useState('');
   const [tonsPorCamionManual, setTonsPorCamionManual] = useState('');
-  const [camionesPerDay, setCamionesPerDay] = useState(2);
+  const [camionesPerDay, setCamionesPerDay] = useState('2');
   const [fechaInicio, setFechaInicio] = useState(() => todayKey());
   const [diasOp, setDiasOp] = useState([0, 1, 2, 3, 4]);
   const [period, setPeriod] = useState(null);
@@ -204,7 +204,8 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
     return Number.isFinite(manual) && manual > 0 ? manual : null;
   }, [selectedTipo, tonsPorCamionManual]);
 
-  const tonsPorDia = tonsPorCamion != null ? camionesPerDay * tonsPorCamion : 0;
+  const camionesNum = Math.max(0, parseInt(camionesPerDay, 10) || 0);
+  const tonsPorDia = tonsPorCamion != null && camionesNum > 0 ? camionesNum * tonsPorCamion : 0;
 
   // Which month keys to show based on period selection
   const visibleMonthKeys = useMemo(() => {
@@ -351,7 +352,18 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
           {tonsPorCamion != null && <div className="disp-sim-computed">{fmtNumber(tonsPorCamion, 2)} t por camión</div>}
           <div className="mx-form-group">
             <label className="mx-label">Camiones por día</label>
-            <input className="mx-input" type="number" min="1" max="30" value={camionesPerDay} onChange={(e) => setCamionesPerDay(Math.max(1, parseInt(e.target.value, 10) || 1))} />
+            <input
+              className="mx-input"
+              type="number"
+              min="1"
+              max="30"
+              value={camionesPerDay}
+              onChange={(e) => setCamionesPerDay(e.target.value)}
+              onBlur={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setCamionesPerDay(String(v > 0 ? v : 1));
+              }}
+            />
           </div>
           {tonsPorDia > 0 && <div className="disp-sim-computed disp-sim-computed--accent">{fmtTons(tonsPorDia)} / día operacional</div>}
         </div>
