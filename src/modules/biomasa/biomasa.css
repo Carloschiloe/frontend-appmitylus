@@ -7182,6 +7182,177 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   padding: 4px 0 24px;
 }
 
+/* Sección derecha */
+.disp-sim-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Selector de período */
+.disp-sim-period-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+.disp-sim-period-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.2;
+}
+.disp-sim-period-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.disp-sim-period-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.disp-sim-period-sub {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+.disp-sim-period-btn.is-active .disp-sim-period-sub {
+  opacity: 0.85;
+}
+
+/* Tarjetas mensuales */
+.disp-sim-month-cards {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.disp-sim-month-card {
+  flex: 0 0 auto;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 10px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: center;
+  gap: 2px;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+.disp-sim-month-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.disp-sim-month-card.is-expanded {
+  box-shadow: 0 0 0 3px var(--color-primary);
+  border-color: var(--color-primary);
+}
+.disp-sim-month-card--green  { border-color: #16a34a; background: #f0fdf4; }
+.disp-sim-month-card--yellow { border-color: #ca8a04; background: #fefce8; }
+.disp-sim-month-card--red    { border-color: #dc2626; background: #fef2f2; }
+.disp-sim-month-card--empty  { border-color: var(--color-border); background: var(--color-bg); opacity: 0.6; }
+.disp-sim-month-card--total  { border-color: var(--color-primary); background: rgba(37,99,235,0.04); cursor: default; }
+
+.disp-sim-mc-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+.disp-sim-mc-avail {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.disp-sim-mc-needed {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.disp-sim-mc-label {
+  font-size: 0.65rem;
+  color: var(--color-text-subtle, var(--color-text-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.disp-sim-mc-balance {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.disp-sim-mc-balance--pos { color: #15803d; background: #dcfce7; }
+.disp-sim-mc-balance--neg { color: #dc2626; background: #fee2e2; }
+.disp-sim-mc-days {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Encabezado mes expandido */
+.disp-sim-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.disp-sim-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.disp-sim-back-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Calendario single (mes expandido) */
+.disp-sim-calendar--single .disp-sim-month {
+  max-width: 580px;
+}
+.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day {
+  min-height: 68px;
+  font-size: 0.82rem;
+}
+.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day-num {
+  font-size: 1rem;
+}
+.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day-tons {
+  font-size: 0.78rem;
+}
+
 /* Panel izquierdo */
 .disp-sim-panel {
   flex: 0 0 268px;
