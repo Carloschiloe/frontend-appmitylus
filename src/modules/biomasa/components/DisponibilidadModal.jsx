@@ -36,6 +36,11 @@ const EMPTY_FORM = {
   origen: 'llamada',
   observacion: '',
   motivo: '',
+  // Centro de origen (cuando proveedor es comercializadora)
+  centroOrigenId: '',
+  centroOrigenCodigo: '',
+  centroOrigenComuna: '',
+  centroOrigenProveedor: '',
 };
 
 const EMPTY_ADD_ROW = { mesKey: '', tonsDisponible: '', calibreMin: '', calibreMax: '' };
@@ -58,6 +63,7 @@ export default function DisponibilidadModal({
   const [addRow, setAddRow] = useState(EMPTY_ADD_ROW);
   const [providerSearch, setProviderSearch] = useState('');
   const [contactSearch, setContactSearch] = useState('');
+  const [centroOrigenSearch, setCentroOrigenSearch] = useState('');
   const [validationError, setValidationError] = useState('');
   const [usuarios, setUsuarios] = useState([]);
 
@@ -83,9 +89,14 @@ export default function DisponibilidadModal({
       origen: item.origen || 'otro',
       observacion: item.observacion || '',
       motivo: item.motivo || '',
+      centroOrigenId: item.centroOrigenId || '',
+      centroOrigenCodigo: item.centroOrigenCodigo || '',
+      centroOrigenComuna: item.centroOrigenComuna || '',
+      centroOrigenProveedor: item.centroOrigenProveedor || '',
     } : { ...EMPTY_FORM, responsable: responsableNombre });
     setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
     setContactSearch(item?.contactoNombre || '');
+    setCentroOrigenSearch(item?.centroOrigenCodigo ? `${item.centroOrigenCodigo}${item.centroOrigenComuna ? ` · ${item.centroOrigenComuna}` : ''}` : '');
     setValidationError('');
     // Filtrar por empresa activa: superadmin usa selected_tenant_id,
     // admin normal usa su propio empresaId del JWT
@@ -112,6 +123,36 @@ export default function DisponibilidadModal({
   const selectedCenter = centerOptions.find((c) => String(c._id) === form.centroId);
   const showProviderResults = providerSearch.trim() && providerSearch.trim() !== form.proveedorNombre;
   const showContactResults = contactSearch.trim() && contactSearch.trim() !== form.contactoNombre;
+
+  // Búsqueda de centro de origen (para comercializadoras sin centros propios)
+  const showCentroOrigen = form.proveedorKey && centerOptions.length === 0;
+  const centroOrigenResults = useMemo(() => {
+    if (!centroOrigenSearch.trim() || !showCentroOrigen) return [];
+    const q = centroOrigenSearch.trim().toLowerCase();
+    const results = [];
+    for (const prov of proveedores) {
+      for (const c of (prov.centros || [])) {
+        const codigo = getCenterCode(c).toLowerCase();
+        const comuna = (c.comuna || '').toLowerCase();
+        const nombre = (prov.proveedorNombre || '').toLowerCase();
+        if (codigo.includes(q) || comuna.includes(q) || nombre.includes(q)) {
+          results.push({ centroId: c._id, centroCodigo: getCenterCode(c), centroComuna: c.comuna || '', proveedorNombre: prov.proveedorNombre || '' });
+          if (results.length >= 10) return results;
+        }
+      }
+    }
+    return results;
+  }, [centroOrigenSearch, showCentroOrigen, proveedores]);
+
+  const selectCentroOrigen = (opt) => {
+    setForm((f) => ({ ...f, centroOrigenId: String(opt.centroId), centroOrigenCodigo: opt.centroCodigo, centroOrigenComuna: opt.centroComuna, centroOrigenProveedor: opt.proveedorNombre }));
+    setCentroOrigenSearch(`${opt.centroCodigo}${opt.centroComuna ? ` · ${opt.centroComuna}` : ''}`);
+  };
+  const clearCentroOrigen = () => {
+    setForm((f) => ({ ...f, centroOrigenId: '', centroOrigenCodigo: '', centroOrigenComuna: '', centroOrigenProveedor: '' }));
+    setCentroOrigenSearch('');
+  };
+  const showCentroOrigenResults = centroOrigenSearch.trim() && !form.centroOrigenCodigo;
 
   if (!open) return null;
 
@@ -199,6 +240,10 @@ export default function DisponibilidadModal({
       centroCodigo,
       comuna,
       areaCodigo,
+      centroOrigenId: form.centroOrigenId || null,
+      centroOrigenCodigo: form.centroOrigenCodigo || '',
+      centroOrigenComuna: form.centroOrigenComuna || '',
+      centroOrigenProveedor: form.centroOrigenProveedor || '',
     };
   };
 
@@ -359,6 +404,45 @@ export default function DisponibilidadModal({
                 </select>
               </label>
             </div>
+
+            {/* ── Centro de origen (cuando proveedor es comercializadora) ───── */}
+            {showCentroOrigen && (
+              <div className="mx-form-group disponibilidad-field-wide">
+                <span className="mx-form-label">Centro de origen <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>— centro real que produce la biomasa</span></span>
+                <div className="disponibilidad-provider-search">
+                  <Search size={18} />
+                  <input
+                    value={centroOrigenSearch}
+                    onChange={(e) => {
+                      setCentroOrigenSearch(e.target.value);
+                      if (form.centroOrigenCodigo) clearCentroOrigen();
+                    }}
+                    placeholder="Buscar por código de centro, comuna o empresa..."
+                  />
+                  {form.centroOrigenCodigo && (
+                    <button type="button" className="disponibilidad-search-clear" onClick={clearCentroOrigen} aria-label="Quitar"><X size={15} /></button>
+                  )}
+                </div>
+                {showCentroOrigenResults && (
+                  <div className="disponibilidad-provider-results">
+                    {centroOrigenResults.length === 0
+                      ? <div className="disponibilidad-inline-empty">No encontramos centros con ese criterio.</div>
+                      : centroOrigenResults.map((opt) => (
+                        <button key={opt.centroId} type="button" className="disponibilidad-provider-option" onClick={() => selectCentroOrigen(opt)}>
+                          <strong>{opt.centroCodigo}</strong>
+                          <span>{opt.centroComuna || 'Sin comuna'} · {opt.proveedorNombre}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+                {form.centroOrigenCodigo && (
+                  <div className="disponibilidad-provider-selected">
+                    <CheckCircle2 size={16} />
+                    <span><strong>{form.centroOrigenCodigo}</strong>{form.centroOrigenComuna ? ` · ${form.centroOrigenComuna}` : ''}{form.centroOrigenProveedor ? ` · ${form.centroOrigenProveedor}` : ''}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Calibres (solo edición) / Responsable / Estado ───────────── */}
             {item && (

@@ -263,6 +263,7 @@ export default function Directorio() {
   const [addProviderStep, setAddProviderStep] = useState(1);
   const [addProviderQuery, setAddProviderQuery] = useState('');
   const [addProviderSelected, setAddProviderSelected] = useState(null);
+  const [addProviderTipo, setAddProviderTipo] = useState('titular');
   
   // Optimistic UI updates
   const [deletedProviders, setDeletedProviders] = useState(new Set());
@@ -579,7 +580,8 @@ export default function Directorio() {
         proveedorKey: addProviderSelected.key,
         proveedorNombre: addProviderSelected.nombre,
         entidad: addProviderSelected.nombre,
-        centroCodigo: addProviderSelected.centros[0] || '',
+        centroCodigo: addProviderSelected.centros?.[0] || '',
+        tipo: addProviderTipo,
         creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
       });
       const nombreRegistrado = addProviderSelected.nombre;
@@ -599,6 +601,7 @@ export default function Directorio() {
       setAddProviderQuery('');
       setAddProviderSelected(null);
       setAddProviderStep(1);
+      setAddProviderTipo('titular');
       setShowAddProviderModal(true);
     } else {
       setModalState({ open: true, mode: 'create', item: null });
@@ -1465,7 +1468,7 @@ export default function Directorio() {
                         <li key={opt.key} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <button
                             type="button"
-                            onClick={() => { setAddProviderSelected(opt); setAddProviderStep(2); }}
+                            onClick={() => { setAddProviderSelected(opt); setAddProviderTipo('titular'); setAddProviderStep(2); }}
                             style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 4px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                           >
                             <Building2 size={16} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
@@ -1487,18 +1490,44 @@ export default function Directorio() {
                     Escribe el nombre de la empresa o un código de centro para buscar.
                   </p>
                 )}
+
+                {/* Opción comercializadora */}
+                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+                    ¿No aparece en el listado? Puede ser una comercializadora sin concesiones propias.
+                  </p>
+                  <button
+                    type="button"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', fontSize: '0.87rem', fontWeight: 600, color: 'var(--color-text)' }}
+                    onClick={() => {
+                      const nombre = addProviderQuery.trim() || 'Nueva comercializadora';
+                      setAddProviderSelected({ nombre, key: nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-'), centros: [], comunas: [] });
+                      setAddProviderTipo('comercializadora');
+                      setAddProviderStep(2);
+                    }}
+                  >
+                    <Building2 size={15} />
+                    Registrar como comercializadora
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleAddProvider} className="mx-form">
                 <div className="mx-modal-body">
                   <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <Building2 size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{addProviderSelected?.nombre}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                        {addProviderSelected?.centros.length} centro{addProviderSelected?.centros.length !== 1 ? 's' : ''}
-                        {addProviderSelected?.comunas?.length > 0 && ` · ${addProviderSelected.comunas.slice(0, 2).join(', ')}`}
-                      </div>
+                      {addProviderTipo === 'comercializadora' ? (
+                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0891b2', marginTop: 2 }}>
+                          Comercializadora · Sin centros de cultivo propios
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                          {addProviderSelected?.centros?.length} centro{addProviderSelected?.centros?.length !== 1 ? 's' : ''}
+                          {addProviderSelected?.comunas?.length > 0 && ` · ${addProviderSelected.comunas.slice(0, 2).join(', ')}`}
+                        </div>
+                      )}
                     </div>
                   </div>
 
