@@ -27,6 +27,7 @@ export default function DisponibilidadProyeccionAnual({
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [productFilter, setProductFilter] = useState('');
   const [showPastMonths, setShowPastMonths] = useState(false);
+  const [detailEstadoFiltro, setDetailEstadoFiltro] = useState('');
 
   const availableProducts = useMemo(
     () => DISPONIBILIDAD_PRODUCTOS.filter((p) => items.some((i) => (i.producto || 'sin_definir') === p.value)),
@@ -175,20 +176,29 @@ export default function DisponibilidadProyeccionAnual({
                 <h3 className="mx-modal-title">Detalle {mesLabel(selectedMonth, true)}</h3>
                 <p className="disponibilidad-modal-subtitle">Proveedores con biomasa informada para este mes.</p>
               </div>
-              <button type="button" className="mx-modal-close" onClick={() => setSelectedMonth(null)} aria-label="Cerrar detalle mensual"><X size={18} /></button>
+              <button type="button" className="mx-modal-close" onClick={() => { setSelectedMonth(null); setDetailEstadoFiltro(''); }} aria-label="Cerrar detalle mensual"><X size={18} /></button>
             </div>
 
             <div className="mx-modal-body disponibilidad-month-body">
               <div className="disponibilidad-kpi-grid disponibilidad-kpi-grid--month-detail">
-                <article className="disponibilidad-kpi disponibilidad-kpi--total">
+                <button
+                  type="button"
+                  className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--total${!detailEstadoFiltro ? ' is-active' : ''}`}
+                  onClick={() => setDetailEstadoFiltro('')}
+                >
                   <span>Total mes</span>
                   <strong>{fmtTons(selectedDetail.total)}</strong>
-                </article>
+                </button>
                 {DISPONIBILIDAD_ESTADOS.map((state) => (
-                  <article key={state.value} className={`disponibilidad-kpi disponibilidad-kpi--${state.tone}`}>
+                  <button
+                    key={state.value}
+                    type="button"
+                    className={`disponibilidad-kpi disponibilidad-kpi-button disponibilidad-kpi--${state.tone}${detailEstadoFiltro === state.value ? ' is-active' : ''}`}
+                    onClick={() => setDetailEstadoFiltro((f) => f === state.value ? '' : state.value)}
+                  >
                     <span>{state.label}</span>
                     <strong>{fmtTons(selectedDetail.totalsByState[state.value])}</strong>
-                  </article>
+                  </button>
                 ))}
               </div>
 
@@ -203,7 +213,7 @@ export default function DisponibilidadProyeccionAnual({
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedDetail.items.map((item) => {
+                        {selectedDetail.items.filter((item) => !detailEstadoFiltro || (item.estado || 'disponible') === detailEstadoFiltro).map((item) => {
                           const meta = stateMeta(item.estado || 'disponible');
                           return (
                             <tr key={item._id}>
