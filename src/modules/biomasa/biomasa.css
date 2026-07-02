@@ -858,7 +858,8 @@
 }
 
 .disponibilidad-month-body {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
   overflow-y: auto;
   flex: 1;
