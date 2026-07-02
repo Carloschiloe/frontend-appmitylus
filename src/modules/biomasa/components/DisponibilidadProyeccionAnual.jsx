@@ -4,7 +4,6 @@ import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
   DISPONIBILIDAD_ESTADOS,
-  DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
   optionLabel,
 } from '../disponibilidad.constants';
@@ -213,7 +212,7 @@ export default function DisponibilidadProyeccionAnual({
                       <thead>
                         <tr>
                           <th>Proveedor</th><th>Centro</th><th>Toneladas</th><th>Producto</th>
-                          <th>Estado</th><th>Responsable</th><th>Origen</th><th>Observación</th><th>Acciones</th>
+                          <th>Observación</th><th>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -222,12 +221,12 @@ export default function DisponibilidadProyeccionAnual({
                           return (
                             <tr key={item._id}>
                               <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
-                              <td>{item.centroCodigo || 'Sin centro'}</td>
-                              <td className="disponibilidad-tons">{fmtTons(itemTons(item))}</td>
+                              <td>{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
+                              <td className="disponibilidad-tons">
+                                <div>{fmtTons(itemTons(item))}</div>
+                                <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
+                              </td>
                               <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                              <td><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
-                              <td>{item.responsable || 'Sin asignar'}</td>
-                              <td>{optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</td>
                               <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                               <td>
                                 <div className="disponibilidad-row-actions">
