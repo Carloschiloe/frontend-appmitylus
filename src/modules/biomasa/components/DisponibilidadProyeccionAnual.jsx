@@ -213,7 +213,7 @@ export default function DisponibilidadProyeccionAnual({
                               <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
                               <td className="disp-calibre-cell">
                                 {item.calibreMin || item.calibreMax
-                                  ? `${item.calibreMin ?? '?'}–${item.calibreMax ?? '?'} mm`
+                                  ? `${item.calibreMin ?? '?'}–${item.calibreMax ?? '?'} uk`
                                   : '—'}
                               </td>
                               <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
