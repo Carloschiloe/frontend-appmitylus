@@ -51,11 +51,15 @@ export function buildDisponibilidadAnnualProjection(items = [], year) {
   const rows = Array.from({ length: 12 }, (_, index) => {
     const monthKey = `${year}-${String(index + 1).padStart(2, '0')}`;
     const stateTons = emptyStateTotals();
+    let calibreMin = null;
+    let calibreMax = null;
 
     items.forEach((item) => {
       if (item.mesKey !== monthKey) return;
       const state = item.estado || 'disponible';
       if (state in stateTons) stateTons[state] += Number(item.tons || item.tonsDisponible || 0);
+      if (item.calibreMin != null) calibreMin = calibreMin == null ? item.calibreMin : Math.min(calibreMin, item.calibreMin);
+      if (item.calibreMax != null) calibreMax = calibreMax == null ? item.calibreMax : Math.max(calibreMax, item.calibreMax);
     });
 
     Object.entries(stateTons).forEach(([state, tons]) => {
@@ -66,6 +70,8 @@ export function buildDisponibilidadAnnualProjection(items = [], year) {
       monthKey,
       stateTons,
       total: Object.values(stateTons).reduce((sum, tons) => sum + tons, 0),
+      calibreMin,
+      calibreMax,
     };
   });
 

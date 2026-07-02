@@ -107,13 +107,14 @@ export default function DisponibilidadProyeccionAnual({
               <tr>
                 <th>Mes</th>
                 {DISPONIBILIDAD_ESTADOS.map((state) => <th key={state.value}>{state.label}</th>)}
+                <th>Calibres</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {pastRows.length > 0 && (
                 <tr className="disp-annual-row--past-toggle">
-                  <td colSpan={DISPONIBILIDAD_ESTADOS.length + 2}>
+                  <td colSpan={DISPONIBILIDAD_ESTADOS.length + 3}>
                     <button type="button" className="disp-annual-past-btn" onClick={() => setShowPastMonths((v) => !v)}>
                       {showPastMonths
                         ? <><ChevronUp size={15} /> Ocultar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}</>
@@ -125,14 +126,15 @@ export default function DisponibilidadProyeccionAnual({
               )}
               {showPastMonths && pastRows.map((row) => (
                 <tr key={row.monthKey} className="disp-annual-row--past">
-                  <td className="disponibilidad-annual-month">
-                    <strong>{mesLabel(row.monthKey)}</strong>
-                  </td>
+                  <td className="disponibilidad-annual-month"><strong>{mesLabel(row.monthKey)}</strong></td>
                   {DISPONIBILIDAD_ESTADOS.map((state) => (
                     <td key={state.value} className={row.stateTons[state.value] > 0 ? `disp-annual-cell--${state.tone}` : 'disp-annual-cell--zero'}>
                       {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
                     </td>
                   ))}
+                  <td className="disp-calibre-cell">
+                    {row.calibreMin != null || row.calibreMax != null ? `${row.calibreMin ?? '?'}–${row.calibreMax ?? '?'} uk` : '—'}
+                  </td>
                   <td>
                     <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
                       <Eye size={14} /> Ver proveedores
@@ -142,14 +144,15 @@ export default function DisponibilidadProyeccionAnual({
               ))}
               {currentFutureRows.map((row) => (
                 <tr key={row.monthKey} className={row.monthKey === currentMonthKey ? 'disp-annual-row--current' : undefined}>
-                  <td className="disponibilidad-annual-month">
-                    <strong>{mesLabel(row.monthKey)}</strong>
-                  </td>
+                  <td className="disponibilidad-annual-month"><strong>{mesLabel(row.monthKey)}</strong></td>
                   {DISPONIBILIDAD_ESTADOS.map((state) => (
                     <td key={state.value} className={row.stateTons[state.value] > 0 ? `disp-annual-cell--${state.tone}` : 'disp-annual-cell--zero'}>
                       {row.stateTons[state.value] > 0 ? fmtTons(row.stateTons[state.value]) : '—'}
                     </td>
                   ))}
+                  <td className="disp-calibre-cell">
+                    {row.calibreMin != null || row.calibreMax != null ? `${row.calibreMin ?? '?'}–${row.calibreMax ?? '?'} uk` : '—'}
+                  </td>
                   <td>
                     <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-detail-button" onClick={() => setSelectedMonth(row.monthKey)}>
                       <Eye size={14} /> Ver proveedores
