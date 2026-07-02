@@ -449,7 +449,7 @@
 
 .dir-primary-text,
 .dir-contact-name {
-  font-weight: var(--weight-bold);
+  font-weight: 500;
   color: var(--color-text);
 }
 
