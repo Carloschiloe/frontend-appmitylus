@@ -35,6 +35,8 @@ import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadTratoModal from './DisponibilidadTratoModal';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
+import DisponibilidadSimulador from './DisponibilidadSimulador';
+import { maestrosApi } from '../../../api/api-maestros';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -80,6 +82,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showTotales, setShowTotales] = useState(false);
+  const [tiposTransporte, setTiposTransporte] = useState([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,7 +101,12 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   }, [addToast]);
 
   useEffect(() => {
-    if (!['anual', 'analisis'].includes(activeTab) || !/^\d{4}$/.test(annualYear)) return undefined;
+    if (activeTab !== 'simulador' || tiposTransporte.length > 0) return;
+    maestrosApi.getMaestrosActivos('tipo_transporte').then(setTiposTransporte).catch(() => {});
+  }, [activeTab, tiposTransporte.length]);
+
+  useEffect(() => {
+    if (!['anual', 'analisis', 'simulador'].includes(activeTab) || !/^\d{4}$/.test(annualYear)) return undefined;
     let active = true;
     setAnnualLoading(true);
     getDisponibilidades({ from: `${annualYear}-01`, to: `${annualYear}-12` })
@@ -286,6 +294,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             <option value="resumen">Resumen mensual</option>
             <option value="anual">Proyección anual</option>
             <option value="analisis">Análisis gráfico</option>
+            <option value="simulador">Simulador</option>
           </select>
         </div>
 
@@ -468,6 +477,12 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
             onEdit={openEdit}
             onCreateTrato={openCreateTrato}
+          />
+        )}
+        {activeTab === 'simulador' && (
+          <DisponibilidadSimulador
+            items={filteredAnnualItems}
+            tiposTransporte={tiposTransporte}
           />
         )}
         {activeTab === 'analisis' && (
