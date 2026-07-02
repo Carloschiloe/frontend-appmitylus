@@ -14,12 +14,12 @@ export default function DisponibilidadProviderCell({ item }) {
 
   return (
     <div className={`disponibilidad-provider-cell ${providerName ? '' : 'disponibilidad-provider-cell--contact-only'}`}>
-      <strong>
+      <span className="disponibilidad-provider-name">
         {providerName || 'Sin proveedor'}
         {esComercializadora && (
           <span className="dir-badge-comercializadora" style={{ marginLeft: 6 }}>Comercializadora</span>
         )}
-      </strong>
+      </span>
       {contactName && (
         <span>Contacto: {contactName}{detail ? ` · ${detail}` : ''}</span>
       )}

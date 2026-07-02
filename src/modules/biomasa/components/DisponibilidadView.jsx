@@ -375,7 +375,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   <thead>
                     <tr>
                       <th>Proveedor</th><th>Centro</th><th>Mes</th><th>Toneladas</th><th>Producto</th>
-                      <th>Estado</th><th>Responsable</th><th>Origen</th><th>Observación</th><th>Acciones</th>
+                      <th>Responsable</th><th>Observación</th><th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -386,11 +386,12 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
                           <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
-                          <td className="disponibilidad-tons" data-label="Toneladas">{fmtTons(item.tons || item.tonsDisponible || 0)}</td>
+                          <td className="disponibilidad-tons" data-label="Toneladas">
+                            <div>{fmtTons(item.tons || item.tonsDisponible || 0)}</div>
+                            <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
+                          </td>
                           <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                          <td data-label="Estado"><span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span></td>
                           <td data-label="Responsable">{item.responsable || 'Sin asignar'}</td>
-                          <td data-label="Origen"><OrigenIcon origen={item.origen || 'otro'} label={optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')} /></td>
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                           <td data-label="Acciones">
                             <div className="disponibilidad-row-actions">
@@ -407,7 +408,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                       );
                     })}
                     {!loading && filteredItems.length === 0 && (
-                      <tr><td colSpan={10} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
+                      <tr><td colSpan={8} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
                     )}
                   </tbody>
                 </table>
