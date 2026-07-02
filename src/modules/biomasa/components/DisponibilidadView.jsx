@@ -489,6 +489,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             onRefresh={() => setAnnualReloadKey((current) => current + 1)}
             loading={annualLoading}
             comparisonLoading={comparisonLoading}
+            onEdit={openEdit}
           />
         )}
       </div>

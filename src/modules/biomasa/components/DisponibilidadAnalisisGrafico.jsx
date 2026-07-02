@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -33,6 +33,7 @@ export default function DisponibilidadAnalisisGrafico({
   onRefresh,
   loading,
   comparisonLoading,
+  onEdit,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
@@ -245,7 +246,19 @@ export default function DisponibilidadAnalisisGrafico({
                   <article key={item._id} className="disponibilidad-analysis-detail-record">
                     <div className="disponibilidad-analysis-detail-title">
                       <DisponibilidadProviderCell item={item} />
-                      <strong>{fmtTons(itemTons(item))}</strong>
+                      <div className="disponibilidad-analysis-detail-actions">
+                        <strong>{fmtTons(itemTons(item))}</strong>
+                        {onEdit && (
+                          <button
+                            type="button"
+                            className="mx-btn-icon sm"
+                            onClick={() => onEdit(item)}
+                            aria-label="Editar disponibilidad"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="disponibilidad-analysis-detail-tags">
                       <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
