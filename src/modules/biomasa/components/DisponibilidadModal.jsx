@@ -9,8 +9,7 @@ import {
   hasDisponibilidadIdentity,
 } from '../disponibilidad.constants';
 import { mesLabel } from '../utils/fechasChile';
-import { usuariosApi } from '../../../api/api-usuarios';
-import { useAuth } from '../../../context/AuthContext';
+import { maestrosApi } from '../../../api/api-maestros';
 
 const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
 const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
@@ -58,7 +57,6 @@ export default function DisponibilidadModal({
   onClose,
   onSave,
 }) {
-  const { user } = useAuth();
   const [form, setForm] = useState(EMPTY_FORM);
   const [addRow, setAddRow] = useState(EMPTY_ADD_ROW);
   const [providerSearch, setProviderSearch] = useState('');
@@ -98,17 +96,8 @@ export default function DisponibilidadModal({
     setContactSearch(item?.contactoNombre || '');
     setCentroOrigenSearch(item?.centroOrigenCodigo ? `${item.centroOrigenCodigo}${item.centroOrigenComuna ? ` · ${item.centroOrigenComuna}` : ''}` : '');
     setValidationError('');
-    // Filtrar por empresa activa: superadmin usa selected_tenant_id,
-    // admin normal usa su propio empresaId del JWT
-    const activeEmpresaId = localStorage.getItem('selected_tenant_id')
-      || user?.empresaId?._id
-      || user?.empresaId
-      || null;
-    usuariosApi.getUsuarios()
-      .then((list) => {
-        if (!activeEmpresaId) { setUsuarios(list); return; }
-        setUsuarios(list.filter((u) => String(u.empresaId) === String(activeEmpresaId)));
-      })
+    maestrosApi.getMaestrosActivos('responsable')
+      .then((list) => setUsuarios(list))
       .catch(() => {});
   }, [defaultMes, item, open, responsableNombre]);
 
