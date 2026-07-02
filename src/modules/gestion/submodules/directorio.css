@@ -493,6 +493,40 @@
   border: 1px solid rgba(8, 145, 178, 0.25);
 }
 
+.dir-tipo-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.dir-tipo-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.dir-tipo-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.dir-tipo-btn.is-active {
+  border-color: var(--color-primary);
+  background: rgba(10, 92, 255, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .dir-contact-meta {
   display: grid;
   gap: 2px;

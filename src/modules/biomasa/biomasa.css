@@ -861,6 +861,8 @@
   display: grid;
   gap: 18px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .disponibilidad-month-modal .mx-modal-title {

@@ -279,6 +279,7 @@ export default function Directorio() {
   const [openMenuKey, setOpenMenuKey] = useState(null);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
+  const [editProviderTipo, setEditProviderTipo] = useState('');
 
   // 1. Carga de datos con React Query
   const { data: centrosRaw, isLoading: loadingCentros, refetch: refetchCentros } = useCentros();
@@ -619,6 +620,7 @@ export default function Directorio() {
     setContactCompanyQuery(item?.proveedorNombre || item?.nombre || '');
     setContactCenterValue(item?.centroId || item?.centroCodigo || '');
     setContactSelectedProviderKey(item?.proveedorKey || '');
+    setEditProviderTipo(item?.tipo || 'titular');
   }, []);
 
   const closeModal = useCallback(() => {
@@ -626,6 +628,7 @@ export default function Directorio() {
     setContactCompanyQuery('');
     setContactCenterValue('');
     setContactSelectedProviderKey('');
+    setEditProviderTipo('');
   }, []);
 
   const openProviderCenters = useCallback((provider) => {
@@ -706,10 +709,33 @@ export default function Directorio() {
         };
 
         if (modalState.mode === 'edit') {
-          if (!modalState.item?.primaryCenterId) {
+          if (!modalState.item?.primaryCenterId && modalState.item?.centros > 0) {
             throw new Error('No encontramos un centro base para editar este proveedor.');
           }
-          await apiClient.patch(`/centros/${modalState.item.primaryCenterId}`, centroPayload);
+          if (modalState.item?.primaryCenterId) {
+            await apiClient.patch(`/centros/${modalState.item.primaryCenterId}`, centroPayload);
+          }
+          // Actualizar tipo en los contactos del proveedor
+          const providerKey = normalizeKey(modalState.item?.key || modalState.item?.providerKey || '');
+          if (providerKey) {
+            const providerContactos = (data.contactos || []).filter(
+              (c) => normalizeKey(c.proveedorKey || c.proveedorNombre) === providerKey
+            );
+            if (providerContactos.length > 0) {
+              await Promise.all(providerContactos.map((c) =>
+                apiClient.patch(`/contactos/${c._id}`, { tipo: editProviderTipo || 'titular' })
+              ));
+            } else if (editProviderTipo === 'comercializadora') {
+              await apiClient.post('/contactos', {
+                nombre: payload.nombre,
+                contactoNombre: payload.nombre,
+                proveedorKey: modalState.item.key || modalState.item.providerKey || '',
+                proveedorNombre: payload.nombre,
+                tipo: 'comercializadora',
+                creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
+              });
+            }
+          }
         } else {
           await apiClient.post('/centros', centroPayload);
         }
@@ -1130,6 +1156,27 @@ export default function Directorio() {
                         defaultValue={modalState.item?.comuna || ''}
                       />
                     </div>
+                    {modalState.mode === 'edit' && (
+                      <div className="mx-form-group">
+                        <label className="mx-label">Tipo de empresa</label>
+                        <div className="dir-tipo-toggle">
+                          <button
+                            type="button"
+                            className={`dir-tipo-btn${editProviderTipo !== 'comercializadora' ? ' is-active' : ''}`}
+                            onClick={() => setEditProviderTipo('titular')}
+                          >
+                            <Building2 size={14} /> Titular / productor
+                          </button>
+                          <button
+                            type="button"
+                            className={`dir-tipo-btn${editProviderTipo === 'comercializadora' ? ' is-active' : ''}`}
+                            onClick={() => setEditProviderTipo('comercializadora')}
+                          >
+                            <Building2 size={14} /> Comercializadora
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
