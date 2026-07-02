@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
-  DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
   optionLabel,
 } from '../disponibilidad.constants';
@@ -138,8 +137,9 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                         <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
                       </div>
                       <div className="disponibilidad-state-record-meta">
-                        <span>Origen: {optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</span>
-                        <span>Responsable: {item.responsable || 'Sin asignar'}</span>
+                        {(item.calibreMin != null || item.calibreMax != null) && (
+                          <span>Calibre: {item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk</span>
+                        )}
                         <span title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</span>
                       </div>
                       <div className="disponibilidad-row-actions">
