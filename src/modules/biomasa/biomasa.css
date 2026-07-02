@@ -648,7 +648,7 @@
 .disponibilidad-state-record-volume span,
 .disponibilidad-state-record-meta span {
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .disponibilidad-state-record-meta span:last-child {
