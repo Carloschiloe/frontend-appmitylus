@@ -149,6 +149,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     return Array.from(names).sort((a, b) => a.localeCompare(b));
   }, [items]);
 
+  const availableProductos = useMemo(() => {
+    const vals = new Set(items.map((i) => i.producto || 'sin_definir').filter(Boolean));
+    return DISPONIBILIDAD_PRODUCTOS.filter((p) => vals.has(p.value));
+  }, [items]);
+
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
   // Para el Resumen mensual: solo los del mes seleccionado (sin filtros de año/mes del listado)
   const filteredItemsByMes = useMemo(
@@ -302,6 +307,13 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                 {availableResponsables.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
+            <div className="disp-view-selector">
+              <span className="disp-view-selector__label">Producto</span>
+              <select className="disp-view-selector__select" value={filters.producto} onChange={(e) => setFilters((f) => ({ ...f, producto: e.target.value }))}>
+                <option value="">Todos</option>
+                {availableProductos.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
           </>
         )}
 
@@ -314,13 +326,15 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             <X size={14} /> Limpiar
           </button>
         )}
-        <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}${(filters.producto || filters.estado) ? ' has-active' : ''}`} onClick={() => setShowFilters((v) => !v)}>
-          Filtros {showFilters ? '▲' : '▼'}
-        </button>
+        {activeTab !== 'listado' && (
+          <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+            Filtros {showFilters ? '▲' : '▼'}
+          </button>
+        )}
         <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
           <Plus size={17} /> Registrar disponibilidad
         </button>
-        {showFilters && (
+        {activeTab !== 'listado' && showFilters && (
           <div className="disp-filter-bar__panel">
             {activeTab === 'analisis' ? (
               <>
@@ -346,20 +360,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   {activeTab === 'anual'
                     ? <input className="mx-input" type="number" min="2000" max="2100" value={annualYear} onChange={(event) => setAnnualYear(event.target.value)} />
                     : <input className="mx-input" type="month" value={mes} onChange={(event) => setMes(event.target.value)} />}
-                </label>
-                <label className="disponibilidad-filter">
-                  <span>Producto</span>
-                  <select className="mx-select" value={filters.producto} onChange={(event) => setFilters((current) => ({ ...current, producto: event.target.value }))}>
-                    <option value="">Todos</option>
-                    {DISPONIBILIDAD_PRODUCTOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label className="disponibilidad-filter">
-                  <span>Estado</span>
-                  <select className="mx-select" value={filters.estado} onChange={(event) => setFilters((current) => ({ ...current, estado: event.target.value }))}>
-                    <option value="">Todos</option>
-                    {DISPONIBILIDAD_ESTADOS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
                 </label>
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => activeTab === 'anual' ? setAnnualReloadKey((current) => current + 1) : reload()}>
                   <RotateCcw size={15} /> Actualizar
