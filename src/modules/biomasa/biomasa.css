@@ -6247,6 +6247,33 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   position: relative;
   width: 100%;
 }
+.disp-provider-select-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.disp-provider-select-row .disp-provider-select-btn {
+  flex: 1;
+}
+.disp-provider-clear-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.disp-provider-clear-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #dc2626;
+}
 .disp-provider-select-btn {
   width: 100%;
   display: flex;

@@ -200,14 +200,27 @@ export default function DisponibilidadAnalisisGrafico({
               {allProviders.length > 1 && (
                 <div className="disp-analysis-provider-filter">
                   <span className="disp-annual-chips-label disp-annual-chips-label--section">Proveedor</span>
-                  <button
-                    type="button"
-                    className={`disp-provider-select-btn${selectedProviders.length > 0 ? ' is-active' : ''}`}
-                    onClick={() => setProviderMenuOpen((v) => !v)}
-                  >
-                    <span>{providerBtnLabel}</span>
-                    <ChevronDown size={13} />
-                  </button>
+                  <div className="disp-provider-select-row">
+                    <button
+                      type="button"
+                      className={`disp-provider-select-btn${selectedProviders.length > 0 ? ' is-active' : ''}`}
+                      onClick={() => setProviderMenuOpen((v) => !v)}
+                    >
+                      <span>{providerBtnLabel}</span>
+                      <ChevronDown size={13} />
+                    </button>
+                    {selectedProviders.length > 0 && (
+                      <button
+                        type="button"
+                        className="disp-provider-clear-btn"
+                        onClick={() => setSelectedProviders([])}
+                        title="Limpiar filtro de proveedor"
+                        aria-label="Limpiar filtro de proveedor"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
 
                   {providerMenuOpen && (
                     <>
