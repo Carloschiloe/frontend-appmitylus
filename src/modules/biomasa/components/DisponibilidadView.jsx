@@ -327,13 +327,15 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           </button>
         )}
         {activeTab !== 'listado' && (
-          <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}`} onClick={() => setShowFilters((v) => !v)}>
-            Filtros {showFilters ? '▲' : '▼'}
-          </button>
+          <>
+            <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+              Filtros {showFilters ? '▲' : '▼'}
+            </button>
+            <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
+              <Plus size={17} /> Registrar disponibilidad
+            </button>
+          </>
         )}
-        <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
-          <Plus size={17} /> Registrar disponibilidad
-        </button>
         {activeTab !== 'listado' && showFilters && (
           <div className="disp-filter-bar__panel">
             {activeTab === 'analisis' ? (
@@ -374,11 +376,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         {activeTab === 'listado' && (
           <>
             <div className="disp-totales-bar">
-              <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
-                <span className="disp-totales-toggle__label">{totalesLabel}</span>
-                <strong className="disp-totales-toggle__value">{fmtTons(listedTotals.total)}</strong>
-                <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
-              </button>
+              <div className="disp-totales-bar__row">
+                <button type="button" className="disp-totales-toggle" onClick={() => setShowTotales((v) => !v)}>
+                  <span className="disp-totales-toggle__label">{totalesLabel}</span>
+                  <strong className="disp-totales-toggle__value">{fmtTons(listedTotals.total)}</strong>
+                  <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
+                </button>
+                <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
+                  <Plus size={17} /> Registrar disponibilidad
+                </button>
+              </div>
               {showTotales && (
                 <div className="disp-totales-chips">
                   {kpis.map((kpi) => {
