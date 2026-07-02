@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, MapPin, Pencil, UserRound, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -245,7 +245,7 @@ export default function DisponibilidadAnalisisGrafico({
                 return (
                   <article key={item._id} className="disponibilidad-analysis-detail-record">
                     <div className="disponibilidad-analysis-detail-title">
-                      <DisponibilidadProviderCell item={item} />
+                      <DisponibilidadProviderCell item={item} hideContact />
                       <div className="disponibilidad-analysis-detail-actions">
                         <strong>{fmtTons(itemTons(item))}</strong>
                         {onEdit && (
@@ -263,14 +263,26 @@ export default function DisponibilidadAnalisisGrafico({
                     <div className="disponibilidad-analysis-detail-tags">
                       <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
                       <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
+                      {(item.calibreMin != null || item.calibreMax != null) && (
+                        <span className="disp-analysis-tag-info">{item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk</span>
+                      )}
+                      {(item.centroComuna || item.comuna) && (
+                        <span className="disp-analysis-tag-info"><MapPin size={10} /> {item.centroComuna || item.comuna}</span>
+                      )}
+                      {item.contactoNombre && (
+                        <span
+                          className="disp-analysis-contact-pill"
+                          title={[item.contactoNombre, item.contactoTelefono || item.contactoSnapshot?.telefono, item.contactoEmail || item.contactoSnapshot?.email].filter(Boolean).join(' · ')}
+                        >
+                          <UserRound size={10} /> {item.contactoNombre}
+                        </span>
+                      )}
                     </div>
-                    <div className="disponibilidad-analysis-detail-meta">
-                      <span>Origen: {optionLabel(DISPONIBILIDAD_ORIGENES, item.origen || 'otro')}</span>
-                      <span className="disp-res-prod-sep">·</span>
-                      <span>Responsable: {item.responsable || 'Sin asignar'}</span>
-                      <span className="disp-res-prod-sep">·</span>
-                      <span title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</span>
-                    </div>
+                    {(item.observacion || item.motivo) && (
+                      <div className="disponibilidad-analysis-detail-obs" title={item.observacion || item.motivo}>
+                        {item.observacion || item.motivo}
+                      </div>
+                    )}
                   </article>
                 );
               }) : (

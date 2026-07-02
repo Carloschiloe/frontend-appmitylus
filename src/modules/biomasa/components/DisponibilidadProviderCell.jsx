@@ -6,7 +6,7 @@ const contactDetail = (item) => (
   || ''
 );
 
-export default function DisponibilidadProviderCell({ item }) {
+export default function DisponibilidadProviderCell({ item, hideContact = false }) {
   const providerName = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
   const contactName = item.contactoNombre || '';
   const detail = contactDetail(item);
@@ -20,7 +20,7 @@ export default function DisponibilidadProviderCell({ item }) {
           <span className="dir-badge-comercializadora" style={{ marginLeft: 6 }}>Comercializadora</span>
         )}
       </span>
-      {contactName && (
+      {!hideContact && contactName && (
         <span>Contacto: {contactName}{detail ? ` · ${detail}` : ''}</span>
       )}
     </div>
