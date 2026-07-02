@@ -54,7 +54,6 @@ class ApiError extends Error {
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const isAuthEndpoint = endpoint.startsWith('/auth/');
   const isFormData = options.body instanceof FormData;
 
   const method = (options.method || 'GET').toUpperCase();
@@ -70,7 +69,7 @@ async function request(endpoint, options = {}) {
   }
 
   const tenantDb = localStorage.getItem('selected_tenant_db');
-  if (tenantDb && !isAuthEndpoint) {
+  if (tenantDb && !CSRF_SKIP_PATHS.has(endpoint)) {
     headers['x-tenant-db'] = tenantDb;
   }
 
