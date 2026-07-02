@@ -1288,6 +1288,22 @@
   box-shadow: inset 0 0 0 1px #93c5fd;
 }
 
+.disponibilidad-analysis-month.is-past .disponibilidad-analysis-segment,
+.disponibilidad-analysis-month.is-past .disponibilidad-analysis-stack {
+  opacity: 0.45;
+}
+
+.disponibilidad-analysis-month.is-past strong,
+.disponibilidad-analysis-month.is-past > span:last-child {
+  color: var(--color-text-muted);
+}
+
+.disp-analysis-past-toggle-row {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+
 .disponibilidad-analysis-month strong {
   color: var(--color-text);
   font-size: clamp(7px, 0.7vw, 10px);

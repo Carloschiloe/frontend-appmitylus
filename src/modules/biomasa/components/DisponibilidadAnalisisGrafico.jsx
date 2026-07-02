@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -36,6 +36,10 @@ export default function DisponibilidadAnalisisGrafico({
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
+  const [showPastMonths, setShowPastMonths] = useState(false);
+
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   const primary = useMemo(() => buildDisponibilidadAnnualProjection(items, year), [items, year]);
   const comparison = useMemo(
@@ -48,9 +52,15 @@ export default function DisponibilidadAnalisisGrafico({
     [items]
   );
 
+  const pastRows = primary.rows.filter((r) => r.monthKey < currentMonthKey);
+  const visibleRows = showPastMonths ? primary.rows : primary.rows.filter((r) => r.monthKey >= currentMonthKey);
+
   const maxMonthTotal = Math.max(
-    ...primary.rows.map((row) => row.total),
-    ...(comparisonYear ? comparison.rows.map((row) => row.total) : [0]),
+    ...visibleRows.map((row) => row.total),
+    ...(comparisonYear ? visibleRows.map((row) => {
+      const idx = primary.rows.findIndex((r) => r.monthKey === row.monthKey);
+      return comparison.rows[idx]?.total || 0;
+    }) : [0]),
     1
   );
   const difference = comparisonYear ? primary.annualTotal - comparison.annualTotal : 0;
@@ -104,14 +114,16 @@ export default function DisponibilidadAnalisisGrafico({
         )}
         <div className="disp-analysis-chart-row">
           <div className="disponibilidad-analysis-chart-scroll">
-          <div className="disponibilidad-analysis-chart" aria-label={`Disponibilidad por mes para ${year}`}>
-            {primary.rows.map((row, index) => {
-              const comparedRow = comparison.rows[index];
+          <div className="disponibilidad-analysis-chart" style={{ gridTemplateColumns: `repeat(${visibleRows.length}, minmax(0, 1fr))` }} aria-label={`Disponibilidad por mes para ${year}`}>
+            {visibleRows.map((row) => {
+              const idx = primary.rows.findIndex((r) => r.monthKey === row.monthKey);
+              const comparedRow = comparison.rows[idx];
+              const isPast = row.monthKey < currentMonthKey;
               return (
                 <button
                   key={row.monthKey}
                   type="button"
-                  className={`disponibilidad-analysis-month${selectedMonth === row.monthKey ? ' is-selected' : ''}`}
+                  className={`disponibilidad-analysis-month${selectedMonth === row.monthKey ? ' is-selected' : ''}${isPast ? ' is-past' : ''}`}
                   onClick={() => setSelectedMonth(row.monthKey)}
                   aria-label={`${mesLabel(row.monthKey)}: ${fmtTons(row.total)}`}
                 >
@@ -147,6 +159,27 @@ export default function DisponibilidadAnalisisGrafico({
           )}
         </div>
 
+        {pastRows.length > 0 && (
+          <div className="disp-analysis-past-toggle-row">
+            <button
+              type="button"
+              className="disp-annual-past-btn"
+              onClick={() => {
+                if (showPastMonths) {
+                  setShowPastMonths(false);
+                  if (selectedMonth && selectedMonth < currentMonthKey) setSelectedMonth(null);
+                } else {
+                  setShowPastMonths(true);
+                }
+              }}
+            >
+              {showPastMonths
+                ? <><ChevronUp size={15} /> Ocultar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}</>
+                : <><ChevronDown size={15} /> Mostrar {pastRows.length} mes{pastRows.length !== 1 ? 'es' : ''} anterior{pastRows.length !== 1 ? 'es' : ''}</>
+              }
+            </button>
+          </div>
+        )}
         {(loading || comparisonLoading) && <div className="disponibilidad-annual-loading">Actualizando análisis...</div>}
         {!loading && items.length === 0 && <div className="disponibilidad-annual-empty">No hay datos para graficar con los filtros seleccionados.</div>}
       </div>
