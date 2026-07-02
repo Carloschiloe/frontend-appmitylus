@@ -1489,6 +1489,22 @@
   border-bottom: 1px solid var(--color-border, #e2e8f0);
 }
 
+.disp-centro-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disp-centro-row .mx-select {
+  flex: none;
+}
+
+.disp-centro-chip {
+  flex: 1;
+  margin-top: 0;
+  min-width: 0;
+}
+
 .disp-add-section__estado-info {
   display: inline-flex;
   align-items: center;
