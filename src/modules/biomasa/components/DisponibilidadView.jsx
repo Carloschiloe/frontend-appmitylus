@@ -74,7 +74,10 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [comparisonItems, setComparisonItems] = useState([]);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
-  const [filters, setFilters] = useState({ proveedor: '', producto: '', estado: '', anio: '', mesNum: '', responsable: '' });
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    return { proveedor: '', producto: '', estado: '', anio: String(now.getFullYear()), mesNum: String(now.getMonth() + 1), responsable: '' };
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [showTotales, setShowTotales] = useState(false);
 
