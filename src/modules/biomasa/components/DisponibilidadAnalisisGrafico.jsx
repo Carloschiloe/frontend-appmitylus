@@ -4,7 +4,6 @@ import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
   DISPONIBILIDAD_ESTADOS,
-  DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
   optionLabel,
 } from '../disponibilidad.constants';
@@ -14,6 +13,7 @@ import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
+const providerKeyOf = (item) => item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
 
 export default function DisponibilidadAnalisisGrafico({
   items,
@@ -38,32 +38,44 @@ export default function DisponibilidadAnalisisGrafico({
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
   const [showPastMonths, setShowPastMonths] = useState(false);
+  const [selectedProviders, setSelectedProviders] = useState([]);
+  const [providerMenuOpen, setProviderMenuOpen] = useState(false);
 
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const primary = useMemo(() => buildDisponibilidadAnnualProjection(items, year), [items, year]);
+  // Filtro local de proveedores (multi-select dentro del componente)
+  const chartItems = useMemo(() =>
+    selectedProviders.length > 0
+      ? items.filter((item) => selectedProviders.includes(providerKeyOf(item)))
+      : items,
+    [items, selectedProviders],
+  );
+
+  const primary = useMemo(() => buildDisponibilidadAnnualProjection(chartItems, year), [chartItems, year]);
   const comparison = useMemo(
     () => buildDisponibilidadAnnualProjection(comparisonItems, comparisonYear || year),
-    [comparisonItems, comparisonYear, year]
+    [comparisonItems, comparisonYear, year],
   );
 
   const availableProducts = useMemo(
-    () => DISPONIBILIDAD_PRODUCTOS.filter((p) => items.some((i) => (i.producto || 'sin_definir') === p.value)),
-    [items]
+    () => DISPONIBILIDAD_PRODUCTOS.filter((p) => chartItems.some((i) => (i.producto || 'sin_definir') === p.value)),
+    [chartItems],
   );
 
-  const availableProviders = useMemo(() => {
+  // Lista de proveedores con totales solo de los meses visibles en el gráfico
+  const allProviders = useMemo(() => {
     const map = new Map();
     items.forEach((item) => {
-      const name = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
+      const name = providerKeyOf(item);
       if (!name) return;
+      if (!showPastMonths && item.mesKey < currentMonthKey) return;
       const entry = map.get(name) || { name, total: 0 };
       entry.total += Number(item.tons || item.tonsDisponible || 0);
       map.set(name, entry);
     });
-    return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 8);
-  }, [items]);
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [items, showPastMonths, currentMonthKey]);
 
   const pastRows = primary.rows.filter((r) => r.monthKey < currentMonthKey);
   const visibleRows = showPastMonths ? primary.rows : primary.rows.filter((r) => r.monthKey >= currentMonthKey);
@@ -74,14 +86,26 @@ export default function DisponibilidadAnalisisGrafico({
       const idx = primary.rows.findIndex((r) => r.monthKey === row.monthKey);
       return comparison.rows[idx]?.total || 0;
     }) : [0]),
-    1
+    1,
   );
   const difference = comparisonYear ? primary.annualTotal - comparison.annualTotal : 0;
 
   const selectedDetail = useMemo(
-    () => buildDisponibilidadMonthDetail(items, selectedMonth),
-    [items, selectedMonth]
+    () => buildDisponibilidadMonthDetail(chartItems, selectedMonth),
+    [chartItems, selectedMonth],
   );
+
+  const toggleProvider = (name) => {
+    setSelectedProviders((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+    );
+  };
+
+  const providerBtnLabel = selectedProviders.length === 0
+    ? 'Todos'
+    : selectedProviders.length === 1
+      ? (selectedProviders[0].length > 18 ? `${selectedProviders[0].slice(0, 16)}…` : selectedProviders[0])
+      : `${selectedProviders.length} seleccionados`;
 
   return (
     <section className="disponibilidad-analysis">
@@ -115,7 +139,6 @@ export default function DisponibilidadAnalisisGrafico({
         ))}
       </div>
 
-
       <div className="disponibilidad-analysis-card">
         {(!stateFilter || comparisonYear) && (
           <div className="disponibilidad-analysis-legend">
@@ -127,41 +150,42 @@ export default function DisponibilidadAnalisisGrafico({
         )}
         <div className="disp-analysis-chart-row">
           <div className="disponibilidad-analysis-chart-scroll">
-          <div className="disponibilidad-analysis-chart" style={{ gridTemplateColumns: `repeat(${visibleRows.length}, minmax(0, 1fr))` }} aria-label={`Disponibilidad por mes para ${year}`}>
-            {visibleRows.map((row) => {
-              const idx = primary.rows.findIndex((r) => r.monthKey === row.monthKey);
-              const comparedRow = comparison.rows[idx];
-              const isPast = row.monthKey < currentMonthKey;
-              return (
-                <button
-                  key={row.monthKey}
-                  type="button"
-                  className={`disponibilidad-analysis-month${selectedMonth === row.monthKey ? ' is-selected' : ''}${isPast ? ' is-past' : ''}`}
-                  onClick={() => setSelectedMonth(row.monthKey)}
-                  aria-label={`${mesLabel(row.monthKey)}: ${fmtTons(row.total)}`}
-                >
-                  <span className="disponibilidad-analysis-tooltip" role="tooltip">
-                    <strong>{mesLabel(row.monthKey, true)}</strong>
-                    <span>{fmtTons(row.total)}</span>
-                    <small>Click para ver proveedores</small>
-                  </span>
-                  <span className="disponibilidad-analysis-bars">
-                    <span className="disponibilidad-analysis-stack" style={{ height: `${(row.total / maxMonthTotal) * 100}%` }}>
-                      {DISPONIBILIDAD_ESTADOS.map((state) => {
-                        const tons = row.stateTons[state.value];
-                        return tons > 0 ? <span key={state.value} className={`disponibilidad-analysis-segment disponibilidad-analysis-segment--${state.tone}`} style={{ flexGrow: tons }} /> : null;
-                      })}
+            <div className="disponibilidad-analysis-chart" style={{ gridTemplateColumns: `repeat(${visibleRows.length}, minmax(0, 1fr))` }} aria-label={`Disponibilidad por mes para ${year}`}>
+              {visibleRows.map((row) => {
+                const idx = primary.rows.findIndex((r) => r.monthKey === row.monthKey);
+                const comparedRow = comparison.rows[idx];
+                const isPast = row.monthKey < currentMonthKey;
+                return (
+                  <button
+                    key={row.monthKey}
+                    type="button"
+                    className={`disponibilidad-analysis-month${selectedMonth === row.monthKey ? ' is-selected' : ''}${isPast ? ' is-past' : ''}`}
+                    onClick={() => setSelectedMonth(row.monthKey)}
+                    aria-label={`${mesLabel(row.monthKey)}: ${fmtTons(row.total)}`}
+                  >
+                    <span className="disponibilidad-analysis-tooltip" role="tooltip">
+                      <strong>{mesLabel(row.monthKey, true)}</strong>
+                      <span>{fmtTons(row.total)}</span>
+                      <small>Click para ver proveedores</small>
                     </span>
-                    {comparisonYear && <span className="disponibilidad-analysis-comparison-bar" style={{ height: `${(comparedRow.total / maxMonthTotal) * 100}%` }} />}
-                  </span>
-                  <strong>{row.total > 0 ? fmtTons(row.total) : '0 t'}</strong>
-                  <span>{mesLabel(row.monthKey).slice(0, 3)}</span>
-                </button>
-              );
-            })}
+                    <span className="disponibilidad-analysis-bars">
+                      <span className="disponibilidad-analysis-stack" style={{ height: `${(row.total / maxMonthTotal) * 100}%` }}>
+                        {DISPONIBILIDAD_ESTADOS.map((state) => {
+                          const tons = row.stateTons[state.value];
+                          return tons > 0 ? <span key={state.value} className={`disponibilidad-analysis-segment disponibilidad-analysis-segment--${state.tone}`} style={{ flexGrow: tons }} /> : null;
+                        })}
+                      </span>
+                      {comparisonYear && <span className="disponibilidad-analysis-comparison-bar" style={{ height: `${(comparedRow.total / maxMonthTotal) * 100}%` }} />}
+                    </span>
+                    <strong>{row.total > 0 ? fmtTons(row.total) : '0 t'}</strong>
+                    <span>{mesLabel(row.monthKey).slice(0, 3)}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          </div>
-          {(availableProducts.length > 0 || availableProviders.length > 1) && (
+
+          {(availableProducts.length > 0 || allProviders.length > 1) && (
             <div className="disp-analysis-product-pills-side">
               {availableProducts.length > 0 && (
                 <>
@@ -172,22 +196,57 @@ export default function DisponibilidadAnalisisGrafico({
                   ))}
                 </>
               )}
-              {availableProviders.length > 1 && (
-                <>
+
+              {allProviders.length > 1 && (
+                <div className="disp-analysis-provider-filter">
                   <span className="disp-annual-chips-label disp-annual-chips-label--section">Proveedor</span>
-                  <button type="button" className={`disp-annual-chip${!providerFilter ? ' is-active' : ''}`} onClick={() => onProviderFilterChange('')}>Todos</button>
-                  {availableProviders.map((p) => (
-                    <button
-                      key={p.name}
-                      type="button"
-                      className={`disp-annual-chip${providerFilter === p.name ? ' is-active' : ''}`}
-                      title={`${p.name} · ${fmtTons(p.total)}`}
-                      onClick={() => onProviderFilterChange(providerFilter === p.name ? '' : p.name)}
-                    >
-                      {p.name.length > 22 ? `${p.name.slice(0, 20)}…` : p.name}
-                    </button>
-                  ))}
-                </>
+                  <button
+                    type="button"
+                    className={`disp-provider-select-btn${selectedProviders.length > 0 ? ' is-active' : ''}`}
+                    onClick={() => setProviderMenuOpen((v) => !v)}
+                  >
+                    <span>{providerBtnLabel}</span>
+                    <ChevronDown size={13} />
+                  </button>
+
+                  {providerMenuOpen && (
+                    <>
+                      <div
+                        style={{ position: 'fixed', inset: 0, zIndex: 10 }}
+                        onClick={() => setProviderMenuOpen(false)}
+                      />
+                      <div className="disp-provider-menu" onClick={(e) => e.stopPropagation()}>
+                        <div className="disp-provider-menu-list">
+                          {allProviders.map((p) => {
+                            const checked = selectedProviders.includes(p.name);
+                            return (
+                              <label key={p.name} className="disp-provider-menu-item">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleProvider(p.name)}
+                                />
+                                <span className="disp-provider-menu-name" title={p.name}>
+                                  {p.name.length > 26 ? `${p.name.slice(0, 24)}…` : p.name}
+                                </span>
+                                <span className="disp-provider-menu-tons">{fmtTons(p.total)}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {selectedProviders.length > 0 && (
+                          <button
+                            type="button"
+                            className="disp-provider-menu-clear"
+                            onClick={() => { setSelectedProviders([]); setProviderMenuOpen(false); }}
+                          >
+                            Ver todos
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           )}
