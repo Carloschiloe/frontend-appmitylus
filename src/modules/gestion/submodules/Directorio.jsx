@@ -118,6 +118,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         primaryCenterCode: centro.code || '',
         centros: 0,
         comuna: centro.comuna || '-',
+        tipo: '',
         totalContactos: 0,
         contactoPrincipal: '',
         contactoTelefono: '',
@@ -153,6 +154,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         primaryCenterCode: '',
         centros: 0,
         comuna: '-',
+        tipo: contacto.tipo || '',
         totalContactos: 0,
         contactoPrincipal: '',
         contactoTelefono: '',
@@ -208,6 +210,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     const earliestContact = sortedContacts[0] || null;
 
     provider.totalContactos = providerContacts.length;
+    if (providerContacts.some((c) => c.tipo === 'comercializadora')) provider.tipo = 'comercializadora';
     provider.fechaIngreso = earliestContact?.createdAt || '';
     provider.ingresadoPor = earliestContact?.creadoPor || earliestContact?.createdBy || earliestContact?.responsable || '';
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
@@ -910,6 +913,9 @@ export default function Directorio() {
                           <div className="dir-provider-text">
                             <div className="dir-primary-text dir-name-truncate" title={provider.nombre}>{provider.nombre}</div>
                             <div className="dir-provider-meta">
+                              {provider.tipo === 'comercializadora' && (
+                                <span className="dir-badge-comercializadora">Comercializadora</span>
+                              )}
                               {provider.comuna && provider.comuna !== '-' && <span><MapPin size={10} /> {provider.comuna}</span>}
                               {provider.centros > 0 && <span>{provider.centros} centro{provider.centros === 1 ? '' : 's'}</span>}
                             </div>
