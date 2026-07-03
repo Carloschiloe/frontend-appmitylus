@@ -19,10 +19,10 @@ import {
   Bug,
   CircleHelp,
   FileUp,
-  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
+import TenantSelector from './TenantSelector.jsx';
 import './Sidebar.css';
 
 const MENU_STRUCTURE = [
@@ -73,6 +73,15 @@ const MENU_STRUCTURE = [
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
       { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
       { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug, alertId: 'errorReports' },
+    ],
+  },
+  {
+    id: 'saas',
+    label: 'SaaS',
+    icon: ShieldCheck,
+    requiereRol: 'superadmin',
+    links: [
+      { label: 'Empresas', to: '/configuracion/empresas', icon: Building2 },
     ],
   },
 ];
@@ -157,13 +166,6 @@ export default function Sidebar() {
         return false;
       })
       .map((group) => {
-        // Superadmin gestiona Soporte técnico desde el Panel SaaS, no desde aquí
-        if (group.id === 'administracion' && user?.rol === 'superadmin') {
-          return {
-            ...group,
-            links: group.links.filter((link) => link.to !== '/gestion/soporte/errores'),
-          };
-        }
         if (group.id !== 'ayuda') return group;
         return {
           ...group,
@@ -181,23 +183,8 @@ export default function Sidebar() {
         <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
       </div>
 
-      {/* Superadmin viendo una empresa: botón para volver al Panel SaaS */}
-      {user?.rol === 'superadmin' && selectedTenantDb && (
-        <button
-          type="button"
-          className="mx-sidebar-saas-back"
-          onClick={() => {
-            ['selected_tenant_db','selected_tenant_id','selected_tenant_nombre','selected_tenant_logo']
-              .forEach((k) => localStorage.removeItem(k));
-            window.location.href = '/saas-admin';
-          }}
-        >
-          <ArrowLeft size={14} />
-          Panel SaaS
-        </button>
-      )}
+      <TenantSelector />
 
-      {/* Empresa activa */}
       {user?.rol !== 'superadmin' && user?.empresaId && (
         <div className="mx-sidebar-company">
           {user.empresaId.config?.logo ? (
@@ -211,22 +198,6 @@ export default function Sidebar() {
           )}
           <span className="mx-sidebar-company-name">
             {user.empresaId.nombre}
-          </span>
-        </div>
-      )}
-      {user?.rol === 'superadmin' && selectedTenantDb && (
-        <div className="mx-sidebar-company">
-          {localStorage.getItem('selected_tenant_logo') ? (
-            <img
-              src={localStorage.getItem('selected_tenant_logo')}
-              alt={localStorage.getItem('selected_tenant_nombre') || selectedTenantDb}
-              className="mx-sidebar-company-logo"
-            />
-          ) : (
-            <Building2 size={16} className="mx-sidebar-company-icon" />
-          )}
-          <span className="mx-sidebar-company-name">
-            {localStorage.getItem('selected_tenant_nombre') || selectedTenantDb}
           </span>
         </div>
       )}

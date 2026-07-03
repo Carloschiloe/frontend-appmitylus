@@ -373,30 +373,6 @@
   margin: 4px 8px;
 }
 
-/* Botón volver al Panel SaaS (solo superadmin con tenant activo) */
-.mx-sidebar-saas-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: calc(100% - 16px);
-  margin: 8px 8px 0;
-  padding: 7px 10px;
-  border: 1px solid rgba(167, 139, 250, 0.35);
-  border-radius: 8px;
-  background: rgba(124, 58, 237, 0.12);
-  color: #a78bfa;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.13s, color 0.13s, border-color 0.13s;
-}
-.mx-sidebar-saas-back:hover {
-  background: rgba(124, 58, 237, 0.22);
-  color: #c4b5fd;
-  border-color: rgba(167, 139, 250, 0.6);
-}
-
 .mx-sidebar-company {
   display: flex;
   align-items: center;
