@@ -7374,84 +7374,83 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 /* Panel proveedores/calibres (derecha) */
 .disp-sim-exp-providers {
-  flex: 0 0 260px;
+  flex: 0 0 230px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 4px;
+  align-self: flex-start;
 }
 .disp-sim-exp-providers-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  margin-bottom: 6px;
 }
 .disp-sim-exp-providers-total {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2px;
+}
+.disp-sim-exp-providers-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 .disp-sim-exp-providers-empty {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
-  padding: 12px 0;
+  padding: 8px 0;
   text-align: center;
 }
 .disp-sim-exp-provider-row {
-  padding: 9px 0;
-  border-bottom: 1px solid var(--color-border);
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  min-width: 0;
 }
-.disp-sim-exp-provider-row:last-child {
-  border-bottom: none;
-}
+.disp-sim-exp-provider-row:last-child { border-bottom: none; }
 .disp-sim-exp-provider-name {
-  font-size: 0.82rem;
-  font-weight: 600;
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.disp-sim-exp-provider-detail {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  min-width: 0;
 }
 .disp-sim-exp-provider-tons {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--color-text);
-}
-.disp-sim-exp-provider-tags {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .disp-sim-exp-calibre {
   background: #e0f2fe;
   color: #0369a1;
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 1px 5px;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Fallback legacy single */

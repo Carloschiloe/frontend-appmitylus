@@ -289,49 +289,39 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       const m = parseInt(expandedMonth.slice(5, 7), 10);
       const ms = monthStats.find((s) => s.mk === expandedMonth);
       const tonsAvail = ms?.tonsAvail || 0;
+      // Si el mes está antes de fechaInicio, no aplicar restricción de startKey
+      const effectiveStart = expandedMonth >= fechaInicio.slice(0, 7) ? fechaInicio : null;
       const { firstDow, days } = tonsPorDia > 0
-        ? buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, fechaInicio)
-        : { firstDow: dayOfWeekFromKey(`${expandedMonth}-01`), days: Array.from({ length: new Date(y, m, 0).getDate() }, (_, d) => {
-            const dateKey = `${expandedMonth}-${String(d + 1).padStart(2, '0')}`;
-            const dow = dayOfWeekFromKey(dateKey);
-            const isBeforeStart = dateKey < fechaInicio;
-            const isOp = !isBeforeStart && diasOp.includes(dow);
-            return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'rest' : 'rest' };
-          }) };
+        ? buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, effectiveStart)
+        : buildMonthlySimulation(y, m, 0, 0, diasOp, effectiveStart);
       return (
         <div className="disp-sim-expanded-layout">
           <MonthGrid year={y} month={m} firstDow={firstDow} days={days} expanded />
           <aside className="disp-sim-exp-providers">
             <div className="disp-sim-exp-providers-title">
-              <Fish size={15} />
-              Stock disponible — {MONTHS_ES[m - 1]} {y}
+              <Fish size={14} />
+              {MONTHS_ES[m - 1]} {y}
             </div>
-            <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)} totales</div>
-            {monthProviders.length === 0 ? (
-              <div className="disp-sim-exp-providers-empty">Sin biomasa registrada para este mes</div>
-            ) : (
-              monthProviders.map((item) => {
-                const nombre = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || 'Sin proveedor';
-                const producto = optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir');
-                const hasCalibres = item.calibreMin != null || item.calibreMax != null;
-                return (
-                  <div key={item._id} className="disp-sim-exp-provider-row">
-                    <div className="disp-sim-exp-provider-name" title={nombre}>{nombre}</div>
-                    <div className="disp-sim-exp-provider-detail">
+            <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)}</div>
+            <div className="disp-sim-exp-providers-list">
+              {monthProviders.length === 0 ? (
+                <div className="disp-sim-exp-providers-empty">Sin biomasa registrada</div>
+              ) : (
+                monthProviders.map((item) => {
+                  const nombre = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '—';
+                  const hasCalibres = item.calibreMin != null || item.calibreMax != null;
+                  return (
+                    <div key={item._id} className="disp-sim-exp-provider-row">
+                      <span className="disp-sim-exp-provider-name" title={nombre}>{nombre}</span>
                       <span className="disp-sim-exp-provider-tons">{fmtTons(Number(item.tons || item.tonsDisponible || 0))}</span>
-                      <span className="disp-sim-exp-provider-tags">
-                        <span>{producto}</span>
-                        {hasCalibres && (
-                          <span className="disp-sim-exp-calibre">
-                            {item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk
-                          </span>
-                        )}
-                      </span>
+                      {hasCalibres && (
+                        <span className="disp-sim-exp-calibre">{item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk</span>
+                      )}
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
           </aside>
         </div>
       );
