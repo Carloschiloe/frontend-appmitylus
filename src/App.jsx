@@ -9,6 +9,7 @@ import AppHeader from './components/Layout/AppHeader.jsx';
 import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
 import CopilotPanel from './components/CopilotPanel.jsx';
 import SpeedDialFab from './components/SpeedDialFab.jsx';
+import SaasAdminShell from './modules/saas-admin/SaasAdminShell.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import SupportReportModal from './components/SupportReportModal.jsx';
 import { installGlobalErrorCapture } from './utils/errorReporter.js';
@@ -37,6 +38,7 @@ const Ayuda     = lazy(() => import('./modules/ayuda/Ayuda.jsx'));
 const Login          = lazy(() => import('./modules/auth/Login.jsx'));
 const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
+const ErrorReports   = lazy(() => import('./modules/gestion/soporte/ErrorReports.jsx'));
 const ImportarDatos  = lazy(() => import('./modules/configuracion/ImportarDatos.jsx'));
 const MiPerfil       = lazy(() => import('./modules/perfil/MiPerfil.jsx'));
 const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
@@ -207,8 +209,8 @@ const TenantScopedRoute = ({ children, title, description }) => {
 
   if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
-  if (user.rol === 'superadmin' && !selectedTenantDb && !isSupportErrorsRoute) {
-    return <TenantContextRequired title={title} description={description} />;
+  if (user.rol === 'superadmin' && !selectedTenantDb) {
+    return <Navigate to="/saas-admin" replace />;
   }
 
   return children;
@@ -348,11 +350,7 @@ export default function App() {
                     </AdminRoute>
                   } />
 
-                  <Route path="/configuracion/empresas" element={
-                    <SuperAdminRoute>
-                      <Empresas />
-                    </SuperAdminRoute>
-                  } />
+                  <Route path="/configuracion/empresas" element={<Navigate to="/saas-admin/empresas" replace />} />
 
                   <Route path="/configuracion/importar" element={
                     <AdminRoute>
@@ -379,6 +377,23 @@ export default function App() {
                     <PrivateRoute>
                       <MiPerfil />
                     </PrivateRoute>
+                  } />
+
+                  {/* Panel SaaS Admin — shell separado */}
+                  <Route path="/saas-admin" element={<Navigate to="/saas-admin/empresas" replace />} />
+                  <Route path="/saas-admin/empresas" element={
+                    <SaasAdminShell>
+                      <Suspense fallback={<div className="mx-loading-screen"><div className="mx-spinner"></div><p>Cargando...</p></div>}>
+                        <Empresas />
+                      </Suspense>
+                    </SaasAdminShell>
+                  } />
+                  <Route path="/saas-admin/soporte" element={
+                    <SaasAdminShell>
+                      <Suspense fallback={<div className="mx-loading-screen"><div className="mx-spinner"></div><p>Cargando...</p></div>}>
+                        <ErrorReports />
+                      </Suspense>
+                    </SaasAdminShell>
                   } />
 
                   {/* Fallback global */}
