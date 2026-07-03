@@ -7344,12 +7344,15 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  width: 100%;
 }
 
 /* Calendario expandido más grande */
 .disp-sim-expanded-layout .disp-sim-month--expanded {
   flex: 1;
   min-width: 0;
+  max-width: none;
+  overflow: hidden;
 }
 .disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-month-grid {
   gap: 6px;
@@ -7374,14 +7377,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 /* Panel proveedores/calibres (derecha) */
 .disp-sim-exp-providers {
-  flex: 0 0 230px;
+  flex: 0 0 220px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   align-self: flex-start;
 }
 .disp-sim-exp-providers-title {
@@ -7419,8 +7422,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .disp-sim-exp-provider-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 0;
+  gap: 5px;
+  padding: 3px 0;
   border-bottom: 1px solid var(--color-border);
   min-width: 0;
 }
@@ -7453,8 +7456,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   flex-shrink: 0;
 }
 
-/* Fallback legacy single */
-.disp-sim-calendar--single .disp-sim-month {
+/* Fallback legacy single — solo para meses sueltos, no el expandido */
+.disp-sim-calendar--single:not(:has(.disp-sim-expanded-layout)) .disp-sim-month {
   max-width: 580px;
 }
 
