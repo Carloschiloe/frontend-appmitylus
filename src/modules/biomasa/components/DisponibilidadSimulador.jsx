@@ -154,6 +154,7 @@ function MonthGrid({ year, month, firstDow, days, expanded = false, onClick }) {
 
 const pad = (n) => String(n).padStart(2, '0');
 const TRIM_MONTHS = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]];
+const SEM_MONTHS  = [[1,2,3,4,5,6],[7,8,9,10,11,12]];
 
 export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const [incluirSemiCerrado, setIncluirSemiCerrado] = useState(true);
@@ -206,6 +207,9 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const visibleMonthKeys = useMemo(() => {
     if (viewMode === 'año') {
       return Array.from({ length: 12 }, (_, i) => `${viewYear}-${pad(i + 1)}`);
+    }
+    if (viewMode === 'sem' && viewPeriod) {
+      return SEM_MONTHS[viewPeriod - 1].map((m) => `${viewYear}-${pad(m)}`);
     }
     if (viewMode === 'trim' && viewPeriod) {
       return TRIM_MONTHS[viewPeriod - 1].map((m) => `${viewYear}-${pad(m)}`);
@@ -333,22 +337,15 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       );
     }
 
-    // Mes mode with no period selected yet
-    if (viewMode === 'mes' && !viewPeriod) {
+    // Modes that need a sub-period before showing the calendar
+    if (!viewPeriod && (viewMode === 'mes' || viewMode === 'sem' || viewMode === 'trim')) {
+      const hint = viewMode === 'mes' ? 'Selecciona un mes'
+        : viewMode === 'sem' ? 'Selecciona un semestre'
+        : 'Selecciona un trimestre';
       return (
         <div className="disp-sim-calendar-empty">
           <CalendarDays size={44} />
-          <p>Selecciona un mes en la barra</p>
-        </div>
-      );
-    }
-
-    // Trim mode with no trim selected yet
-    if (viewMode === 'trim' && !viewPeriod) {
-      return (
-        <div className="disp-sim-calendar-empty">
-          <CalendarDays size={44} />
-          <p>Selecciona un trimestre</p>
+          <p>{hint}</p>
         </div>
       );
     }
@@ -481,36 +478,21 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       {/* ── Sección derecha ── */}
       <div className="disp-sim-right">
 
-        {/* Barra de filtro en una sola fila */}
+        {/* Barra de filtro — una sola fila */}
         <div className="disp-sim-period-bar">
           {/* Navegador de año */}
-          <button
-            type="button"
-            className="disp-sim-year-nav-btn"
-            onClick={() => setViewYear((y) => y - 1)}
-            aria-label="Año anterior"
-          >‹</button>
+          <button type="button" className="disp-sim-year-nav-btn" onClick={() => setViewYear((y) => y - 1)} aria-label="Año anterior">‹</button>
           <span className="disp-sim-year-label">{viewYear}</span>
-          <button
-            type="button"
-            className="disp-sim-year-nav-btn"
-            onClick={() => setViewYear((y) => y + 1)}
-            aria-label="Año siguiente"
-          >›</button>
+          <button type="button" className="disp-sim-year-nav-btn" onClick={() => setViewYear((y) => y + 1)} aria-label="Año siguiente">›</button>
 
           <div className="disp-sim-period-sep" />
 
-          {/* Modo */}
-          <button
-            type="button"
-            className={`disp-sim-period-btn${!viewMode ? ' is-active' : ''}`}
-            onClick={() => { setViewMode(null); setViewPeriod(null); setExpandedMonth(null); }}
-          >Inicio</button>
-
+          {/* Modos: Año → Sem → Trim → Mes */}
           {[
-            { key: 'mes', label: 'Mes' },
+            { key: 'año',  label: 'Año'  },
+            { key: 'sem',  label: 'Sem'  },
             { key: 'trim', label: 'Trim' },
-            { key: 'año', label: 'Año' },
+            { key: 'mes',  label: 'Mes'  },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -520,17 +502,41 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
             >{label}</button>
           ))}
 
+          {/* Sub-opciones: Semestres */}
+          {viewMode === 'sem' && (
+            <>
+              <div className="disp-sim-period-sep" />
+              {[
+                { s: 1, label: 'S1', title: 'Ene–Jun' },
+                { s: 2, label: 'S2', title: 'Jul–Dic' },
+              ].map(({ s, label, title }) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`disp-sim-period-sub-btn${viewPeriod === s ? ' is-active' : ''}`}
+                  onClick={() => handleSelectPeriod(s)}
+                  title={title}
+                >{label}</button>
+              ))}
+            </>
+          )}
+
           {/* Sub-opciones: Trimestres */}
           {viewMode === 'trim' && (
             <>
               <div className="disp-sim-period-sep" />
-              {[1, 2, 3, 4].map((t) => (
+              {[
+                { t: 1, title: 'Ene–Mar' },
+                { t: 2, title: 'Abr–Jun' },
+                { t: 3, title: 'Jul–Sep' },
+                { t: 4, title: 'Oct–Dic' },
+              ].map(({ t, title }) => (
                 <button
                   key={t}
                   type="button"
                   className={`disp-sim-period-sub-btn${viewPeriod === t ? ' is-active' : ''}`}
                   onClick={() => handleSelectPeriod(t)}
-                  title={`Trim ${t} · ${['Ene–Mar','Abr–Jun','Jul–Sep','Oct–Dic'][t-1]}`}
+                  title={title}
                 >T{t}</button>
               ))}
             </>
