@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -19,6 +19,7 @@ import {
   Bug,
   CircleHelp,
   FileUp,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -72,16 +73,6 @@ const MENU_STRUCTURE = [
       { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
       { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
       { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
-      { label: 'Soporte tecnico', to: '/gestion/soporte/errores', icon: Bug, alertId: 'errorReports' },
-    ],
-  },
-  {
-    id: 'saas',
-    label: 'SaaS',
-    icon: ShieldCheck,
-    requiereRol: 'superadmin',
-    links: [
-      { label: 'Empresas', to: '/configuracion/empresas', icon: Building2 },
     ],
   },
 ];
@@ -184,6 +175,13 @@ export default function Sidebar() {
       </div>
 
       <TenantSelector />
+
+      {user?.rol === 'superadmin' && selectedTenantDb && (
+        <Link to="/saas-admin" className="mx-sidebar-saas-back">
+          <ArrowLeft size={13} />
+          Panel SaaS
+        </Link>
+      )}
 
       {user?.rol !== 'superadmin' && user?.empresaId && (
         <div className="mx-sidebar-company">

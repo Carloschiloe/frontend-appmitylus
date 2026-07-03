@@ -39,7 +39,8 @@ const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 const ImportarDatos  = lazy(() => import('./modules/configuracion/ImportarDatos.jsx'));
 const MiPerfil       = lazy(() => import('./modules/perfil/MiPerfil.jsx'));
-const SharedMuestreo = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
+const SharedMuestreo    = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
+const SaasAdminShell   = lazy(() => import('./modules/saas-admin/SaasAdminShell.jsx'));
 
 const MainLayout = ({ children }) => {
   const { user } = useAuth();
@@ -47,6 +48,7 @@ const MainLayout = ({ children }) => {
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
   const [supportModal, setSupportModal] = React.useState({ open: false, initialData: {} });
   const location = useLocation();
+  const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
   // Cerrar el menú lateral al cambiar de ruta
   React.useEffect(() => {
@@ -95,9 +97,16 @@ const MainLayout = ({ children }) => {
       .catch(() => {});
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Rutas públicas: nunca mostrar sidebar, sin importar si hay sesión activa
   const isPublicRoute = ['/login', '/activar-cuenta'].includes(location.pathname);
-  if (!user || isPublicRoute) return children;
+  const isSaasAdminRoute = location.pathname.startsWith('/saas-admin');
+
+  // Superadmin sin empresa seleccionada → forzar Panel SaaS (bloquea /dashboard y todo lo demás)
+  if (user?.rol === 'superadmin' && !selectedTenantDb && !isSaasAdminRoute && !isPublicRoute) {
+    return <Navigate to="/saas-admin" replace />;
+  }
+
+  // Rutas SaaS Admin y rutas públicas: sin shell normal
+  if (!user || isPublicRoute || isSaasAdminRoute) return children;
 
   return (
     <div className={`mx-app-shell ${isMobileOpen ? 'mobile-sidebar-open' : ''}`}>
@@ -194,7 +203,6 @@ const TenantScopedRoute = ({ children, title, description }) => {
   const selectedTenantDb = typeof window !== 'undefined'
     ? window.localStorage.getItem('selected_tenant_db') || ''
     : '';
-  const isSupportErrorsRoute = window.location.pathname === '/gestion/soporte/errores';
 
   if (loading) {
     return (
@@ -207,7 +215,7 @@ const TenantScopedRoute = ({ children, title, description }) => {
 
   if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
-  if (user.rol === 'superadmin' && !selectedTenantDb && !isSupportErrorsRoute) {
+  if (user.rol === 'superadmin' && !selectedTenantDb) {
     return <TenantContextRequired title={title} description={description} />;
   }
 
@@ -296,6 +304,13 @@ export default function App() {
                 </div>
               }>
                 <Routes>
+                  {/* Panel SaaS Admin — layout propio, sin sidebar normal */}
+                  <Route path="/saas-admin/*" element={
+                    <SuperAdminRoute>
+                      <SaasAdminShell />
+                    </SuperAdminRoute>
+                  } />
+
                   {/* Rutas Públicas (Auth) */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/activar-cuenta" element={<ActivarCuenta />} />

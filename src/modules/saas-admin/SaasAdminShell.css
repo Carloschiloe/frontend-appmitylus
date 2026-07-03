@@ -1,0 +1,152 @@
+.saas-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.saas-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  background: var(--mx-gradient-dark-panel);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-shadow: 8px 0 30px rgba(0, 18, 51, 0.22);
+}
+
+.saas-sidebar-top {
+  padding: 0 0 8px;
+}
+
+.saas-brand {
+  padding: 22px 20px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.saas-brand img {
+  width: 140px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.saas-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 14px 0;
+  padding: 5px 11px;
+  background: rgba(124, 58, 237, 0.18);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 20px;
+  color: #c4b5fd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.saas-nav {
+  flex: 1;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saas-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--nav-fg-dim);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.saas-nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.saas-nav-link.is-active {
+  background: rgba(124, 58, 237, 0.22);
+  color: #c4b5fd;
+  font-weight: 700;
+}
+
+.saas-nav-badge {
+  background: var(--color-error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.saas-sidebar-foot {
+  padding: 12px 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.saas-user {
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.saas-user-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saas-user-role {
+  display: block;
+  font-size: 11px;
+  color: var(--nav-fg-dim);
+  margin-top: 2px;
+}
+
+.saas-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--nav-fg-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saas-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.saas-main {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.saas-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}

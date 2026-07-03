@@ -373,6 +373,28 @@
   margin: 4px 8px;
 }
 
+.mx-sidebar-saas-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 12px 6px;
+  padding: 6px 12px;
+  background: rgba(124, 58, 237, 0.14);
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 8px;
+  color: #c4b5fd;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.mx-sidebar-saas-back:hover {
+  background: rgba(124, 58, 237, 0.25);
+  border-color: rgba(124, 58, 237, 0.5);
+  color: #ddd6fe;
+}
+
 .mx-sidebar-company {
   display: flex;
   align-items: center;
