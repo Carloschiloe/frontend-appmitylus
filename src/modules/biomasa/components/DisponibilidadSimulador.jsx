@@ -17,17 +17,6 @@ const DIAS_SEMANA = [
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTHS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-const PERIODS = [
-  { key: 'trim1', label: 'Trim 1', sub: 'Ene–Mar', months: [1,2,3] },
-  { key: 'trim2', label: 'Trim 2', sub: 'Abr–Jun', months: [4,5,6] },
-  { key: 'trim3', label: 'Trim 3', sub: 'Jul–Sep', months: [7,8,9] },
-  { key: 'trim4', label: 'Trim 4', sub: 'Oct–Dic', months: [10,11,12] },
-  { key: 'sem1',  label: 'Sem 1',  sub: 'Ene–Jun', months: [1,2,3,4,5,6] },
-  { key: 'sem2',  label: 'Sem 2',  sub: 'Jul–Dic', months: [7,8,9,10,11,12] },
-  { key: 'año',   label: 'Año',    sub: 'completo', months: [1,2,3,4,5,6,7,8,9,10,11,12] },
-];
-
-// Count operating days in a month (m is 1-indexed)
 function operatingDaysInMonth(y, m, diasOp, startKey) {
   const diasSet = new Set(diasOp.map(Number));
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -40,7 +29,6 @@ function operatingDaysInMonth(y, m, diasOp, startKey) {
   return count;
 }
 
-// Per-month calendar simulation against a monthly budget
 function buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, startKey) {
   const diasSet = new Set(diasOp.map(Number));
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -76,7 +64,6 @@ function buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, startKey) {
   return { firstDow, days };
 }
 
-// Original continuous-pool simulation
 function buildSimulation(totalTons, tonsPorDia, startKey, diasOp) {
   const diasSet = new Set(diasOp.map(Number));
   let consumed = 0;
@@ -165,6 +152,9 @@ function MonthGrid({ year, month, firstDow, days, expanded = false, onClick }) {
   );
 }
 
+const pad = (n) => String(n).padStart(2, '0');
+const TRIM_MONTHS = [[1,2,3],[4,5,6],[7,8,9],[10,11,12]];
+
 export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const [incluirSemiCerrado, setIncluirSemiCerrado] = useState(true);
   const [tipoTransporteId, setTipoTransporteId] = useState('');
@@ -172,12 +162,14 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const [camionesPerDay, setCamionesPerDay] = useState('2');
   const [fechaInicio, setFechaInicio] = useState(() => todayKey());
   const [diasOp, setDiasOp] = useState([0, 1, 2, 3, 4]);
-  const [period, setPeriod] = useState(null);
+
+  // New cascading filter state
+  const [viewYear, setViewYear] = useState(() => parseInt(todayKey().slice(0, 4), 10));
+  const [viewMode, setViewMode] = useState(null); // null | 'mes' | 'trim' | 'año'
+  const [viewPeriod, setViewPeriod] = useState(null); // month 1-12 or trim 1-4
+
   const [expandedMonth, setExpandedMonth] = useState(null);
 
-  const simYear = parseInt(fechaInicio.slice(0, 4), 10);
-
-  // Total stock (for continuous simulation)
   const totalTons = useMemo(() => {
     const estados = incluirSemiCerrado ? ['disponible', 'semi_cerrado'] : ['disponible'];
     return items
@@ -185,7 +177,6 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       .reduce((sum, item) => sum + Number(item.tons || item.tonsDisponible || 0), 0);
   }, [items, incluirSemiCerrado]);
 
-  // Monthly breakdown of available tons
   const monthlyTons = useMemo(() => {
     const estadosOk = incluirSemiCerrado ? ['disponible', 'semi_cerrado'] : ['disponible'];
     const map = {};
@@ -212,11 +203,15 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
   const camionesNum = Math.max(0, parseInt(camionesPerDay, 10) || 0);
   const tonsPorDia = tonsPorCamion != null && camionesNum > 0 ? camionesNum * tonsPorCamion : 0;
 
-  // Which month keys to show based on period selection
   const visibleMonthKeys = useMemo(() => {
-    if (period) {
-      const p = PERIODS.find((pr) => pr.key === period);
-      return (p?.months || []).map((m) => `${simYear}-${String(m).padStart(2, '0')}`);
+    if (viewMode === 'año') {
+      return Array.from({ length: 12 }, (_, i) => `${viewYear}-${pad(i + 1)}`);
+    }
+    if (viewMode === 'trim' && viewPeriod) {
+      return TRIM_MONTHS[viewPeriod - 1].map((m) => `${viewYear}-${pad(m)}`);
+    }
+    if (viewMode === 'mes' && viewPeriod) {
+      return [`${viewYear}-${pad(viewPeriod)}`];
     }
     // Default: 6 months from fechaInicio
     const startM = parseInt(fechaInicio.slice(5, 7), 10);
@@ -225,11 +220,10 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       const totalM = (startM - 1) + i;
       const y = startY + Math.floor(totalM / 12);
       const m = (totalM % 12) + 1;
-      return `${y}-${String(m).padStart(2, '0')}`;
+      return `${y}-${pad(m)}`;
     });
-  }, [period, simYear, fechaInicio]);
+  }, [viewMode, viewYear, viewPeriod, fechaInicio]);
 
-  // Per-month planning stats
   const monthStats = useMemo(() => {
     return visibleMonthKeys.map((mk) => {
       const y = parseInt(mk.slice(0, 4), 10);
@@ -252,28 +246,11 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
     totalOpDays: monthStats.reduce((s, ms) => s + ms.opDays, 0),
   }), [monthStats]);
 
-  // Continuous simulation (used when no period selected)
   const simulation = useMemo(() => {
-    if (period || !tonsPorDia || totalTons <= 0 || !fechaInicio) return null;
+    if (viewMode || !tonsPorDia || totalTons <= 0 || !fechaInicio) return null;
     return buildSimulation(totalTons, tonsPorDia, fechaInicio, diasOp);
-  }, [period, totalTons, tonsPorDia, fechaInicio, diasOp]);
+  }, [viewMode, totalTons, tonsPorDia, fechaInicio, diasOp]);
 
-  const toggleDia = (dow) => {
-    setDiasOp((prev) =>
-      prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow].sort((a, b) => a - b),
-    );
-  };
-
-  const handlePeriod = (key) => {
-    setPeriod((prev) => (prev === key ? null : key));
-    setExpandedMonth(null);
-  };
-
-  const handleExpandMonth = (mk) => {
-    setExpandedMonth((prev) => (prev === mk ? null : mk));
-  };
-
-  // Items del mes expandido (para panel de proveedores/calibres)
   const monthProviders = useMemo(() => {
     if (!expandedMonth) return [];
     const estadosOk = incluirSemiCerrado ? ['disponible', 'semi_cerrado'] : ['disponible'];
@@ -282,14 +259,43 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       .sort((a, b) => (Number(b.tons || b.tonsDisponible || 0)) - (Number(a.tons || a.tonsDisponible || 0)));
   }, [expandedMonth, items, incluirSemiCerrado]);
 
-  // Render calendar content
+  const toggleDia = (dow) => {
+    setDiasOp((prev) =>
+      prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow].sort((a, b) => a - b),
+    );
+  };
+
+  const handleMode = (mode) => {
+    if (viewMode === mode) {
+      setViewMode(null);
+      setViewPeriod(null);
+    } else {
+      setViewMode(mode);
+      setViewPeriod(null);
+    }
+    setExpandedMonth(null);
+  };
+
+  const handleSelectPeriod = (p) => {
+    setViewPeriod((prev) => (prev === p ? null : p));
+    setExpandedMonth(null);
+  };
+
+  const handleExpandMonth = (mk) => {
+    setExpandedMonth((prev) => (prev === mk ? null : mk));
+  };
+
+  const handleBack = () => {
+    setExpandedMonth(null);
+    if (viewMode === 'mes') setViewPeriod(null);
+  };
+
   const renderCalendar = () => {
     if (expandedMonth) {
       const y = parseInt(expandedMonth.slice(0, 4), 10);
       const m = parseInt(expandedMonth.slice(5, 7), 10);
       const ms = monthStats.find((s) => s.mk === expandedMonth);
       const tonsAvail = ms?.tonsAvail || 0;
-      // Si el mes está antes de fechaInicio, no aplicar restricción de startKey
       const effectiveStart = expandedMonth >= fechaInicio.slice(0, 7) ? fechaInicio : null;
       const { firstDow, days } = tonsPorDia > 0
         ? buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, effectiveStart)
@@ -327,7 +333,28 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       );
     }
 
-    if (period) {
+    // Mes mode with no period selected yet
+    if (viewMode === 'mes' && !viewPeriod) {
+      return (
+        <div className="disp-sim-calendar-empty">
+          <CalendarDays size={44} />
+          <p>Selecciona un mes en la barra</p>
+        </div>
+      );
+    }
+
+    // Trim mode with no trim selected yet
+    if (viewMode === 'trim' && !viewPeriod) {
+      return (
+        <div className="disp-sim-calendar-empty">
+          <CalendarDays size={44} />
+          <p>Selecciona un trimestre</p>
+        </div>
+      );
+    }
+
+    // Period modes (trim, año, mes+period)
+    if (viewMode) {
       if (!tonsPorDia) {
         return <div className="disp-sim-calendar-empty"><CalendarDays size={44} /><p>Configura el transporte para ver la proyección</p></div>;
       }
@@ -335,7 +362,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
         const { firstDow, days } = ms.tonsAvail > 0
           ? buildMonthlySimulation(ms.y, ms.m, ms.tonsAvail, tonsPorDia, diasOp, fechaInicio)
           : { firstDow: dayOfWeekFromKey(`${ms.mk}-01`), days: Array.from({ length: new Date(ms.y, ms.m, 0).getDate() }, (_, d) => {
-              const dateKey = `${ms.mk}-${String(d + 1).padStart(2, '0')}`;
+              const dateKey = `${ms.mk}-${pad(d + 1)}`;
               const isBeforeStart = dateKey < fechaInicio;
               const dow = dayOfWeekFromKey(dateKey);
               const isOp = !isBeforeStart && diasOp.includes(dow);
@@ -348,7 +375,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
     // Default: continuous simulation
     if (simulation) {
       return simulation.monthsData.map(({ year, month, firstDow, days }) => (
-        <MonthGrid key={`${year}-${month}`} year={year} month={month + 1} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(`${year}-${String(month + 1).padStart(2, '0')}`)} />
+        <MonthGrid key={`${year}-${month}`} year={year} month={month + 1} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(`${year}-${pad(month + 1)}`)} />
       ));
     }
 
@@ -429,7 +456,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
           </div>
         </div>
 
-        {!period && simulation && (
+        {!viewMode && simulation && (
           <div className="disp-sim-summary">
             <div className="disp-sim-summary-row">
               <span>Días hábiles</span>
@@ -446,7 +473,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
           </div>
         )}
 
-        {!period && !simulation && (
+        {!viewMode && !simulation && (
           <div className="disp-sim-empty-hint">Selecciona tipo de camión y configura los parámetros para ver la simulación.</div>
         )}
       </aside>
@@ -454,27 +481,78 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       {/* ── Sección derecha ── */}
       <div className="disp-sim-right">
 
-        {/* Selector de período */}
+        {/* Barra de filtro en una sola fila */}
         <div className="disp-sim-period-bar">
+          {/* Navegador de año */}
           <button
             type="button"
-            className={`disp-sim-period-btn${!period ? ' is-active' : ''}`}
-            onClick={() => { setPeriod(null); setExpandedMonth(null); }}
-          >
-            Desde inicio
-          </button>
-          {PERIODS.map((p) => (
+            className="disp-sim-year-nav-btn"
+            onClick={() => setViewYear((y) => y - 1)}
+            aria-label="Año anterior"
+          >‹</button>
+          <span className="disp-sim-year-label">{viewYear}</span>
+          <button
+            type="button"
+            className="disp-sim-year-nav-btn"
+            onClick={() => setViewYear((y) => y + 1)}
+            aria-label="Año siguiente"
+          >›</button>
+
+          <div className="disp-sim-period-sep" />
+
+          {/* Modo */}
+          <button
+            type="button"
+            className={`disp-sim-period-btn${!viewMode ? ' is-active' : ''}`}
+            onClick={() => { setViewMode(null); setViewPeriod(null); setExpandedMonth(null); }}
+          >Inicio</button>
+
+          {[
+            { key: 'mes', label: 'Mes' },
+            { key: 'trim', label: 'Trim' },
+            { key: 'año', label: 'Año' },
+          ].map(({ key, label }) => (
             <button
-              key={p.key}
+              key={key}
               type="button"
-              className={`disp-sim-period-btn${period === p.key ? ' is-active' : ''}`}
-              onClick={() => handlePeriod(p.key)}
-              title={`${p.label} ${simYear} (${p.sub})`}
-            >
-              {p.label}
-              <span className="disp-sim-period-sub">{p.sub}</span>
-            </button>
+              className={`disp-sim-period-btn${viewMode === key ? ' is-active' : ''}`}
+              onClick={() => handleMode(key)}
+            >{label}</button>
           ))}
+
+          {/* Sub-opciones: Trimestres */}
+          {viewMode === 'trim' && (
+            <>
+              <div className="disp-sim-period-sep" />
+              {[1, 2, 3, 4].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={`disp-sim-period-sub-btn${viewPeriod === t ? ' is-active' : ''}`}
+                  onClick={() => handleSelectPeriod(t)}
+                  title={`Trim ${t} · ${['Ene–Mar','Abr–Jun','Jul–Sep','Oct–Dic'][t-1]}`}
+                >T{t}</button>
+              ))}
+            </>
+          )}
+
+          {/* Sub-opciones: Meses */}
+          {viewMode === 'mes' && (
+            <>
+              <div className="disp-sim-period-sep" />
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`disp-sim-period-sub-btn${viewPeriod === m ? ' is-active' : ''}`}
+                  onClick={() => {
+                    handleSelectPeriod(m);
+                    handleExpandMonth(`${viewYear}-${pad(m)}`);
+                  }}
+                >{MONTHS_SHORT[m - 1]}</button>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Tarjetas mensuales de resumen */}
@@ -503,9 +581,8 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
             </button>
           ))}
 
-          {/* Tarjeta de totales */}
           {tonsPorDia > 0 && monthStats.length > 1 && (
-            <div className={`disp-sim-month-card disp-sim-month-card--total`}>
+            <div className="disp-sim-month-card disp-sim-month-card--total">
               <span className="disp-sim-mc-name">Total</span>
               <span className="disp-sim-mc-avail">{fmtTons(annualSummary.totalAvail)}</span>
               <span className="disp-sim-mc-label">disponible</span>
@@ -519,10 +596,10 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
           )}
         </div>
 
-        {/* Encabezado del calendario cuando hay un mes expandido */}
+        {/* Encabezado cuando hay un mes expandido */}
         {expandedMonth && (
           <div className="disp-sim-expanded-header">
-            <button type="button" className="disp-sim-back-btn" onClick={() => setExpandedMonth(null)}>
+            <button type="button" className="disp-sim-back-btn" onClick={handleBack}>
               <ChevronLeft size={16} /> Volver
             </button>
             <span>Detalle: {MONTHS_ES[parseInt(expandedMonth.slice(5, 7), 10) - 1]} {expandedMonth.slice(0, 4)}</span>

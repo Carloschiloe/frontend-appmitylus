@@ -123,7 +123,7 @@
   --z-toast: 9999;
 
   /* Navegacion */
-  --nav-width: 240px;
+  --nav-width: 210px;
   --nav-bg: var(--color-sidebar);
   --nav-fg: #EAF4FF;
   --nav-fg-dim: #A9B8CF;

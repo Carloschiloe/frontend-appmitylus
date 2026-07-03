@@ -7191,47 +7191,102 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   gap: 14px;
 }
 
-/* Selector de período */
+/* Barra de filtro — una sola fila */
 .disp-sim-period-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 12px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.disp-sim-period-btn {
-  display: flex;
-  flex-direction: column;
+.disp-sim-period-bar::-webkit-scrollbar { display: none; }
+
+/* Navegador de año */
+.disp-sim-year-nav-btn {
+  display: inline-flex;
   align-items: center;
-  padding: 5px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
+}
+.disp-sim-year-nav-btn:hover { color: var(--color-primary); background: var(--color-bg); }
+
+.disp-sim-year-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Separador vertical */
+.disp-sim-period-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Botones de modo: Inicio / Mes / Trim / Año */
+.disp-sim-period-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
-  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.13s;
 }
-.disp-sim-period-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
+.disp-sim-period-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .disp-sim-period-btn.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
 }
-.disp-sim-period-sub {
-  font-size: 0.68rem;
-  font-weight: 400;
-  opacity: 0.75;
+
+/* Sub-pills: T1 T2 T3 T4 / Ene Feb ... */
+.disp-sim-period-sub-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.13s;
 }
-.disp-sim-period-btn.is-active .disp-sim-period-sub {
-  opacity: 0.85;
+.disp-sim-period-sub-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.disp-sim-period-sub-btn.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
 }
 
 /* Tarjetas mensuales */
@@ -7463,7 +7518,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 /* Panel izquierdo */
 .disp-sim-panel {
-  flex: 0 0 268px;
+  flex: 0 0 240px;
   display: flex;
   flex-direction: column;
   gap: 0;
