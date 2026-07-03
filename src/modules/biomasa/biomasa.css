@@ -7339,18 +7339,124 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* Calendario single (mes expandido) */
+/* Layout dos columnas en mes expandido */
+.disp-sim-expanded-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Calendario expandido más grande */
+.disp-sim-expanded-layout .disp-sim-month--expanded {
+  flex: 1;
+  min-width: 0;
+}
+.disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-month-grid {
+  gap: 6px;
+}
+.disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-day {
+  min-height: 80px;
+  border-radius: 8px;
+  padding: 6px 4px;
+}
+.disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-day-num {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-day-tons {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.disp-sim-expanded-layout .disp-sim-month--expanded .disp-sim-dow-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Panel proveedores/calibres (derecha) */
+.disp-sim-exp-providers {
+  flex: 0 0 260px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.disp-sim-exp-providers-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+.disp-sim-exp-providers-total {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.disp-sim-exp-providers-empty {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  padding: 12px 0;
+  text-align: center;
+}
+.disp-sim-exp-provider-row {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.disp-sim-exp-provider-row:last-child {
+  border-bottom: none;
+}
+.disp-sim-exp-provider-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.disp-sim-exp-provider-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.disp-sim-exp-provider-tons {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.disp-sim-exp-provider-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+.disp-sim-exp-calibre {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+/* Fallback legacy single */
 .disp-sim-calendar--single .disp-sim-month {
   max-width: 580px;
-}
-.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day {
-  min-height: 68px;
-  font-size: 0.82rem;
-}
-.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day-num {
-  font-size: 1rem;
-}
-.disp-sim-calendar--single .disp-sim-month--expanded .disp-sim-day-tons {
-  font-size: 0.78rem;
 }
 
 /* Panel izquierdo */

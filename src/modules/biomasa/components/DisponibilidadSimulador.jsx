@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Fish } from 'lucide-react';
 import { fmtTons, fmtNumber, tonsPorCamionDeTipo } from '../utils/programaCalculos';
+import { optionLabel, DISPONIBILIDAD_PRODUCTOS } from '../disponibilidad.constants';
 import { dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
 
 const DIAS_SEMANA = [
@@ -272,6 +273,15 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
     setExpandedMonth((prev) => (prev === mk ? null : mk));
   };
 
+  // Items del mes expandido (para panel de proveedores/calibres)
+  const monthProviders = useMemo(() => {
+    if (!expandedMonth) return [];
+    const estadosOk = incluirSemiCerrado ? ['disponible', 'semi_cerrado'] : ['disponible'];
+    return items
+      .filter((item) => item.mesKey === expandedMonth && estadosOk.includes(item.estado || 'disponible'))
+      .sort((a, b) => (Number(b.tons || b.tonsDisponible || 0)) - (Number(a.tons || a.tonsDisponible || 0)));
+  }, [expandedMonth, items, incluirSemiCerrado]);
+
   // Render calendar content
   const renderCalendar = () => {
     if (expandedMonth) {
@@ -279,11 +289,52 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       const m = parseInt(expandedMonth.slice(5, 7), 10);
       const ms = monthStats.find((s) => s.mk === expandedMonth);
       const tonsAvail = ms?.tonsAvail || 0;
-      if (!tonsPorDia) {
-        return <div className="disp-sim-calendar-empty"><CalendarDays size={44} /><p>Configura el transporte para ver la proyección</p></div>;
-      }
-      const { firstDow, days } = buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, fechaInicio);
-      return <MonthGrid year={y} month={m} firstDow={firstDow} days={days} expanded />;
+      const { firstDow, days } = tonsPorDia > 0
+        ? buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, fechaInicio)
+        : { firstDow: dayOfWeekFromKey(`${expandedMonth}-01`), days: Array.from({ length: new Date(y, m, 0).getDate() }, (_, d) => {
+            const dateKey = `${expandedMonth}-${String(d + 1).padStart(2, '0')}`;
+            const dow = dayOfWeekFromKey(dateKey);
+            const isBeforeStart = dateKey < fechaInicio;
+            const isOp = !isBeforeStart && diasOp.includes(dow);
+            return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'rest' : 'rest' };
+          }) };
+      return (
+        <div className="disp-sim-expanded-layout">
+          <MonthGrid year={y} month={m} firstDow={firstDow} days={days} expanded />
+          <aside className="disp-sim-exp-providers">
+            <div className="disp-sim-exp-providers-title">
+              <Fish size={15} />
+              Stock disponible — {MONTHS_ES[m - 1]} {y}
+            </div>
+            <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)} totales</div>
+            {monthProviders.length === 0 ? (
+              <div className="disp-sim-exp-providers-empty">Sin biomasa registrada para este mes</div>
+            ) : (
+              monthProviders.map((item) => {
+                const nombre = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || 'Sin proveedor';
+                const producto = optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir');
+                const hasCalibres = item.calibreMin != null || item.calibreMax != null;
+                return (
+                  <div key={item._id} className="disp-sim-exp-provider-row">
+                    <div className="disp-sim-exp-provider-name" title={nombre}>{nombre}</div>
+                    <div className="disp-sim-exp-provider-detail">
+                      <span className="disp-sim-exp-provider-tons">{fmtTons(Number(item.tons || item.tonsDisponible || 0))}</span>
+                      <span className="disp-sim-exp-provider-tags">
+                        <span>{producto}</span>
+                        {hasCalibres && (
+                          <span className="disp-sim-exp-calibre">
+                            {item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </aside>
+        </div>
+      );
     }
 
     if (period) {
