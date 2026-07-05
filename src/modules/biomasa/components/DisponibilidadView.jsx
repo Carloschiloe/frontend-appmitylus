@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowRight, Handshake, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
 
 const ORIGEN_ICON = {
   llamada:  Phone,
@@ -58,6 +58,7 @@ const filterDisponibilidades = (sourceItems, filters) => {
 };
 
 export default function DisponibilidadView({ items, loading, mes, setMes, reload }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { addToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -432,8 +433,9 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   <tbody>
                     {filteredItems.map((item) => {
                       const meta = stateMeta(item.estado || 'disponible');
+                      const isCerrado = item.tratoId || item.estado === 'cerrado';
                       return (
-                        <tr key={item._id}>
+                        <tr key={item._id} className={isCerrado ? 'disp-row--cerrado' : ''}>
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
                           <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
@@ -447,7 +449,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                             <div className="disponibilidad-row-actions">
                               <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
                               <button type="button" className="mx-btn-icon sm" onClick={() => setDeleteItem(item)} aria-label="Eliminar disponibilidad"><Trash2 size={15} /></button>
-                              {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
+                              {item.tratoId ? (
+                                <button
+                                  type="button"
+                                  className="mx-btn sm disponibilidad-ver-trato-button"
+                                  onClick={() => navigate('/biomasa/tratos')}
+                                  title="Ver trato asociado"
+                                >
+                                  <Handshake size={14} /> Ver trato
+                                </button>
+                              ) : (item.estado || 'disponible') === 'disponible' && (
                                 <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
                                   <ArrowRight size={15} /> Crear trato
                                 </button>

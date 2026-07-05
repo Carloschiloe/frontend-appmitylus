@@ -5942,6 +5942,28 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   color: #fff !important;
 }
 
+/* ── Fila cerrada con trato ── */
+.disp-row--cerrado {
+  background: rgba(0, 196, 140, 0.04);
+}
+.disp-row--cerrado td {
+  color: var(--color-text-muted);
+}
+
+/* ── Botón "Ver trato" ── */
+.disponibilidad-ver-trato-button {
+  white-space: nowrap;
+  background: rgba(0, 196, 140, 0.10) !important;
+  border: 1px solid rgba(0, 196, 140, 0.35) !important;
+  color: #007C5E !important;
+  font-weight: 700;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.disponibilidad-ver-trato-button:hover {
+  background: rgba(0, 196, 140, 0.22) !important;
+  border-color: rgba(0, 196, 140, 0.6) !important;
+}
+
 /* ── Resumen mensual: barra proporcional apilada ── */
 .disp-res-stacked-bar {
   display: flex;
