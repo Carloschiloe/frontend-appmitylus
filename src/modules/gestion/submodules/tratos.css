@@ -193,30 +193,36 @@
   color: var(--color-primary);
 }
 
-.tratos-action-programa {
-  color: #00c48c;
+.tratos-btn-crear-programa {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-.tratos-action-programa:hover {
-  background: rgba(0, 196, 140, 0.12);
+  gap: 5px;
+  background: rgba(0, 196, 140, 0.10);
+  border: 1px solid rgba(0, 196, 140, 0.32);
   color: #007C5E;
+  white-space: nowrap;
 }
 
-.tratos-action-programa-view {
-  color: #f59e0b;
+.tratos-btn-crear-programa:hover {
+  background: rgba(0, 196, 140, 0.20);
+  border-color: rgba(0, 196, 140, 0.55);
+  color: #005a44;
+}
+
+.tratos-btn-ver-programa {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.10);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  color: #92400e;
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.tratos-action-programa-view:hover {
-  background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
+.tratos-btn-ver-programa:hover {
+  background: rgba(245, 158, 11, 0.20);
+  border-color: rgba(245, 158, 11, 0.55);
 }
 
 .tratos-actions {

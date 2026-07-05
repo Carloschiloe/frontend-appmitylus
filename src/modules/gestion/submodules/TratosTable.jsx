@@ -243,20 +243,19 @@ export default function TratosTable({
                           )}
                           {canCreatePrograma && (
                             <button
-                              className="mx-action-btn tratos-action-programa"
-                              title="Crear programa de cosecha"
+                              type="button"
+                              className="mx-btn sm tratos-btn-crear-programa"
                               onClick={() => onCrearPrograma(null, item._id)}
                             >
-                              <CalendarPlus size={14} />
+                              <CalendarPlus size={13} /> Crear programa
                             </button>
                           )}
                           {hasProgramaActivo && (
                             <Link
                               to="/biomasa/programa"
-                              className="mx-action-btn tratos-action-programa-view"
-                              title="Ver programa de cosecha"
+                              className="mx-btn sm tratos-btn-ver-programa"
                             >
-                              <CalendarCheck size={14} />
+                              <CalendarCheck size={13} /> Ver programa
                             </Link>
                           )}
                           <button
