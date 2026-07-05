@@ -57,7 +57,7 @@ function getUserDisplayName(user) {
   return user?.nombre || user?.name || user?.username || user?.email || '';
 }
 
-export default function Tratos() {
+export default function Tratos({ onCrearPrograma }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -622,6 +622,7 @@ export default function Tratos() {
         onEdit={openEdit}
         onDelete={setConfirmDeleteTrato}
         onViewReport={handleViewReport}
+        onCrearPrograma={onCrearPrograma}
       />
 
       <TratoFormModal

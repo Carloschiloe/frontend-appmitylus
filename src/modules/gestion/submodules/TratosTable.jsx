@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal } from 'lucide-react';
+import { CalendarCheck, CalendarPlus, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal } from 'lucide-react';
 import {
   ESTADOS_TRATO,
   calcularFechaTerminoEstimadaTrato,
@@ -47,7 +47,7 @@ const COND_BADGE = {
 };
 
 /** Menú desplegable ⋯ para acciones secundarias */
-function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete }) {
+function ActionsMenu({ item, onShare, onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -57,11 +57,6 @@ function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete })
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-
-  const isAcordado = uiEstado === 'acordado' || uiEstado === 'cerrado_ok';
-  const hasProgramaActivo = item.meta?.programaCosecha?.estado === 'activo' || item.meta?.programaCosecha?.estado === 'pausado';
-  const canCreatePrograma = isAcordado && !hasProgramaActivo && displayTons > 0 && !!item.proveedorNombre;
-  const canViewPrograma = hasProgramaActivo;
 
   return (
     <div className="tratos-menu-wrap" ref={ref} data-tour="tratos-acciones">
@@ -86,24 +81,6 @@ function ActionsMenu({ item, uiEstado, displayTons, onShare, onEdit, onDelete })
           >
             <Send size={13} /> Compartir
           </button>
-          {canCreatePrograma && (
-            <Link
-              to={`/biomasa/programa?tratoId=${item._id}`}
-              className="tratos-menu-item"
-              onClick={() => setOpen(false)}
-            >
-              <CalendarCheck size={13} /> Crear programa de cosecha
-            </Link>
-          )}
-          {canViewPrograma && (
-            <Link
-              to={`/biomasa/programa?programaId=${item.meta?.programaCosecha?.id || ''}&tratoId=${item._id}`}
-              className="tratos-menu-item"
-              onClick={() => setOpen(false)}
-            >
-              <CalendarCheck size={13} /> Ver programa
-            </Link>
-          )}
           <div className="tratos-menu-separator" />
           <button
             className="tratos-menu-item tratos-menu-item-danger"
@@ -124,6 +101,7 @@ export default function TratosTable({
   onEdit,
   onDelete,
   onViewReport,
+  onCrearPrograma,
 }) {
   const [condModal, setCondModal] = useState(null);
 
@@ -169,6 +147,9 @@ export default function TratosTable({
                   const displayPrecio = item.precioAcordado ?? derivePrecioDesdeCondiciones(item.condiciones) ?? 0;
                   const displayTons = item.tonsAcordadas || deriveVolumenDesdeCondiciones(item.condiciones) || 0;
                   const displayCamiones = item.camionesXDia || deriveCamionesXDia(item.condiciones);
+                  const isAcordado = uiEstado === 'acordado' || uiEstado === 'cerrado_ok';
+                  const hasProgramaActivo = item.meta?.programaCosecha?.estado === 'activo' || item.meta?.programaCosecha?.estado === 'pausado';
+                  const canCreatePrograma = isAcordado && !hasProgramaActivo && displayTons > 0 && !!item.proveedorNombre && !!onCrearPrograma;
                   const displayInicioCosecha = item.vigenciaDesde || item.fechaCierre;
                   const displayTerminoCosecha = item.fechaTerminoCosecha || calcularFechaTerminoEstimadaTrato({
                     vigenciaDesde: displayInicioCosecha,
@@ -260,7 +241,24 @@ export default function TratosTable({
                               <ClipboardList size={14} />
                             </button>
                           )}
-                          {/* Botón primario: Ver informe */}
+                          {canCreatePrograma && (
+                            <button
+                              className="mx-action-btn tratos-action-programa"
+                              title="Crear programa de cosecha"
+                              onClick={() => onCrearPrograma(null, item._id)}
+                            >
+                              <CalendarPlus size={14} />
+                            </button>
+                          )}
+                          {hasProgramaActivo && (
+                            <Link
+                              to="/biomasa/programa"
+                              className="mx-action-btn tratos-action-programa-view"
+                              title="Ver programa de cosecha"
+                            >
+                              <CalendarCheck size={14} />
+                            </Link>
+                          )}
                           <button
                             className="mx-action-btn tratos-action-primary"
                             title="Ver informe"
@@ -268,11 +266,8 @@ export default function TratosTable({
                           >
                             <FileText size={14} />
                           </button>
-                          {/* Menú ⋯ acciones secundarias */}
                           <ActionsMenu
                             item={item}
-                            uiEstado={uiEstado}
-                            displayTons={displayTons}
                             onShare={onShare}
                             onEdit={onEdit}
                             onDelete={onDelete}

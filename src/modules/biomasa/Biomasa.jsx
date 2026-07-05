@@ -43,6 +43,7 @@ export default function Biomasa() {
   const [mes, setMes] = useState(mesActual);
   const { loading, disp, programas, calData, notasDia, tratosAcordados, reload: load } = useBiomasaData(mes, {
     isStatusView,
+    isTratosView,
     isProgramView,
     isMuestreosView,
     statusSubTab,
@@ -370,7 +371,7 @@ export default function Biomasa() {
           {isStatusView && <DisponibilidadView items={disp} loading={loading} mes={mes} setMes={setMes} reload={load} />}
           {isTratosView && (
             <Suspense fallback={<div className="mx-loading-placeholder"><div className="mx-spinner"></div><p>Cargando tratos...</p></div>}>
-              <Tratos />
+              <Tratos onCrearPrograma={handleOpenModal} />
             </Suspense>
           )}
 

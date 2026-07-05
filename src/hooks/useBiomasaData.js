@@ -21,6 +21,7 @@ function endOfMonthKey(mesKey) {
 export function useBiomasaData(mes, viewContext = {}) {
   const {
     isStatusView = false,
+    isTratosView = false,
     isProgramView = false,
     isMuestreosView = false,
     statusSubTab = '',
@@ -62,6 +63,11 @@ export function useBiomasaData(mes, viewContext = {}) {
         keys.push('tratosBiomasaRes');
         promises.push(apiClient.get('/oportunidades?seguimientoEstado=cerrado', { signal }).catch(() => ({ items: [] })));
         keys.push('oportunidadesCerradasRes');
+      }
+
+      if (isTratosView) {
+        promises.push(apiClient.get('/programa-cosecha/tratos-acordados', { signal }).catch(() => ({ items: [] })));
+        keys.push('tratosRes');
       }
 
       if (isProgramView && (progSubTab === 'programa' || progSubTab === 'seguimiento')) {
@@ -114,7 +120,7 @@ export function useBiomasaData(mes, viewContext = {}) {
     } finally {
       setLoading(false);
     }
-  }, [mes, addToast, isStatusView, isProgramView, isMuestreosView, statusSubTab, progSubTab]);
+  }, [mes, addToast, isStatusView, isTratosView, isProgramView, isMuestreosView, statusSubTab, progSubTab]);
 
   useEffect(() => {
     const controller = new AbortController();
