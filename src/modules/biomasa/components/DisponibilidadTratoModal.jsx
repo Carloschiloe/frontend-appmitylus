@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { apiClient } from '../../../api/apiClient';
+import { crearTratoDesdeDisponibilidad } from '../../../api/api-mmpp';
 import { maestrosApi } from '../../../api/api-maestros';
 import { useContactos, useCentros } from '../../gestion/hooks/useGestionQueries';
 import TratoFormModal from '../../gestion/submodules/TratoFormModal';
@@ -182,35 +183,31 @@ export default function DisponibilidadTratoModal({ open, item, onClose, onSucces
     }
     try {
       const volumenDesdeCondiciones = deriveVolumenDesdeCondiciones(form.condiciones);
-      const created = await apiClient.post('/oportunidades', {
-        proveedorId: selectedProvider.contactoId || '',
-        proveedorKey: selectedProvider.proveedorKey,
-        proveedorNombre: selectedProvider.proveedorNombre,
-        estado: 'negociando',
-        origen: 'manual',
-        meta: {
-          contactoNombre: selectedProvider.contactoNombre || '',
-          contactoTelefono: selectedProvider.contactoTelefono || '',
-          contactoEmail: selectedProvider.contactoEmail || '',
-          comuna: selectedProvider.comuna || '',
-        },
+      const condicionesFinales = (form.condiciones || []).map((c) => ({ ...c, valor: c.valor === '' ? null : c.valor }));
+
+      // Crea el trato Y cierra la disponibilidad atómicamente
+      const created = await crearTratoDesdeDisponibilidad(item._id, {
+        tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
+        precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
+        producto: item.producto || 'sin_definir',
+        vigenciaDesde: form.fechaInicioCosecha || null,
+        notasTrato: form.notas || '',
+        condiciones: condicionesFinales,
       });
-      const newId = created?.item?._id || created?._id;
+
+      const newId = created?._id || created?.item?._id;
       if (newId) {
+        // Patchear camiones y transportes (no los maneja el endpoint crear-trato)
         await apiClient.patch(`/oportunidades/${newId}/trato`, {
-          tonsAcordadas: parseNumberOrNull(form.tonsAcordadas) ?? volumenDesdeCondiciones,
-          precioAcordado: derivePrecioDesdeCondiciones(form.condiciones),
-          notasTrato: form.notas || '',
           camionesXDia: deriveCamionesXDia(form.condiciones),
-          vigenciaDesde: form.fechaInicioCosecha || null,
-          condiciones: (form.condiciones || []).map((c) => ({ ...c, valor: c.valor === '' ? null : c.valor })),
           transportes: form.transporteTrato ? [form.transporteTrato] : [],
         });
-        const todasAcordadas = form.condiciones.length > 0 && form.condiciones.every((c) => c.estado === 'acordado');
+        const todasAcordadas = condicionesFinales.length > 0 && condicionesFinales.every((c) => c.estado === 'acordado');
         if (todasAcordadas) {
           await apiClient.patch(`/oportunidades/${newId}/estado`, { estado: 'acordado', observacion: form.notas || '' });
         }
       }
+
       await queryClient.refetchQueries({ queryKey: ['tratos'] });
       addToast({
         title: 'Trato creado',
