@@ -1236,7 +1236,7 @@
   left: 50%;
   display: grid;
   gap: 3px;
-  min-width: 160px;
+  min-width: 190px;
   padding: 9px 11px;
   border: 1px solid #bfdbfe;
   border-radius: var(--radius-md);
@@ -1262,6 +1262,86 @@
   font-weight: var(--weight-semibold);
 }
 
+/* tooltip enriquecido — Option A */
+.disp-tooltip-total-line {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.disp-tooltip-states {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 2px 0;
+}
+
+.disp-tooltip-state-row {
+  display: grid;
+  grid-template-columns: 8px 1fr auto auto;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+}
+
+.disp-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.disp-tooltip-dot--success { background: #00c48c; }
+.disp-tooltip-dot--warning { background: #f59e0b; }
+.disp-tooltip-dot--info { background: #3b82f6; }
+.disp-tooltip-dot--error { background: #ef4444; }
+.disp-tooltip-dot--muted { background: #64748b; }
+.disp-tooltip-dot--primary { background: #2563eb; }
+
+.disp-tooltip-state-label {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.disp-tooltip-state-tons {
+  color: var(--color-text);
+  font-size: 10.5px;
+  font-style: normal;
+}
+
+.disp-tooltip-pct {
+  color: #64748b;
+  font-size: 10px;
+  font-style: normal;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* mini pills debajo del total — Option B */
+.disp-bar-mini-states {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  margin: 1px 0 0;
+}
+
+.disp-bar-mini-pill {
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.disp-bar-mini-pill--success { background: rgba(0,196,140,0.14); color: #007C5E; }
+.disp-bar-mini-pill--warning { background: rgba(245,158,11,0.14); color: #92400e; }
+.disp-bar-mini-pill--info    { background: rgba(59,130,246,0.14); color: #1d4ed8; }
+.disp-bar-mini-pill--error   { background: rgba(239,68,68,0.14);  color: #b91c1c; }
+.disp-bar-mini-pill--muted   { background: rgba(100,116,139,0.14); color: #475569; }
+.disp-bar-mini-pill--primary { background: rgba(37,99,235,0.14);  color: #1d4ed8; }
+
 .disponibilidad-analysis-chart-scroll {
   min-width: 0;
   overflow-x: visible;
@@ -1282,8 +1362,8 @@
 .disponibilidad-analysis-month {
   position: relative;
   display: grid;
-  grid-template-rows: 1fr auto auto;
-  gap: 5px;
+  grid-template-rows: 1fr auto auto auto;
+  gap: 3px;
   min-width: 0;
   padding: 0;
   border: 0;

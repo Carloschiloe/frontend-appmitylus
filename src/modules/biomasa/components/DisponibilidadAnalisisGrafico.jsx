@@ -165,8 +165,22 @@ export default function DisponibilidadAnalisisGrafico({
                   >
                     <span className="disponibilidad-analysis-tooltip" role="tooltip">
                       <strong>{mesLabel(row.monthKey, true)}</strong>
-                      <span>{fmtTons(row.total)}</span>
-                      <small>Click para ver proveedores</small>
+                      <span className="disp-tooltip-total-line">{fmtTons(row.total)} total</span>
+                      <span className="disp-tooltip-states">
+                        {DISPONIBILIDAD_ESTADOS.filter((s) => row.stateTons[s.value] > 0).map((s) => {
+                          const tons = row.stateTons[s.value];
+                          const pct = row.total > 0 ? Math.round((tons / row.total) * 100) : 0;
+                          return (
+                            <span key={s.value} className="disp-tooltip-state-row">
+                              <i className={`disp-tooltip-dot disp-tooltip-dot--${s.tone}`} />
+                              <span className="disp-tooltip-state-label">{s.label}</span>
+                              <strong className="disp-tooltip-state-tons">{fmtTons(tons)}</strong>
+                              <em className="disp-tooltip-pct">{pct}%</em>
+                            </span>
+                          );
+                        })}
+                      </span>
+                      <small>Click para ver detalle</small>
                     </span>
                     <span className="disponibilidad-analysis-bars">
                       <span className="disponibilidad-analysis-stack" style={{ height: `${(row.total / maxMonthTotal) * 100}%` }}>
@@ -178,6 +192,18 @@ export default function DisponibilidadAnalisisGrafico({
                       {comparisonYear && <span className="disponibilidad-analysis-comparison-bar" style={{ height: `${(comparedRow.total / maxMonthTotal) * 100}%` }} />}
                     </span>
                     <strong>{row.total > 0 ? fmtTons(row.total) : '0 t'}</strong>
+                    {row.total > 0 && (
+                      <span className="disp-bar-mini-states">
+                        {DISPONIBILIDAD_ESTADOS
+                          .filter((s) => s.value !== 'disponible' && row.stateTons[s.value] > 0)
+                          .map((s) => (
+                            <span key={s.value} className={`disp-bar-mini-pill disp-bar-mini-pill--${s.tone}`}>
+                              {fmtTons(row.stateTons[s.value])}
+                            </span>
+                          ))
+                        }
+                      </span>
+                    )}
                     <span>{mesLabel(row.monthKey).slice(0, 3)}</span>
                   </button>
                 );
