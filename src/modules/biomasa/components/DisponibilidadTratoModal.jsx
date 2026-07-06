@@ -53,6 +53,13 @@ export default function DisponibilidadTratoModal({ open, item, onClose, onSucces
     return buildProviderDirectory(centros, contactos);
   }, [open, centrosRaw, contactosRaw]);
 
+  const centrosProveedor = useMemo(() => {
+    const provKey = selectedProvider?.proveedorKey || '';
+    if (!provKey) return [];
+    const all = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
+    return all.filter(c => c.proveedorKey === provKey);
+  }, [centrosRaw, selectedProvider]);
+
   const loadingProviders = loadingCentros || loadingContactos;
 
   const filteredProviders = useMemo(() => {
@@ -237,6 +244,8 @@ export default function DisponibilidadTratoModal({ open, item, onClose, onSucces
       loadingProviders={loadingProviders}
       filteredProviders={filteredProviders}
       tiposTransporte={tiposTransporte}
+      centrosProveedor={centrosProveedor}
+      loadingCentros={loadingCentros}
       onClose={handleClose}
       onSubmit={handleSave}
       onFormChange={setForm}
