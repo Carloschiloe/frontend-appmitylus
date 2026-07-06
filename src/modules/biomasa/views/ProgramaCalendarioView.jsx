@@ -96,6 +96,14 @@ export default function ProgramaCalendarioView({
     }))
     .filter((t) => t.tipoTransporteId);
 
+  // Mapa nombre de proveedor → programa, para el avance en el panel derecho.
+  const providerProgramMap = Object.fromEntries(
+    Object.entries(weekData).map(([id, d]) => {
+      const prog = programasById.get(id);
+      return [d.nombre, prog];
+    }).filter(([, prog]) => prog),
+  );
+
   // Acceso único: abre el modal "Ajustar día" (acción inicial por defecto 'sumar'; dentro
   // el usuario elige Sumar / Descontar / Suspender). Se pasa la composición real del día
   // (desgloseDia) para mostrar el estado y que la resta solo ofrezca tipos existentes.
@@ -288,7 +296,6 @@ export default function ProgramaCalendarioView({
             {Object.entries(weekData).filter(([, data]) => !filterProducto || data.tipoProducto === filterProducto).map(([id, data]) => {
               const programa = programasById.get(id);
               const rowTotal = data.dias.reduce((s, c) => ({ camiones: s.camiones + Number(c.camiones || 0), tons: s.tons + Number(c.tonsDia || 0) }), { camiones: 0, tons: 0 });
-              const volume = getProgramVolumeProgress(programa, getEffectiveTonsPerTruck(programa));
               return (
                 <div key={id} className="harvest-week-v2-row">
                   <div className={`harvest-week-v2-prov ${getProductClass(data.tipoProducto)} ${programa?.estado === 'pausado' ? 'is-pausado' : ''}`}>
@@ -315,23 +322,7 @@ export default function ProgramaCalendarioView({
                       </div>
                     ) : (
                       <>
-                        <div className="wk-prov-product-row">
-                          <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
-                          {volume?.estimated > 0 && (
-                            <div className="wk-avance-inline" title={`${fmtTonsInt(volume.consumed)} planificadas de ${fmtTonsInt(volume.estimated)} t acordadas`}>
-                              <div className="wk-avance-bar">
-                                <div
-                                  className="wk-avance-bar-fill"
-                                  style={{
-                                    width: `${volume.progress}%`,
-                                    background: volume.progress >= 90 ? '#EF4444' : volume.progress >= 65 ? '#F59E0B' : '#10B981',
-                                  }}
-                                />
-                              </div>
-                              <span className="wk-avance-text">{fmtTonsInt(volume.consumed)}/{fmtTonsInt(volume.estimated)} t</span>
-                            </div>
-                          )}
-                        </div>
+                        <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
                         {handleAplicarSemana && (
                           <button
                             type="button"
@@ -599,6 +590,9 @@ export default function ProgramaCalendarioView({
                     const totalT = allWeekProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalT > 0 ? Math.round(provider.tons / totalT * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;
+                    const prog = providerProgramMap[provider.nombre];
+                    const weekEnd = weekDays[weekDays.length - 1];
+                    const vol = prog ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(weekEnd + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}
@@ -613,6 +607,20 @@ export default function ProgramaCalendarioView({
                         <div className="hds-provider-bar">
                           <div className="hds-provider-bar-fill" style={{ width: `${pct}%` }} />
                         </div>
+                        {vol?.estimated > 0 && (
+                          <div className="hds-avance-prog">
+                            <div className="hds-avance-prog-label">
+                              <span>Programado acum.</span>
+                              <span>{fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} t · {Math.round(vol.progress)}%</span>
+                            </div>
+                            <div className="hds-avance-prog-bar">
+                              <div className="hds-avance-prog-fill" style={{
+                                width: `${vol.progress}%`,
+                                background: vol.progress >= 90 ? '#EF4444' : vol.progress >= 65 ? '#F59E0B' : '#10B981',
+                              }} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -743,6 +751,11 @@ export default function ProgramaCalendarioView({
                     const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;
+                    const prog = providerProgramMap[provider.nombre];
+                    const lastDayOfMonth = mes && monthData?.days?.length
+                      ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
+                      : null;
+                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}
@@ -761,6 +774,20 @@ export default function ProgramaCalendarioView({
                         <div className="hds-provider-bar">
                           <div className="hds-provider-bar-fill" style={{ width: `${pct}%` }} />
                         </div>
+                        {vol?.estimated > 0 && (
+                          <div className="hds-avance-prog">
+                            <div className="hds-avance-prog-label">
+                              <span>Programado acum.</span>
+                              <span>{fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} t · {Math.round(vol.progress)}%</span>
+                            </div>
+                            <div className="hds-avance-prog-bar">
+                              <div className="hds-avance-prog-fill" style={{
+                                width: `${vol.progress}%`,
+                                background: vol.progress >= 90 ? '#EF4444' : vol.progress >= 65 ? '#F59E0B' : '#10B981',
+                              }} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })

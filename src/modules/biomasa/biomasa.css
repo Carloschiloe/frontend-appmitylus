@@ -8048,3 +8048,34 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   line-height: 1;
   letter-spacing: 0.01em;
 }
+
+/* ── Avance programado acumulado (panel derecho) ──────────────── */
+.hds-avance-prog {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--color-border, #e5e7eb);
+}
+.hds-avance-prog-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+  gap: 4px;
+}
+.hds-avance-prog-label span:last-child {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.hds-avance-prog-bar {
+  height: 3px;
+  background: var(--color-border, #e5e7eb);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hds-avance-prog-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
