@@ -380,9 +380,9 @@ export default function ProgramaCalendarioView({
                           <span className="harvest-week-v2-sinprog">Sin programa</span>
                         ) : isSusp ? (
                           <>
-                            <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Suspendido'}</div>
+                            <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Sin programa'}</div>
                             {programa && (
-                              <button className="wk-btn wk-btn-react" onClick={() => handleReactivateDay(programa, dia)}>↺ Reactivar</button>
+                              <button className="wk-btn wk-btn-react" onClick={() => handleReactivateDay(programa, dia)}>{cell.ajusteMotivo ? '↺ Reactivar' : '+ Activar'}</button>
                             )}
                           </>
                         ) : cell.camiones > 0 || programa ? (
