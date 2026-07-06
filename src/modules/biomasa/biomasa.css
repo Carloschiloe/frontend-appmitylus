@@ -8010,3 +8010,41 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   color: var(--color-primary, #007C5E);
   background: rgba(0,124,94,0.06);
 }
+
+/* ── Avance de consumo inline (vista semanal, fila proveedor) ──── */
+.wk-prov-product-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.wk-avance-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wk-avance-bar {
+  height: 3px;
+  background: var(--color-border, #e5e7eb);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 36px;
+}
+
+.wk-avance-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.wk-avance-text {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}

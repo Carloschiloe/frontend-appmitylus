@@ -28,6 +28,7 @@ import {
   summarizeHarvestItems,
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
   formatMuestreoResumen, formatMuestreoFecha, tonsPorCamionDeTipo,
+  getProgramVolumeProgress, getEffectiveTonsPerTruck,
 } from '../utils/programaCalculos';
 import { esFechaEnVigencia } from '../utils/programaImpacto';
 import DonutChart from '../components/DonutChart';
@@ -287,6 +288,7 @@ export default function ProgramaCalendarioView({
             {Object.entries(weekData).filter(([, data]) => !filterProducto || data.tipoProducto === filterProducto).map(([id, data]) => {
               const programa = programasById.get(id);
               const rowTotal = data.dias.reduce((s, c) => ({ camiones: s.camiones + Number(c.camiones || 0), tons: s.tons + Number(c.tonsDia || 0) }), { camiones: 0, tons: 0 });
+              const volume = getProgramVolumeProgress(programa, getEffectiveTonsPerTruck(programa));
               return (
                 <div key={id} className="harvest-week-v2-row">
                   <div className={`harvest-week-v2-prov ${getProductClass(data.tipoProducto)} ${programa?.estado === 'pausado' ? 'is-pausado' : ''}`}>
@@ -313,7 +315,23 @@ export default function ProgramaCalendarioView({
                       </div>
                     ) : (
                       <>
-                        <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
+                        <div className="wk-prov-product-row">
+                          <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
+                          {volume?.estimated > 0 && (
+                            <div className="wk-avance-inline" title={`${fmtTonsInt(volume.consumed)} planificadas de ${fmtTonsInt(volume.estimated)} t acordadas`}>
+                              <div className="wk-avance-bar">
+                                <div
+                                  className="wk-avance-bar-fill"
+                                  style={{
+                                    width: `${volume.progress}%`,
+                                    background: volume.progress >= 90 ? '#EF4444' : volume.progress >= 65 ? '#F59E0B' : '#10B981',
+                                  }}
+                                />
+                              </div>
+                              <span className="wk-avance-text">{fmtTonsInt(volume.consumed)}/{fmtTonsInt(volume.estimated)} t</span>
+                            </div>
+                          )}
+                        </div>
                         {handleAplicarSemana && (
                           <button
                             type="button"
