@@ -6,6 +6,7 @@ import {
   Activity,
   Calendar as CalendarIcon,
   CalendarDays,
+  Pencil,
   Maximize2,
   Minimize2,
   Info,
@@ -387,22 +388,20 @@ export default function ProgramaCalendarioView({
                         {programa.vigenciaHasta && <span className="wk-prov-pausa-desde">hasta {new Date(programa.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</span>}
                       </div>
                     ) : (
-                      <div className="wk-prov-chip-row">
-                        <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
-                        {handleAplicarSemana && (
-                          <button
-                            type="button"
-                            className="wk-btn-semana"
-                            title="Planificar días de esta semana"
-                            onClick={() => setSemanaModal({
-                              programa,
-                              diasActuales: Object.fromEntries(weekDays.map((d, i) => [d, data.dias[i]?.camiones || 0])),
-                            })}
-                          >
-                            <CalendarDays size={13} />
-                          </button>
-                        )}
-                      </div>
+                      <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
+                    )}
+                    {handleAplicarSemana && programa?.estado !== 'pausado' && programa?.estado !== 'finalizado' && (
+                      <button
+                        type="button"
+                        className="wk-btn-semana"
+                        title="Planificar semana"
+                        onClick={() => setSemanaModal({
+                          programa,
+                          diasActuales: Object.fromEntries(weekDays.map((d, i) => [d, data.dias[i]?.camiones || 0])),
+                        })}
+                      >
+                        <Pencil size={12} />
+                      </button>
                     )}
                   </div>
                   {data.dias.map((cell, i) => {
