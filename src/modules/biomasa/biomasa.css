@@ -8140,3 +8140,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   transition: width 0.4s ease;
   min-width: 2px;
 }
+.hds-prov-prog-text {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+}

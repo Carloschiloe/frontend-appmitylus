@@ -590,6 +590,9 @@ export default function ProgramaCalendarioView({
                     const totalT = allWeekProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalT > 0 ? Math.round(provider.tons / totalT * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;
+                    const prog = providerProgramMap[provider.nombre];
+                    const weekEnd = weekDays[weekDays.length - 1];
+                    const vol = prog ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(weekEnd + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}
@@ -604,6 +607,11 @@ export default function ProgramaCalendarioView({
                         <div className="hds-prov-prog-bar">
                           <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
+                        {vol?.estimated > 0 && (
+                          <span className="hds-prov-prog-text">
+                            programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progress)}%
+                          </span>
+                        )}
                       </div>
                     );
                   })
@@ -737,6 +745,11 @@ export default function ProgramaCalendarioView({
                     const metricLabel = calendarMetric === 'camiones'
                       ? `${provider.camiones} cam · ${pct}%`
                       : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
+                    const prog = providerProgramMap[provider.nombre];
+                    const lastDayOfMonth = mes && monthData?.days?.length
+                      ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
+                      : null;
+                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}
@@ -751,6 +764,11 @@ export default function ProgramaCalendarioView({
                         <div className="hds-prov-prog-bar">
                           <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
+                        {vol?.estimated > 0 && (
+                          <span className="hds-prov-prog-text">
+                            programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progress)}%
+                          </span>
+                        )}
                       </div>
                     );
                   })
