@@ -2967,11 +2967,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ── Provider column ── */
 .harvest-week-v2-prov {
   position: relative;
-  padding: 14px 16px;
+  padding: 9px 12px;
   border-left: 4px solid #CBD5E1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   justify-content: center;
   overflow: visible;
 }
@@ -3015,17 +3015,49 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-top-color: #0F172A;
 }
 .harvest-week-v2-prov:hover .wk-prov-tooltip { opacity: 1; }
-.harvest-week-v2-prov-centro {
+/* Centro + muestreo en una sola línea */
+.wk-prov-centro-muestreo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.wk-prov-centro-code {
   font-size: 11px;
   color: #64748B;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wk-prov-sep {
+  font-size: 11px;
+  color: #CBD5E1;
+  flex-shrink: 0;
+}
+.wk-prov-muestreo-inline {
+  font-size: 10.5px;
+  color: #94A3B8;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.wk-prov-muestreo-inline.wk-prov-muestreo--vacio {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* Chip de producto + botón Planificar en la misma fila */
+.wk-prov-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  margin-top: 1px;
+}
 .wk-product-chip {
   display: inline-flex;
   align-items: center;
-  margin-top: 4px;
   padding: 2px 7px;
   border-radius: 5px;
   font-size: 10px;
@@ -3041,16 +3073,16 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 /* ── Day cells ── */
 .harvest-week-v2-cell {
-  padding: 14px 8px 10px;
+  padding: 8px 6px 7px;
   text-align: center;
   border-left: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   position: relative;
-  min-height: 78px;
+  min-height: 62px;
 }
 .harvest-week-v2-cell.is-today { background: #F8FBFF; }
 .harvest-week-v2-cell.is-susp  { background: #FAFAFA; }
@@ -3065,7 +3097,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   line-height: 1;
 }
 .harvest-week-v2-count strong {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #0F172A;
   line-height: 1;

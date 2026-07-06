@@ -361,14 +361,20 @@ export default function ProgramaCalendarioView({
                       )}
                     </div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
-                    <div className="harvest-week-v2-prov-centro">{data.centro || '—'}</div>
-                    {formatMuestreoResumen(data) ? (
-                      <div className="wk-prov-muestreo">
-                        Últ. muestreo{formatMuestreoFecha(data.muestreoFecha, 'short') ? ` ${formatMuestreoFecha(data.muestreoFecha, 'short')}` : ''}: {formatMuestreoResumen(data)}
-                      </div>
-                    ) : (
-                      <div className="wk-prov-muestreo wk-prov-muestreo--vacio">Sin muestreo registrado</div>
-                    )}
+                    {/* Centro + muestreo en una sola línea */}
+                    <div className="wk-prov-centro-muestreo">
+                      <span className="wk-prov-centro-code">{data.centro || '—'}</span>
+                      <span className="wk-prov-sep">·</span>
+                      {formatMuestreoResumen(data) ? (
+                        <span className="wk-prov-muestreo-inline">
+                          {formatMuestreoFecha(data.muestreoFecha, 'short') ? `${formatMuestreoFecha(data.muestreoFecha, 'short')}: ` : ''}
+                          {formatMuestreoResumen(data)}
+                        </span>
+                      ) : (
+                        <span className="wk-prov-muestreo-inline wk-prov-muestreo--vacio">Sin muestreo</span>
+                      )}
+                    </div>
+                    {/* Chip de producto + botón en la misma línea */}
                     {programa?.estado === 'pausado' ? (
                       <div className="wk-prov-pausa-info">
                         <span className="wk-prov-pausa-badge">PAUSADO</span>
@@ -381,7 +387,7 @@ export default function ProgramaCalendarioView({
                         {programa.vigenciaHasta && <span className="wk-prov-pausa-desde">hasta {new Date(programa.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</span>}
                       </div>
                     ) : (
-                      <>
+                      <div className="wk-prov-chip-row">
                         <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
                         {handleAplicarSemana && (
                           <button
@@ -396,7 +402,7 @@ export default function ProgramaCalendarioView({
                             <CalendarDays size={11} /> Planificar semana
                           </button>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                   {data.dias.map((cell, i) => {
