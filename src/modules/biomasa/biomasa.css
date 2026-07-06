@@ -3053,7 +3053,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   align-items: center;
   gap: 6px;
   flex-wrap: nowrap;
-  margin-top: 1px;
 }
 .wk-product-chip {
   display: inline-flex;
@@ -8021,26 +8020,24 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   color: var(--color-text-muted);
 }
 
-/* Botón "Planificar semana" en la fila del proveedor */
+/* Botón ícono "Planificar semana" en la fila del proveedor */
 .wk-btn-semana {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+  border: none;
+  background: #2563EB;
+  color: #fff;
   cursor: pointer;
-  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  flex-shrink: 0;
+  transition: background 0.13s, transform 0.1s;
 }
 .wk-btn-semana:hover {
-  border-color: var(--color-primary, #007C5E);
-  color: var(--color-primary, #007C5E);
-  background: rgba(0,124,94,0.06);
+  background: #1D4ED8;
+  transform: scale(1.08);
 }
 
 /* ── Avance de consumo inline (vista semanal, fila proveedor) ──── */

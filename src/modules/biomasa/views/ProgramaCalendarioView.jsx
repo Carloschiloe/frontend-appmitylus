@@ -399,7 +399,7 @@ export default function ProgramaCalendarioView({
                               diasActuales: Object.fromEntries(weekDays.map((d, i) => [d, data.dias[i]?.camiones || 0])),
                             })}
                           >
-                            <CalendarDays size={11} /> Planificar semana
+                            <CalendarDays size={13} />
                           </button>
                         )}
                       </div>
