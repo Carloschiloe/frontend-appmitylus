@@ -8,8 +8,8 @@ import { tiposDescontables } from '../utils/programaImpacto';
 // Reutiliza el endpoint ajuste-diario via onAplicar(payload). La validación final
 // (tipos descontables, no negativos, recálculo de vigencia) la hace el backend.
 
-const ADJUST_MOTIVOS = ['Planta', 'Clima', 'Transporte', 'Proveedor', 'Sanitario', 'Calidad', 'Comercial', 'Otro'];
-const SUSPEND_MOTIVOS = ['Clima', 'Planta', 'Logística', 'Proveedor', 'Otro'];
+const ADJUST_MOTIVOS = ['Planta', 'Clima', 'Transporte', 'Proveedor', 'Sanitario', 'Calidad', 'Comercial', 'Término cosecha', 'Otro'];
+const SUSPEND_MOTIVOS = ['Clima', 'Planta', 'Logística', 'Proveedor', 'Término cosecha', 'Otro'];
 
 const fmtFechaLarga = (fecha) => {
   if (!fecha) return '';
@@ -263,9 +263,15 @@ export default function ProgramaAjustarDiaModal({
                     {SUSPEND_MOTIVOS.map((m) => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
-                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#991b1b' }}>
-                  Este día quedará sin cosecha y el programa se recalculará automáticamente.
-                </div>
+                {motivo === 'Término cosecha' ? (
+                  <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#92400E' }}>
+                    ⚠️ La vigencia del programa se cortará en esta fecha. Los días posteriores quedarán sin programa.
+                  </div>
+                ) : (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#991b1b' }}>
+                    Este día quedará sin cosecha. El programa se recalculará automáticamente.
+                  </div>
+                )}
               </div>
             )}
 
@@ -276,6 +282,11 @@ export default function ProgramaAjustarDiaModal({
                 <select className="mx-select" required value={motivo} onChange={(e) => setMotivo(e.target.value)}>
                   {ADJUST_MOTIVOS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
+                {motivo === 'Término cosecha' && (
+                  <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: '#92400E', marginTop: 4 }}>
+                    ⚠️ La vigencia del programa se cortará en esta fecha. Los días posteriores quedarán sin programa.
+                  </div>
+                )}
               </div>
             )}
 
@@ -289,13 +300,19 @@ export default function ProgramaAjustarDiaModal({
             <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
             <button
               type="submit"
-              className={`mx-btn ${accion === 'suspender' ? 'mx-btn-danger' : 'mx-btn-primary'}`}
+              className={`mx-btn ${motivo === 'Término cosecha' ? 'mx-btn-danger' : accion === 'suspender' ? 'mx-btn-danger' : 'mx-btn-primary'}`}
               disabled={confirmDisabled}
               title={accion === 'restar' && !puedeDescontar ? 'No hay camiones de este tipo para descontar.' : undefined}
             >
-              {accion === 'sumar' && <><Plus size={16} /> Sumar camión</>}
-              {accion === 'restar' && <><CheckCircle2 size={16} /> Descontar camión</>}
-              {accion === 'suspender' && <><CheckCircle2 size={16} /> Suspender día</>}
+              {motivo === 'Término cosecha' ? (
+                <><CheckCircle2 size={16} /> Cerrar cosecha aquí</>
+              ) : accion === 'sumar' ? (
+                <><Plus size={16} /> Sumar camión</>
+              ) : accion === 'restar' ? (
+                <><CheckCircle2 size={16} /> Descontar camión</>
+              ) : (
+                <><CheckCircle2 size={16} /> Suspender día</>
+              )}
             </button>
           </div>
         </form>
