@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { todayKey } from '../utils/fechasChile';
 import { buildImpactoAjuste, esFechaEnVigencia } from '../utils/programaImpacto';
+import { getProgramVolumeProgress, getEffectiveTonsPerTruck } from '../utils/programaCalculos';
 
 export function useProgramaActions({
   addToast,
@@ -119,6 +120,19 @@ export function useProgramaActions({
     if (!programa?._id) return;
     const base = currentCamiones != null ? Number(currentCamiones) : Number(programa.camionesDefault || 0);
     const nuevo = Math.max(0, base + delta);
+
+    if (delta > 0 && programa.tonsEstimadas) {
+      const tpp = getEffectiveTonsPerTruck(programa);
+      const vol = getProgramVolumeProgress(programa, tpp);
+      if (tpp > 0 && (vol.consumed + tpp) > Number(programa.tonsEstimadas)) {
+        addToast({
+          title: '⚠️ Sobrepaso de biomasa acordada',
+          message: `${programa.proveedorNombre}: quedarían ${Math.round(vol.consumed + tpp)} t programadas vs ${programa.tonsEstimadas} t acordadas.`,
+          type: 'warning',
+        });
+      }
+    }
+
     try {
       await apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
         fecha,

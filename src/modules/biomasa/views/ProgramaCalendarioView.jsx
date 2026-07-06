@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -103,6 +103,18 @@ export default function ProgramaCalendarioView({
       return [d.nombre, prog];
     }).filter(([, prog]) => prog),
   );
+
+  // Mapa id→vol para detectar sobrepaso de biomasa acordada en cualquier programa activo.
+  const overageMap = useMemo(() => {
+    const map = {};
+    Object.entries(weekData).forEach(([id]) => {
+      const prog = programasById.get(id);
+      if (!prog || !prog.tonsEstimadas) return;
+      const vol = getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog));
+      if (vol.isOver) map[id] = vol;
+    });
+    return map;
+  }, [weekData, programasById]);
 
   // Acceso único: abre el modal "Ajustar día" (acción inicial por defecto 'sumar'; dentro
   // el usuario elige Sumar / Descontar / Suspender). Se pasa la composición real del día
@@ -299,7 +311,14 @@ export default function ProgramaCalendarioView({
               return (
                 <div key={id} className="harvest-week-v2-row">
                   <div className={`harvest-week-v2-prov ${getProductClass(data.tipoProducto)} ${programa?.estado === 'pausado' ? 'is-pausado' : ''}`}>
-                    <div className="harvest-week-v2-prov-name">{data.nombre}</div>
+                    <div className="harvest-week-v2-prov-name">
+                      {data.nombre}
+                      {overageMap[id] && (
+                        <span className="wk-overage-badge" title={`Biomasa acordada superada: ${Math.round(overageMap[id].progressRaw)}% programado`}>
+                          ⚠️ {Math.round(overageMap[id].progressRaw)}%
+                        </span>
+                      )}
+                    </div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
                     <div className="harvest-week-v2-prov-centro">{data.centro || '—'}</div>
                     {formatMuestreoResumen(data) ? (
@@ -608,8 +627,8 @@ export default function ProgramaCalendarioView({
                           <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
                         {vol?.estimated > 0 && (
-                          <span className="hds-prov-prog-text">
-                            programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progress)}%
+                          <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
+                            {vol.isOver ? '⚠️ ' : ''}programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
                           </span>
                         )}
                       </div>
@@ -765,8 +784,8 @@ export default function ProgramaCalendarioView({
                           <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
                         {vol?.estimated > 0 && (
-                          <span className="hds-prov-prog-text">
-                            programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progress)}%
+                          <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
+                            {vol.isOver ? '⚠️ ' : ''}programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
                           </span>
                         )}
                       </div>

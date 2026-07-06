@@ -251,12 +251,15 @@ export const getProgramVolumeProgress = (programa, tonsPerTruck = 0, until = new
   }
 
   const consumed = camiones * Number(tonsPerTruck || 0);
-  const progress = estimated > 0 ? Math.min((consumed / estimated) * 100, 100) : 0;
+  const progressRaw = estimated > 0 ? (consumed / estimated) * 100 : 0;
+  const progress = Math.min(progressRaw, 100);
   return {
     estimated,
     consumed,
     balance: estimated ? estimated - consumed : 0,
     progress,
+    progressRaw,
+    isOver: consumed > estimated && estimated > 0,
   };
 };
 
