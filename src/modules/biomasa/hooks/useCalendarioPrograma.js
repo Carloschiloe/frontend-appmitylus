@@ -6,6 +6,7 @@ import {
   isSanitarioRelevant,
 } from '../utils/programaCalculos';
 import { addDaysToKey, dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
+import { esFechaEnVigencia } from '../utils/programaImpacto';
 
 export function useCalendarioPrograma({
   mes,
@@ -246,6 +247,12 @@ export function useCalendarioPrograma({
     programasFiltrados
       .filter((p) => ['activo', 'pausado', 'finalizado'].includes(p.estado))
       .forEach((p) => {
+        // No mostrar filas donde ningún día de la semana cae dentro de la vigencia
+        // del programa y tampoco hay ítems reales en el calendario esta semana.
+        const hasRelevantDay = weekDays.some(
+          (d) => esFechaEnVigencia(p, d) || calData[d]?.items?.some((x) => String(x.programaId) === String(p._id)),
+        );
+        if (!hasRelevantDay) return;
         data[p._id] = {
           nombre: p.proveedorNombre,
           centro: p.centroNombre,
