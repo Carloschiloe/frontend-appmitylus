@@ -112,22 +112,33 @@ export default function TratoFormModal({
               )}
             </div>
 
-            <div className="mx-form-group" style={{ marginTop: 10 }}>
-              <label className="mx-label">Centro de cultivo</label>
-              <select
-                className="mx-select"
-                value={form.centroCodigo || ''}
-                onChange={e => onFormChange({ ...form, centroCodigo: e.target.value })}
-                disabled={loadingCentros}
-              >
-                <option value="">— Sin centro específico —</option>
-                {(centrosProveedor || []).map(c => (
-                  <option key={c._id} value={c.code}>
-                    {c.code}{c.areaPSMB ? ` · ${c.areaPSMB}` : ''}{c.comuna ? ` (${c.comuna})` : ''}
-                  </option>
-                ))}
-              </select>
-              {loadingCentros && <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'block' }}>Cargando centros...</span>}
+            <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'flex-end' }}>
+              <div className="mx-form-group" style={{ flex: 1, margin: 0 }}>
+                <label className="mx-label">Centro de cultivo</label>
+                <select
+                  className="mx-select"
+                  value={form.centroCodigo || ''}
+                  onChange={e => onFormChange({ ...form, centroCodigo: e.target.value })}
+                  disabled={loadingCentros}
+                >
+                  <option value="">— Sin centro —</option>
+                  {(centrosProveedor || []).map(c => (
+                    <option key={c._id} value={c.code}>
+                      {c.code}{c.areaPSMB ? ` · ${c.areaPSMB}` : ''}{c.comuna ? ` (${c.comuna})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {loadingCentros && <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'block' }}>Cargando...</span>}
+              </div>
+              {(() => {
+                const sel = (centrosProveedor || []).find(c => c.code === form.centroCodigo);
+                return sel?.proveedor ? (
+                  <div className="mx-form-group" style={{ flex: 1, margin: 0 }}>
+                    <label className="mx-label">Proveedor del centro</label>
+                    <div className="tratos-centro-proveedor-display">{sel.proveedor}</div>
+                  </div>
+                ) : null;
+              })()}
             </div>
 
             <div className="tratos-form-row" style={{ marginTop: 10 }}>

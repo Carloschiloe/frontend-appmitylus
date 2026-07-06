@@ -133,6 +133,21 @@
   text-align: center;
 }
 
+.tratos-centro-proveedor-display {
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-bg-subtle, #f8fafc);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tratos-centro-code {
   font-family: 'SF Mono', 'Fira Mono', monospace;
   font-size: 11px;
