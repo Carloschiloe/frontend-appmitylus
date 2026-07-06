@@ -239,14 +239,14 @@ export function useProgramaActions({
 
   const handleAplicarSemana = useCallback(async (programa, diasConf) => {
     if (!programa?._id || !diasConf?.length) return;
+    // Secuencial: el backend usa optimistic locking — si se envían en paralelo,
+    // el primero sube la versión y los demás fallan con 409.
     try {
-      await Promise.all(
-        diasConf.map(({ fecha, accion, camiones }) =>
-          apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
-            fecha, accion, camiones, motivo: '', nota: '',
-          }),
-        ),
-      );
+      for (const { fecha, accion, camiones } of diasConf) {
+        await apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
+          fecha, accion, camiones, motivo: '', nota: '',
+        });
+      }
       load();
     } catch (e) {
       addToast({ title: 'Error al planificar semana', message: e.message, type: 'error' });
