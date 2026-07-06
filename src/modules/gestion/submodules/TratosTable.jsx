@@ -47,7 +47,7 @@ const COND_BADGE = {
 };
 
 /** Menú desplegable ⋯ para acciones secundarias */
-function ActionsMenu({ item, onShare, onEdit, onDelete }) {
+function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCondiciones, hasCondiciones }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -69,6 +69,21 @@ function ActionsMenu({ item, onShare, onEdit, onDelete }) {
       </button>
       {open && (
         <div className="tratos-menu-dropdown">
+          <button
+            className="tratos-menu-item"
+            onClick={() => { onViewReport(item); setOpen(false); }}
+          >
+            <FileText size={13} /> Ver informe
+          </button>
+          {hasCondiciones && (
+            <button
+              className="tratos-menu-item"
+              onClick={() => { onViewCondiciones(item); setOpen(false); }}
+            >
+              <ClipboardList size={13} /> Ver condiciones
+            </button>
+          )}
+          <div className="tratos-menu-separator" />
           <button
             className="tratos-menu-item"
             onClick={() => { onEdit(item); setOpen(false); }}
@@ -232,15 +247,6 @@ export default function TratosTable({
                       </td>
                       <td className="tratos-actions-cell" data-label="Acciones">
                         <div className="mx-table-actions-cell tratos-actions">
-                          {condiciones.length > 0 && (
-                            <button
-                              className="mx-action-btn"
-                              title="Ver condiciones"
-                              onClick={() => setCondModal(item)}
-                            >
-                              <ClipboardList size={14} />
-                            </button>
-                          )}
                           {canCreatePrograma && (
                             <button
                               type="button"
@@ -258,18 +264,14 @@ export default function TratosTable({
                               <CalendarCheck size={13} /> Ver programa
                             </Link>
                           )}
-                          <button
-                            className="mx-action-btn tratos-action-primary"
-                            title="Ver informe"
-                            onClick={() => onViewReport(item)}
-                          >
-                            <FileText size={14} />
-                          </button>
                           <ActionsMenu
                             item={item}
                             onShare={onShare}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onViewReport={onViewReport}
+                            onViewCondiciones={setCondModal}
+                            hasCondiciones={condiciones.length > 0}
                           />
                         </div>
                       </td>
