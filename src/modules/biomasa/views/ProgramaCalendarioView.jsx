@@ -420,12 +420,7 @@ export default function ProgramaCalendarioView({
                         ) : isSinPrograma ? (
                           <span className="harvest-week-v2-sinprog">Sin programa</span>
                         ) : isSusp ? (
-                          <>
-                            <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Sin programa'}</div>
-                            {programa && (
-                              <button className="wk-btn wk-btn-react" onClick={() => handleReactivateDay(programa, dia)}>{cell.ajusteMotivo ? '↺ Reactivar' : '+ Activar'}</button>
-                            )}
-                          </>
+                          <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Sin programa'}</div>
                         ) : cell.camiones > 0 || programa ? (
                           <>
                             {cell.camiones > 0 ? (
@@ -931,6 +926,7 @@ export default function ProgramaCalendarioView({
           weekDays={weekDays}
           diasActuales={semanaModal.diasActuales}
           onAplicar={handleAplicarSemana}
+          tiposTransporte={tiposTransporte}
         />
       )}
     </div>

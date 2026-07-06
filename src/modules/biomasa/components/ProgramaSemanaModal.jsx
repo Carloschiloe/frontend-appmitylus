@@ -5,14 +5,24 @@ import { fmtTonsInt } from '../utils/programaCalculos';
 
 const DAY_LABELS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
-function calcTonsPerTruck(programa) {
+function defaultTipoId(programa, tiposTransporte) {
+  const stored = programa?.transportes?.[0]?.tipoTransporteId;
+  if (stored && tiposTransporte?.some(t => String(t._id) === String(stored))) return String(stored);
+  return tiposTransporte?.[0]?._id ? String(tiposTransporte[0]._id) : '';
+}
+
+function tpcFromTipo(tipo) {
+  if (!tipo) return 0;
+  return (Number(tipo.maxisPorUnidad || 0) * Number(tipo.kgPorMaxiRef || 0)) / 1000;
+}
+
+function fallbackTpc(programa) {
   if (Array.isArray(programa?.transportes) && programa.transportes.length) {
     const totalCam = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0), 0);
     const totalTons = programa.transportes.reduce((s, t) => s + (Number(t.cantidadDia) || 0) * (Number(t.toneladasPorCamion) || 0), 0);
     if (totalCam > 0 && totalTons > 0) return totalTons / totalCam;
   }
-  if (Number(programa?.toneladasPorCamion) > 0) return Number(programa.toneladasPorCamion);
-  return 11;
+  return Number(programa?.toneladasPorCamion) > 0 ? Number(programa.toneladasPorCamion) : 10;
 }
 
 export default function ProgramaSemanaModal({
@@ -22,9 +32,11 @@ export default function ProgramaSemanaModal({
   weekDays,
   diasActuales,
   onAplicar,
+  tiposTransporte = [],
 }) {
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [camiones, setCamiones] = useState(1);
+  const [tipoId, setTipoId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,10 +44,14 @@ export default function ProgramaSemanaModal({
     const presel = new Set(weekDays.filter((d) => (diasActuales?.[d] || 0) > 0));
     setSeleccionados(presel);
     setCamiones(programa.camionesDefault || programa.camionesXDia || 1);
+    setTipoId(defaultTipoId(programa, tiposTransporte));
     setSubmitting(false);
   }, [show, programa?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!show || !programa) return null;
+
+  const selectedTipo = tiposTransporte.find(t => String(t._id) === tipoId) || null;
+  const tonsPerTruck = selectedTipo ? tpcFromTipo(selectedTipo) : fallbackTpc(programa);
 
   const toggleDia = (day) => {
     if (!esFechaEnVigencia(programa, day)) return;
@@ -48,7 +64,6 @@ export default function ProgramaSemanaModal({
   };
 
   const diasEfectivos = seleccionados.size;
-  const tonsPerTruck = calcTonsPerTruck(programa);
   const tonsTotal = camiones * tonsPerTruck * diasEfectivos;
 
   const handleSubmit = async (e) => {
@@ -59,6 +74,11 @@ export default function ProgramaSemanaModal({
         fecha: d,
         accion: seleccionados.has(d) ? 'set_total' : 'suspender_dia',
         camiones: seleccionados.has(d) ? Math.max(1, camiones) : 0,
+        ...(selectedTipo && seleccionados.has(d) && {
+          tipoTransporteId: selectedTipo._id,
+          tipoTransporteNombre: selectedTipo.nombre || '',
+          toneladasPorCamion: tonsPerTruck,
+        }),
       }));
     setSubmitting(true);
     try {
@@ -105,6 +125,27 @@ export default function ProgramaSemanaModal({
                 );
               })}
             </div>
+
+            {tiposTransporte.length > 0 && (
+              <>
+                <div className="semana-modal-section-label" style={{ marginTop: 16 }}>Tipo de camión</div>
+                <select
+                  className="mx-select"
+                  style={{ width: '100%', marginTop: 6 }}
+                  value={tipoId}
+                  onChange={e => setTipoId(e.target.value)}
+                >
+                  {tiposTransporte.map(t => {
+                    const tpc = tpcFromTipo(t);
+                    return (
+                      <option key={t._id} value={String(t._id)}>
+                        {t.nombre}{tpc > 0 ? ` — ${tpc} t/camión` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </>
+            )}
 
             <div className="semana-modal-section-label" style={{ marginTop: 16 }}>Camiones por día</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>

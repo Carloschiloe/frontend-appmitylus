@@ -257,9 +257,10 @@ export function useProgramaActions({
     // Secuencial: el backend usa optimistic locking — si se envían en paralelo,
     // el primero sube la versión y los demás fallan con 409.
     try {
-      for (const { fecha, accion, camiones } of diasConf) {
+      for (const { fecha, accion, camiones, tipoTransporteId, tipoTransporteNombre, toneladasPorCamion } of diasConf) {
         await apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
           fecha, accion, camiones, motivo: '', nota: '',
+          ...(tipoTransporteId && { tipoTransporteId, tipoTransporteNombre, toneladasPorCamion }),
         });
       }
       load();
