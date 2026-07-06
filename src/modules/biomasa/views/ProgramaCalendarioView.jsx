@@ -212,7 +212,7 @@ export default function ProgramaCalendarioView({
                   <CalendarIcon size={14} className="harvest-week-title-icon" />
                   <div>
                     <div className="harvest-calendar-title">
-                      SEMANA {getISOWeek(weekDays[0])} · {new Date(weekDays[0] + 'T12:00:00Z').toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())}
+                      SEMANA {getISOWeek(weekDays[0])}
                     </div>
                     <div className="harvest-week-subtitle">
                       {new Date(weekDays[0] + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })} — {new Date(weekDays[6] + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' })}
