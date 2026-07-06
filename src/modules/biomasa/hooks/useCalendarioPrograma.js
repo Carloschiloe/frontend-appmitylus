@@ -37,9 +37,9 @@ export function useCalendarioPrograma({
   const weekDays = useMemo(() => {
     const today = todayKey();
     const dow = dayOfWeekFromKey(today); // 0=domingo … 6=sábado
-    const diffToMonday = dow === 0 ? -6 : 1 - dow; // domingo vuelve al lunes anterior
-    const monday = addDaysToKey(today, diffToMonday + currentWeekOffset * 7);
-    return Array.from({ length: 7 }, (_, i) => addDaysToKey(monday, i));
+    const diffToSunday = -dow; // domingo=0 → no se mueve; resto → retrocede al domingo anterior
+    const sunday = addDaysToKey(today, diffToSunday + currentWeekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => addDaysToKey(sunday, i));
   }, [currentWeekOffset]);
 
   // ── Índice de programas ───────────────────────────────────────────────────────
