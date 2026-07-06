@@ -54,11 +54,17 @@ export default function DisponibilidadTratoModal({ open, item, onClose, onSucces
   }, [open, centrosRaw, contactosRaw]);
 
   const centrosProveedor = useMemo(() => {
-    const provKey = selectedProvider?.proveedorKey || '';
-    if (!provKey) return [];
     const all = Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []);
-    return all.filter(c => c.proveedorKey === provKey);
-  }, [centrosRaw, selectedProvider]);
+    if (!all.length) return [];
+    const provKey = String(selectedProvider?.proveedorKey || '').toLowerCase();
+    // Para comercializadoras el centro pertenece al productor real (distinto proveedorKey),
+    // por eso incluimos también el centro específico del item de disponibilidad por su código.
+    const centroCodigoItem = String(item?.centroCodigo || '');
+    return all.filter(c =>
+      (provKey && String(c.proveedorKey || '').toLowerCase() === provKey) ||
+      (centroCodigoItem && String(c.code || '') === centroCodigoItem)
+    );
+  }, [centrosRaw, selectedProvider, item]);
 
   const loadingProviders = loadingCentros || loadingContactos;
 
@@ -95,6 +101,7 @@ export default function DisponibilidadTratoModal({ open, item, onClose, onSucces
       responsableNombre: currentResponsable,
       tonsAcordadas: String(item.tons || item.tonsDisponible || ''),
       fechaInicioCosecha: item.mesKey ? `${item.mesKey}-01` : '',
+      centroCodigo: item.centroCodigo || '',
     });
   }, [open, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
