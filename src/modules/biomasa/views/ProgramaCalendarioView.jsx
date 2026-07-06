@@ -590,13 +590,6 @@ export default function ProgramaCalendarioView({
                     const totalT = allWeekProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalT > 0 ? Math.round(provider.tons / totalT * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;
-                    const prog = providerProgramMap[provider.nombre];
-                    const weekEnd = weekDays[weekDays.length - 1];
-                    const vol = prog ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(weekEnd + 'T23:59:59Z')) : null;
-                    const barPct = vol?.estimated > 0 ? vol.progress : pct;
-                    const barColor = vol?.estimated > 0
-                      ? (vol.progress >= 90 ? '#EF4444' : vol.progress >= 65 ? '#F59E0B' : '#3B82F6')
-                      : '#3B82F6';
                     return (
                       <div
                         key={provider.nombre}
@@ -604,21 +597,12 @@ export default function ProgramaCalendarioView({
                         onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
                         title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
                       >
-                        <div className="hds-prov-card-name">{provider.nombre}</div>
-                        <div className="hds-prov-card-metrics">
-                          <div className="hds-prov-metric">
-                            <strong>{fmtNumber(provider.tons, 0)} t <em>{pct}%</em></strong>
-                            <span>esta semana</span>
-                          </div>
-                          {vol?.estimated > 0 && (
-                            <div className="hds-prov-metric hds-prov-metric--end">
-                              <strong>{fmtTonsInt(vol.consumed)}<small>/{fmtTonsInt(vol.estimated)}</small></strong>
-                              <span>programado · {Math.round(vol.progress)}%</span>
-                            </div>
-                          )}
+                        <div className="hds-prov-card-top">
+                          <span className="hds-prov-card-name">{provider.nombre}</span>
+                          <span className="hds-prov-card-val">{fmtNumber(provider.tons, 0)} t · {pct}%</span>
                         </div>
                         <div className="hds-prov-prog-bar">
-                          <div className="hds-prov-prog-fill" style={{ width: `${barPct}%`, background: barColor }} />
+                          <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -750,15 +734,9 @@ export default function ProgramaCalendarioView({
                     const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;
-                    const prog = providerProgramMap[provider.nombre];
-                    const lastDayOfMonth = mes && monthData?.days?.length
-                      ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
-                      : null;
-                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
-                    const barPct = vol?.estimated > 0 ? vol.progress : pct;
-                    const barColor = vol?.estimated > 0
-                      ? (vol.progress >= 90 ? '#EF4444' : vol.progress >= 65 ? '#F59E0B' : '#3B82F6')
-                      : '#3B82F6';
+                    const metricLabel = calendarMetric === 'camiones'
+                      ? `${provider.camiones} cam · ${pct}%`
+                      : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
                     return (
                       <div
                         key={provider.nombre}
@@ -766,26 +744,12 @@ export default function ProgramaCalendarioView({
                         onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
                         title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
                       >
-                        <div className="hds-prov-card-name">{provider.nombre}</div>
-                        <div className="hds-prov-card-metrics">
-                          <div className="hds-prov-metric">
-                            <strong>
-                              {calendarMetric === 'camiones'
-                                ? `${provider.camiones} cam`
-                                : `${fmtNumber(provider.tons, 0)} t`}
-                              {' '}<em>{pct}%</em>
-                            </strong>
-                            <span>este mes</span>
-                          </div>
-                          {vol?.estimated > 0 && (
-                            <div className="hds-prov-metric hds-prov-metric--end">
-                              <strong>{fmtTonsInt(vol.consumed)}<small>/{fmtTonsInt(vol.estimated)}</small></strong>
-                              <span>programado · {Math.round(vol.progress)}%</span>
-                            </div>
-                          )}
+                        <div className="hds-prov-card-top">
+                          <span className="hds-prov-card-name">{provider.nombre}</span>
+                          <span className="hds-prov-card-val">{metricLabel}</span>
                         </div>
                         <div className="hds-prov-prog-bar">
-                          <div className="hds-prov-prog-fill" style={{ width: `${barPct}%`, background: barColor }} />
+                          <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
