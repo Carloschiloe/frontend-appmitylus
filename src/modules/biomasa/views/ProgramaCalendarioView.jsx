@@ -207,6 +207,54 @@ export default function ProgramaCalendarioView({
           </div>
         </div>
 
+        {/* Chips de navegación rápida */}
+        {calView === 'week' && weekDays.length > 0 && (
+          <div className="cal-quick-nav">
+            {[-1, 0, 1, 2].map(absOffset => {
+              const diff = (absOffset - currentWeekOffset) * 7;
+              const d = new Date(weekDays[0] + 'T12:00:00Z');
+              d.setUTCDate(d.getUTCDate() + diff);
+              const endD = new Date(d);
+              endD.setUTCDate(endD.getUTCDate() + 6);
+              const wNum = getISOWeek(d.toISOString().slice(0, 10));
+              const startLbl = d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+              const endLbl = endD.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+              const isActive = absOffset === currentWeekOffset;
+              const isToday = absOffset === 0;
+              return (
+                <button
+                  key={absOffset}
+                  className={`cal-nav-chip${isActive ? ' is-active' : ''}${isToday && !isActive ? ' is-today-ref' : ''}`}
+                  onClick={() => setCurrentWeekOffset(absOffset)}
+                >
+                  <span className="cal-nav-chip-wk">Sem. {wNum}</span>
+                  <span className="cal-nav-chip-range">{startLbl} – {endLbl}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {calView === 'month' && (
+          <div className="cal-quick-nav">
+            {[-1, 0, 1, 2].map(n => {
+              const today = new Date();
+              const d = new Date(today.getFullYear(), today.getMonth() + n, 1);
+              const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              const isActive = mk === mes;
+              const isToday = n === 0;
+              return (
+                <button
+                  key={n}
+                  className={`cal-nav-chip${isActive ? ' is-active' : ''}${isToday && !isActive ? ' is-today-ref' : ''}`}
+                  onClick={() => setMes(mk)}
+                >
+                  {mesLabel(mk, false)}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {calView === 'month' ? (
           <>
           <div className="cal-month-grid">
