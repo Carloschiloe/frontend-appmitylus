@@ -288,6 +288,7 @@ export default function Biomasa() {
     handleDeleteNotaDia,
     handleOpenAdjustModal,
     handleAplicarAjusteDia,
+    handleAplicarSemana,
   } = useProgramaActions({
     addToast,
     load,
@@ -445,6 +446,7 @@ export default function Biomasa() {
               getProgramCamionesStatus={getProgramCamionesStatus}
               onExportarPrograma={handleExportarPrograma}
               exportandoPrograma={exportandoPrograma}
+              handleAplicarSemana={handleAplicarSemana}
             />
           )}
           {isMuestreosView && (

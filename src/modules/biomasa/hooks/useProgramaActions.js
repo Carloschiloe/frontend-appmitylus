@@ -237,6 +237,23 @@ export function useProgramaActions({
     }
   }, [adjustProgram, addToast, load, setShowAdjustModal, setAdjustProgram, setSelectedDay, setImpactoAjuste]);
 
+  const handleAplicarSemana = useCallback(async (programa, diasConf) => {
+    if (!programa?._id || !diasConf?.length) return;
+    try {
+      await Promise.all(
+        diasConf.map(({ fecha, accion, camiones }) =>
+          apiClient.post(`/programa-cosecha/${programa._id}/ajuste-diario`, {
+            fecha, accion, camiones, motivo: '', nota: '',
+          }),
+        ),
+      );
+      load();
+    } catch (e) {
+      addToast({ title: 'Error al planificar semana', message: e.message, type: 'error' });
+      throw e;
+    }
+  }, [addToast, load]);
+
   return {
     handleStatusChange,
     handlePauseConfirm,
@@ -252,5 +269,6 @@ export function useProgramaActions({
     handleDeleteNotaDia,
     handleOpenAdjustModal,
     handleAplicarAjusteDia,
+    handleAplicarSemana,
   };
 }

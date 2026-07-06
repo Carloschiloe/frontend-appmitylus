@@ -60,6 +60,7 @@ export default function ProgramaCosechaView({
   getProgramCamionesStatus,
   onExportarPrograma,
   exportandoPrograma,
+  handleAplicarSemana,
 }) {
   return (
     <div className="program-view">
@@ -129,6 +130,7 @@ export default function ProgramaCosechaView({
           setShowAllProviders={setShowAllProviders}
           allMonthProducts={allMonthProducts}
           handleOpenAdjustModal={handleOpenAdjustModal}
+          handleAplicarSemana={handleAplicarSemana}
         />
       )}
 

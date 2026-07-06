@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Activity,
   Calendar as CalendarIcon,
+  CalendarDays,
   Maximize2,
   Minimize2,
   Info,
@@ -12,6 +13,7 @@ import {
   SlidersHorizontal,
   MapPin,
 } from 'lucide-react';
+import ProgramaSemanaModal from '../components/ProgramaSemanaModal';
 import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
 
 const CAL_VIEW_LABELS = { month: 'Mes', week: 'Semana' };
@@ -64,11 +66,13 @@ export default function ProgramaCalendarioView({
   showAllProviders, setShowAllProviders,
   allMonthProducts,
   handleOpenAdjustModal,
+  handleAplicarSemana,
 }) {
   const { addToast } = useToast();
   const [truckPopover, setTruckPopover] = useState(null);
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
   const [mapProvider, setMapProvider] = useState(null);
+  const [semanaModal, setSemanaModal] = useState(null);
   const calViewDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -308,7 +312,22 @@ export default function ProgramaCalendarioView({
                         {programa.vigenciaHasta && <span className="wk-prov-pausa-desde">hasta {new Date(programa.vigenciaHasta).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', timeZone: 'America/Santiago' })}</span>}
                       </div>
                     ) : (
-                      <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
+                      <>
+                        <span className={`wk-product-chip ${getProductClass(data.tipoProducto)}`}>{getTipoProductoLabel(data.tipoProducto)}</span>
+                        {handleAplicarSemana && (
+                          <button
+                            type="button"
+                            className="wk-btn-semana"
+                            title="Planificar días de esta semana"
+                            onClick={() => setSemanaModal({
+                              programa,
+                              diasActuales: Object.fromEntries(weekDays.map((d, i) => [d, data.dias[i]?.camiones || 0])),
+                            })}
+                          >
+                            <CalendarDays size={11} /> Planificar semana
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                   {data.dias.map((cell, i) => {
@@ -816,6 +835,16 @@ export default function ProgramaCalendarioView({
         <ProviderMapModal
           provider={mapProvider}
           onClose={() => setMapProvider(null)}
+        />
+      )}
+      {semanaModal && (
+        <ProgramaSemanaModal
+          show={true}
+          onClose={() => setSemanaModal(null)}
+          programa={semanaModal.programa}
+          weekDays={weekDays}
+          diasActuales={semanaModal.diasActuales}
+          onAplicar={handleAplicarSemana}
         />
       )}
     </div>
