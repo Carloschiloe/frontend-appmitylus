@@ -8079,3 +8079,87 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-radius: 2px;
   transition: width 0.4s ease;
 }
+
+/* ── Provider mini-cards (panel derecho semanal + mensual) ── */
+.hds-prov-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: background 0.13s, border-color 0.13s, box-shadow 0.13s;
+}
+.hds-prov-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.hds-prov-card--active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+.hds-prov-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hds-prov-card--active .hds-prov-card-name {
+  color: #1d4ed8;
+}
+.hds-prov-card-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 6px;
+}
+.hds-prov-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hds-prov-metric--end {
+  text-align: right;
+}
+.hds-prov-metric strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+.hds-prov-metric strong em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+.hds-prov-metric strong small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #64748b;
+}
+.hds-prov-metric span {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.hds-prov-prog-bar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.hds-prov-prog-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
