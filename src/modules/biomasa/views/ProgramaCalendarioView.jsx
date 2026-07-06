@@ -110,7 +110,7 @@ export default function ProgramaCalendarioView({
     Object.entries(weekData).forEach(([id]) => {
       const prog = programasById.get(id);
       if (!prog || !prog.tonsEstimadas) return;
-      const vol = getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog));
+      const vol = getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte));
       if (vol.isOver) map[id] = vol;
     });
     return map;
@@ -611,7 +611,7 @@ export default function ProgramaCalendarioView({
                     const isActive = filterProveedor === provider.nombre;
                     const prog = providerProgramMap[provider.nombre];
                     const weekEnd = weekDays[weekDays.length - 1];
-                    const vol = prog ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(weekEnd + 'T23:59:59Z')) : null;
+                    const vol = prog ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(weekEnd + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}
@@ -768,7 +768,7 @@ export default function ProgramaCalendarioView({
                     const lastDayOfMonth = mes && monthData?.days?.length
                       ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
                       : null;
-                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
+                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
                     return (
                       <div
                         key={provider.nombre}

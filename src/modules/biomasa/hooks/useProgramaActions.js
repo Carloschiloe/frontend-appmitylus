@@ -7,6 +7,7 @@ import { getProgramVolumeProgress, getEffectiveTonsPerTruck } from '../utils/pro
 export function useProgramaActions({
   addToast,
   load,
+  tiposTransporte,
   // State values
   confirmDelete,
   pauseModal,
@@ -122,7 +123,7 @@ export function useProgramaActions({
     const nuevo = Math.max(0, base + delta);
 
     if (delta > 0 && programa.tonsEstimadas) {
-      const tpp = getEffectiveTonsPerTruck(programa);
+      const tpp = getEffectiveTonsPerTruck(programa, 10, tiposTransporte);
       const vol = getProgramVolumeProgress(programa, tpp);
       if (tpp > 0 && (vol.consumed + tpp) > Number(programa.tonsEstimadas)) {
         addToast({

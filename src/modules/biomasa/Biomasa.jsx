@@ -318,6 +318,7 @@ export default function Biomasa() {
     setShowAdjustModal,
     setSelectedDay,
     setImpactoAjuste,
+    tiposTransporte,
   });
 
   const {

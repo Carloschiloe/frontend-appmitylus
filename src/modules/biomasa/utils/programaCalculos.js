@@ -294,7 +294,28 @@ export const calcTerminoPrograma = (vigenciaDesde, tonsEstimadas, transportes, d
 
 // ── Tons por camión efectivo ──────────────────────────────────────────────────
 
-export const getEffectiveTonsPerTruck = (programa, fallback = 11) => {
+export const getEffectiveTonsPerTruck = (programa, fallback = 10, tiposTransporte = []) => {
+  const transportes = programa?.transportes;
+
+  // Prioridad 1: valor vivo del maestro de tipos de transporte
+  if (Array.isArray(transportes) && transportes.length > 0 && Array.isArray(tiposTransporte) && tiposTransporte.length > 0) {
+    const tipoId = transportes[0]?.tipoTransporteId;
+    if (tipoId) {
+      const master = tiposTransporte.find((t) => String(t._id) === String(tipoId));
+      if (master) {
+        const tpc = (Number(master.maxisPorUnidad || 0) * Number(master.kgPorMaxiRef || 0)) / 1000;
+        if (tpc > 0) return tpc;
+      }
+    }
+  }
+
+  // Prioridad 2: valor guardado en el snapshot del programa
+  if (Array.isArray(transportes) && transportes.length > 0) {
+    const tpc = Number(transportes[0]?.toneladasPorCamion || 0);
+    if (tpc > 0) return tpc;
+  }
+
+  // Prioridad 3: derivado de tonsEstimadas (último recurso, impreciso)
   const tonsEst = Number(programa?.tonsEstimadas || 0);
   const camiones = Number(programa?.camionesDefault || 0);
   if (!tonsEst || !camiones) return fallback;
