@@ -231,20 +231,22 @@ export default function QuickCaptureModal() {
   useEffect(() => {
     function handleOpenWithContext(event) {
       const detail = event.detail || {};
-      if (!detail.proveedorKey) return;
-      const preselected = {
-        id: `prov-${detail.proveedorKey}`,
-        contactoId: detail.contactoId || '',
-        proveedorKey: detail.proveedorKey,
-        proveedorNombre: detail.proveedorNombre || '',
-        contactoNombre: detail.contactoNombre || '',
-        contactoTelefono: detail.contactoTelefono || '',
-        contactoEmail: detail.contactoEmail || '',
-        comuna: detail.comuna || '',
-        centros: detail.centros || 0,
-      };
-      setSelected(preselected);
-      setSearch(preselected.proveedorNombre);
+      if (detail.proveedorKey) {
+        // Abierto desde un contexto con proveedor preseleccionado
+        const preselected = {
+          id: `prov-${detail.proveedorKey}`,
+          contactoId: detail.contactoId || '',
+          proveedorKey: detail.proveedorKey,
+          proveedorNombre: detail.proveedorNombre || '',
+          contactoNombre: detail.contactoNombre || '',
+          contactoTelefono: detail.contactoTelefono || '',
+          contactoEmail: detail.contactoEmail || '',
+          comuna: detail.comuna || '',
+          centros: detail.centros || 0,
+        };
+        setSelected(preselected);
+        setSearch(preselected.proveedorNombre);
+      }
       setOpen(true);
     }
     window.addEventListener('mitynex:quick-capture-open', handleOpenWithContext);
