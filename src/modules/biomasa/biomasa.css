@@ -8151,58 +8151,33 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* Badge de sobrepaso en la fila del proveedor (grilla semanal) */
-/* ── Chips de navegación rápida (semanal + mensual) ── */
-.cal-quick-nav {
+/* ── Chips de período inline (al lado del selector Vista) ── */
+.cal-period-chips {
   display: flex;
-  gap: 6px;
-  padding: 7px 16px 8px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #fff;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cal-quick-nav::-webkit-scrollbar { display: none; }
-.cal-nav-chip {
-  display: flex;
-  flex-direction: column;
+  gap: 4px;
   align-items: center;
-  gap: 1px;
-  padding: 5px 14px;
-  border-radius: 20px;
+}
+.cal-period-chip {
+  padding: 4px 11px;
+  border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
   color: #64748b;
-  background: #f8fafc;
+  background: #f1f5f9;
   border: 1px solid #e2e8f0;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
-  line-height: 1.2;
 }
-.cal-nav-chip:hover {
-  background: #f1f5f9;
+.cal-period-chip:hover {
+  background: #e2e8f0;
   color: #334155;
-  border-color: #cbd5e1;
 }
-.cal-nav-chip.is-active {
+.cal-period-chip.is-active {
   background: #2563eb;
   color: #fff;
   border-color: #2563eb;
 }
-.cal-nav-chip.is-today-ref {
-  border-color: #93c5fd;
-  color: #1d4ed8;
-}
-.cal-nav-chip-wk {
-  font-size: 12px;
-  font-weight: 600;
-}
-.cal-nav-chip-range {
-  font-size: 10px;
-  font-weight: 400;
-  opacity: 0.8;
-}
-.cal-nav-chip.is-active .cal-nav-chip-range { opacity: 0.85; }
 
 .wk-overage-badge {
   display: inline-flex;
