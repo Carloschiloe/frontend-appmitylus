@@ -13,9 +13,6 @@ export function useProgramaActions({
   pauseModal,
   pauseForm,
   adjustProgram,
-  segNota,
-  segEstado,
-  segProg,
   finalizingProgram,
   finalizeForm,
   // State setters
@@ -23,9 +20,6 @@ export function useProgramaActions({
   setPauseModal,
   setSuspendPopover,
   setNotaPopover,
-  setShowSegModal,
-  setSegNota,
-  setSegEstado,
   setFinalizingProgram,
   setFinalizeForm,
   setShowFinalizeModal,
@@ -75,21 +69,6 @@ export function useProgramaActions({
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
   }, [confirmDelete, addToast, load]);
-
-  const handleSegSave = useCallback(async (e) => {
-    e.preventDefault();
-    if (!segNota.trim() || !segEstado) return;
-    try {
-      await apiClient.post(`/programa-cosecha/${segProg._id}/seguimiento`, { estado: segEstado, nota: segNota });
-      addToast({ title: 'Éxito', message: 'Novedad registrada con éxito', type: 'success' });
-      setShowSegModal(false);
-      setSegNota('');
-      setSegEstado('');
-      load();
-    } catch (e) {
-      addToast({ title: 'Error', message: e.message, type: 'error' });
-    }
-  }, [segNota, segEstado, segProg, addToast, load]);
 
   const handleOpenFinalizeModal = useCallback((programa) => {
     setFinalizingProgram(programa);
@@ -274,7 +253,6 @@ export function useProgramaActions({
     handleStatusChange,
     handlePauseConfirm,
     handleDelete,
-    handleSegSave,
     handleOpenFinalizeModal,
     handleFinalizarConfirm,
     handleQuickAdjust,

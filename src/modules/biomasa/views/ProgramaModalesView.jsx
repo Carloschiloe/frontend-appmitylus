@@ -15,11 +15,6 @@ export default function ProgramaModalesView({
   adjustProgram, adjustForm,
   handleAplicarAjusteDia,
   impactoAjuste, setImpactoAjuste,
-  // SegModal
-  showSegModal, setShowSegModal,
-  segNota, setSegNota,
-  segEstado, setSegEstado,
-  handleSegSave,
   // ProgramaFormModal + ConfirmModal (estado compartido)
   showModal, setShowModal,
   showConfirm, setShowConfirm,
@@ -136,44 +131,6 @@ export default function ProgramaModalesView({
         onAplicar={handleAplicarAjusteDia}
       />
       <ProgramaImpactoModal impacto={impactoAjuste} onClose={() => setImpactoAjuste(null)} />
-
-      {/* ── MODAL SEGUIMIENTO / NOVEDAD ── */}
-      {showSegModal && (
-        <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '500px' }}>
-            <div className="mx-modal-header">
-              <h2>Registrar Novedad</h2>
-              <button className="mx-btn-icon" onClick={() => setShowSegModal(false)}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleSegSave} className="mx-form">
-              <div className="mx-modal-body">
-                <div className="mx-form-group">
-                  <label className="mx-label">Estado de Cosecha</label>
-                  <select className="mx-select" value={segEstado} required
-                    onChange={e => setSegEstado(e.target.value)}>
-                    <option value="">Seleccionar</option>
-                    <option value="en_plan">En plan</option>
-                    <option value="con_retrasos">Con retrasos</option>
-                    <option value="detenido">Detenido</option>
-                  </select>
-                </div>
-                <div className="mx-form-group">
-                  <label className="mx-label">Nota / Observación de Cosecha</label>
-                  <textarea className="mx-textarea" value={segNota} required
-                    placeholder="Describe lo ocurrido (ej: retraso por clima, cambio de logística...)"
-                    onChange={e => setSegNota(e.target.value)} />
-                </div>
-              </div>
-              <div className="mx-modal-footer">
-                <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowSegModal(false)}>Cancelar</button>
-                <button type="submit" className="mx-btn mx-btn-primary">
-                  <CheckCircle2 size={18} /> Registrar Novedad
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── MODAL PROGRAMA (crear / editar) ── */}
       {showModal && (

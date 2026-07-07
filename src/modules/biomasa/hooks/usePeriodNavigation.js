@@ -8,7 +8,6 @@ function stepMes(current, direction) {
 
 export function usePeriodNavigation({ setMes }) {
   const [programPeriod, setProgramPeriod] = useState('month');
-  const [followupPeriod, setFollowupPeriod] = useState('week');
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
 
   const moveProgramPeriod = useCallback((direction) => {
@@ -19,19 +18,9 @@ export function usePeriodNavigation({ setMes }) {
     setMes((prev) => stepMes(prev, direction));
   }, [programPeriod, setMes]);
 
-  const moveFollowupPeriod = useCallback((direction) => {
-    if (followupPeriod === 'week') {
-      setCurrentWeekOffset((o) => o + direction);
-      return;
-    }
-    setMes((prev) => stepMes(prev, direction));
-  }, [followupPeriod, setMes]);
-
   return {
     programPeriod, setProgramPeriod,
-    followupPeriod, setFollowupPeriod,
     currentWeekOffset, setCurrentWeekOffset,
     moveProgramPeriod,
-    moveFollowupPeriod,
   };
 }

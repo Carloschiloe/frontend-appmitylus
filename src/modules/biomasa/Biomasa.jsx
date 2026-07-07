@@ -3,7 +3,6 @@ import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import {
   Plus,
-  Activity,
   LayoutGrid,
   List as ListIcon,
 } from 'lucide-react';
@@ -88,16 +87,10 @@ export default function Biomasa() {
   const [finalizeForm, setFinalizeForm] = useState({ motivoCierre: '', nota: '', fechaCierre: todayKey() });
   const [showContinuityModal, setShowContinuityModal] = useState(false);
   const [continuitySource, setContinuitySource] = useState(null);
-  const [showSegModal, setShowSegModal] = useState(false);
-  const [segProg, setSegProg] = useState(null);
-  const [segNota, setSegNota] = useState('');
-  const [segEstado, setSegEstado] = useState('');
   const {
     programPeriod, setProgramPeriod,
-    followupPeriod, setFollowupPeriod,
     currentWeekOffset, setCurrentWeekOffset,
     moveProgramPeriod,
-    moveFollowupPeriod,
   } = usePeriodNavigation({ setMes });
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustProgram, setAdjustProgram] = useState(null);
@@ -272,7 +265,6 @@ export default function Biomasa() {
     handleStatusChange,
     handlePauseConfirm,
     handleDelete,
-    handleSegSave,
     handleOpenFinalizeModal,
     handleFinalizarConfirm,
     handleQuickAdjust,
@@ -291,18 +283,12 @@ export default function Biomasa() {
     pauseModal,
     pauseForm,
     adjustProgram,
-    segNota,
-    segEstado,
-    segProg,
     finalizingProgram,
     finalizeForm,
     setConfirmDelete,
     setPauseModal,
     setSuspendPopover,
     setNotaPopover,
-    setShowSegModal,
-    setSegNota,
-    setSegEstado,
     setFinalizingProgram,
     setFinalizeForm,
     setShowFinalizeModal,
@@ -318,13 +304,8 @@ export default function Biomasa() {
 
   const {
     programasPeriodo,
-    recentDailyAdjustments,
-    followupPrograms,
-    followupSummary,
-    getLatestProgramNovelty,
-    getTodayProgramCamiones,
     getProgramCamionesStatus,
-  } = useBiomasaComputed({ programas, calData, weekDays, mes, programPeriod, followupPeriod, enrichCalendarItem });
+  } = useBiomasaComputed({ programas, calData, weekDays, mes, programPeriod, enrichCalendarItem });
 
   if (!isStatusView && !isTratosView && !isProgramView && !isMuestreosView) return <Navigate to="/biomasa/status" replace />;
 
@@ -343,7 +324,6 @@ export default function Biomasa() {
           <div className="prog-sub-nav" data-tour="programa-vistas">
             <button className={`prog-sub-nav-btn${progSubTab === 'programa' ? ' active' : ''}`} onClick={() => setProgSubTab('programa')}><ListIcon size={13} /> Programa</button>
             <button className={`prog-sub-nav-btn${progSubTab === 'calendario' ? ' active' : ''}`} onClick={() => setProgSubTab('calendario')}><LayoutGrid size={13} /> Calendario</button>
-            <button className={`prog-sub-nav-btn${progSubTab === 'seguimiento' ? ' active' : ''}`} onClick={() => setProgSubTab('seguimiento')}><Activity size={13} /> Seguimiento</button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HelpTourButton tourId="biomasa" />
@@ -370,8 +350,6 @@ export default function Biomasa() {
               setProgSubTab={setProgSubTab}
               programPeriod={programPeriod}
               setProgramPeriod={setProgramPeriod}
-              followupPeriod={followupPeriod}
-              setFollowupPeriod={setFollowupPeriod}
               calView={calView}
               setCalView={setCalView}
               mes={mes}
@@ -405,9 +383,6 @@ export default function Biomasa() {
               filteredProgramIds={filteredProgramIds}
               calData={calData}
               notasDia={notasDia}
-              followupPrograms={followupPrograms}
-              recentDailyAdjustments={recentDailyAdjustments}
-              followupSummary={followupSummary}
               tratosAcordados={tratosAcordados}
               handleOpenModal={handleOpenModal}
               handleOpenAdjustModal={handleOpenAdjustModal}
@@ -418,15 +393,10 @@ export default function Biomasa() {
               handleCalendarBoardToggle={handleCalendarBoardToggle}
               setSuspendPopover={setSuspendPopover}
               setNotaPopover={setNotaPopover}
-              setSegProg={setSegProg}
-              setShowSegModal={setShowSegModal}
               setPauseModal={setPauseModal}
               setPauseForm={setPauseForm}
               setConfirmDelete={setConfirmDelete}
               moveProgramPeriod={moveProgramPeriod}
-              moveFollowupPeriod={moveFollowupPeriod}
-              getTodayProgramCamiones={getTodayProgramCamiones}
-              getLatestProgramNovelty={getLatestProgramNovelty}
               enrichCalendarItem={enrichCalendarItem}
               tonsPerTruck={tonsPerTruck}
               tiposTransporte={tiposTransporte}
@@ -462,13 +432,6 @@ export default function Biomasa() {
         handleAplicarAjusteDia={handleAplicarAjusteDia}
         impactoAjuste={impactoAjuste}
         setImpactoAjuste={setImpactoAjuste}
-        showSegModal={showSegModal}
-        setShowSegModal={setShowSegModal}
-        segNota={segNota}
-        setSegNota={setSegNota}
-        segEstado={segEstado}
-        setSegEstado={setSegEstado}
-        handleSegSave={handleSegSave}
         showModal={showModal}
         setShowModal={setShowModal}
         showConfirm={showConfirm}

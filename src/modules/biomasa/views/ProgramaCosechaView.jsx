@@ -1,11 +1,9 @@
 ﻿import ProgramaTablaView from './ProgramaTablaView';
 import ProgramaCalendarioView from './ProgramaCalendarioView';
-import ProgramaSeguimientoView from './ProgramaSeguimientoView';
 
 export default function ProgramaCosechaView({
   progSubTab, setProgSubTab,
   programPeriod, setProgramPeriod,
-  followupPeriod, setFollowupPeriod,
   calView, setCalView,
   mes, setMes,
   weekDays,
@@ -31,9 +29,6 @@ export default function ProgramaCosechaView({
   filteredProgramIds,
   calData,
   notasDia,
-  followupPrograms,
-  recentDailyAdjustments,
-  followupSummary,
   tratosAcordados,
   handleOpenModal,
   handleOpenAdjustModal,
@@ -46,15 +41,10 @@ export default function ProgramaCosechaView({
   handleCalendarBoardToggle,
   setSuspendPopover,
   setNotaPopover,
-  setSegProg,
-  setShowSegModal,
   setPauseModal,
   setPauseForm,
   setConfirmDelete,
   moveProgramPeriod,
-  moveFollowupPeriod,
-  getTodayProgramCamiones,
-  getLatestProgramNovelty,
   enrichCalendarItem,
   tonsPerTruck,
   getProgramCamionesStatus,
@@ -134,23 +124,6 @@ export default function ProgramaCosechaView({
         />
       )}
 
-      {progSubTab === 'seguimiento' && (
-        <ProgramaSeguimientoView
-          followupPeriod={followupPeriod}
-          setFollowupPeriod={setFollowupPeriod}
-          weekDays={weekDays}
-          mes={mes}
-          moveFollowupPeriod={moveFollowupPeriod}
-          followupSummary={followupSummary}
-          followupPrograms={followupPrograms}
-          getTodayProgramCamiones={getTodayProgramCamiones}
-          getLatestProgramNovelty={getLatestProgramNovelty}
-          handleOpenAdjustModal={handleOpenAdjustModal}
-          setSegProg={setSegProg}
-          setShowSegModal={setShowSegModal}
-          recentDailyAdjustments={recentDailyAdjustments}
-        />
-      )}
     </div>
   );
 }
