@@ -5717,55 +5717,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .biomasa-action-bar .mx-action-btn.play        { background: var(--color-success-bg); color: var(--color-success); }
 .biomasa-action-bar .mx-action-btn.play:hover  { background: var(--color-success-bg); color: var(--color-success); }
 
-/* ── UX/UI Jun 2026: nav de módulo con estilo pestaña real ── */
-.mx-module-nav.mx-toolbar {
-  padding: 0 4px;
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-
-.mx-module-nav .mx-toggle-group {
-  gap: 2px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  padding: 0;
-  align-items: flex-end;
-}
-
-.mx-module-nav .mx-toggle-btn {
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  padding: 9px 16px 10px;
-  font-weight: var(--weight-semibold);
-  margin-bottom: -1px;
-  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
-}
-
-.mx-module-nav .mx-toggle-btn:hover {
-  background: rgba(10, 92, 255, 0.04);
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-
-.mx-module-nav .mx-toggle-btn.active {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  border-bottom-color: var(--color-surface);
-  color: #0A5CFF;
-  font-weight: var(--weight-bold);
-  box-shadow: none;
-  position: relative;
-  z-index: 1;
-}
-
 /* ── Selector de vista compacto — dentro de disp-filter-bar ── */
 .disp-view-selector {
   display: inline-flex;
@@ -6614,58 +6565,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     overflow: visible;
   }
 
-  .mx-module-nav.mx-toolbar {
-    margin: 0 -10px 14px;
-    padding: 8px 10px;
-    border-bottom: 1px solid #dbe6f3;
-    background: rgba(255, 255, 255, 0.92);
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .mx-module-nav.mx-toolbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mx-module-nav .mx-toggle-group {
-    width: max-content;
-    min-width: 100%;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .mx-module-nav .mx-toggle-btn {
-    flex: 0 0 auto;
-    min-height: 42px;
-    padding: 0 14px;
-    border: 1px solid #dbe6f3;
-    border-radius: 999px;
-    background: #fff;
-    color: #61738c;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-    margin-bottom: 0;
-  }
-
-  .mx-module-nav .mx-toggle-btn.active {
-    background: #eff4ff;
-    border-color: rgba(10, 92, 255, 0.35);
-    color: #0a5cff;
-    box-shadow: 0 10px 24px rgba(10, 92, 255, 0.12);
-  }
-}
-
-@media (max-width: 420px) {
-  .mx-module-nav .mx-toggle-btn {
-    padding: 0 12px;
-    font-size: 0.82rem;
-  }
-
-  .mx-module-nav .mx-toggle-btn svg {
-    width: 13px;
-    height: 13px;
-  }
 }
 
 @media (max-width: 640px) {

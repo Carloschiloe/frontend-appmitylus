@@ -96,7 +96,7 @@ export default function Sidebar() {
         const criticas = (data.rojo || 0) + (data.naranja || 0);
         if (criticas > 0) {
           setAlerts((prev) => ({ ...prev, sanitario: criticas }));
-          setOpenGroup('inteligencia');
+          setOpenGroup('proveedores');
         }
       })
       .catch((err) => {

@@ -7,6 +7,10 @@
   gap: 16px;
 }
 
+.importar-page--embedded {
+  padding-top: 16px;
+}
+
 @media (max-width: 768px) {
   .importar-page {
     padding-top: 18px;
