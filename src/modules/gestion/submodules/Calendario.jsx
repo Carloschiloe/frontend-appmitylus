@@ -900,12 +900,6 @@ export default function Calendario() {
     }
   }
 
-  const subtitleText = statusFilter === 'realizado'
-    ? listPeriod === 'week'
-      ? `Gestiones realizadas durante la semana del ${weekPeriodLabel}.`
-      : `Gestiones realizadas en ${MONTHS[month]} ${year}.`
-    : 'Compromisos programados, vencidos y pendientes de gestión.';
-
   function isKpiActive(filter, rangeValue) {
     if (viewMode !== 'list' || statusFilter !== filter) return false;
     if (rangeValue !== undefined && range !== rangeValue) return false;
@@ -928,7 +922,6 @@ export default function Calendario() {
       <div className="calendario-header-bar">
         <div>
           <h2 className="calendario-title-text">Agenda Operativa</h2>
-          <p>{subtitleText}</p>
         </div>
       </div>
 
@@ -1021,45 +1014,40 @@ export default function Calendario() {
               </div>
               <div className="cal-search-box">
                 <Search size={17} />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, acción o responsable..." />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar proveedor, acción..." />
               </div>
+              <ListFilterChip
+                label="Tipo de contacto"
+                value={typeFilter}
+                allLabel="Todos los tipos"
+                options={availableTypes.map(([value, label]) => ({ value, label }))}
+                onChange={setTypeFilter}
+              />
+              <ListFilterChip
+                label="Próximo paso"
+                value={nextStepFilter}
+                allLabel="Todos los pasos"
+                options={availableNextSteps}
+                onChange={setNextStepFilter}
+              />
               <button
                 type="button"
                 className={`agenda-toggle-realizados${statusFilter === 'realizado' ? ' is-active' : ''}`}
                 onClick={() => setStatusFilter((prev) => (prev === 'realizado' ? 'todos' : 'realizado'))}
               >
-                <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Volver a agenda' : 'Mostrar gestiones'}
+                <ClipboardCheck size={15} /> {statusFilter === 'realizado' ? 'Volver a agenda' : 'Gestiones'}
+              </button>
+              <button
+                type="button"
+                className="agenda-list-clear-filters"
+                onClick={clearListFilters}
+                disabled={!search && typeFilter === 'all' && nextStepFilter === 'all'}
+              >
+                Limpiar
               </button>
             </div>
           )}
         </div>
-
-        {viewMode === 'list' && (
-          <div className="agenda-list-filter-chips">
-            <ListFilterChip
-              label="Tipo de contacto"
-              value={typeFilter}
-              allLabel="Todos los tipos de contacto"
-              options={availableTypes.map(([value, label]) => ({ value, label }))}
-              onChange={setTypeFilter}
-            />
-            <ListFilterChip
-              label="Próximo paso"
-              value={nextStepFilter}
-              allLabel="Todos los próximos pasos"
-              options={availableNextSteps}
-              onChange={setNextStepFilter}
-            />
-            <button
-              type="button"
-              className="agenda-list-clear-filters"
-              onClick={clearListFilters}
-              disabled={!search && typeFilter === 'all' && nextStepFilter === 'all'}
-            >
-              Limpiar filtros
-            </button>
-          </div>
-        )}
 
         {loading ? (
           <div className="mx-loading-placeholder">
