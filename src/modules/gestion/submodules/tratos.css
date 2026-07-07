@@ -1013,3 +1013,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Skeleton loader ── */
+@keyframes tratos-skel-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.tratos-skel-row td { padding: 10px 12px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+.skel {
+  border-radius: 5px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: tratos-skel-shimmer 1.4s infinite linear;
+  height: 14px;
+}
+.skel-badge { width: 52px; height: 22px; border-radius: 999px; }
+.skel-sm    { width: 60px; }
+.skel-md    { width: 130px; }
+.skel-xs    { width: 40px; height: 11px; }
+.skel-icon  { width: 22px; height: 22px; border-radius: 50%; }

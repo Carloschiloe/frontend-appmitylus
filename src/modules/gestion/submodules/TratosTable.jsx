@@ -139,13 +139,18 @@ export default function TratosTable({
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="8">
-                    <div className="mx-state-placeholder">
-                      <div className="mx-spinner"></div>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="tratos-skel-row">
+                    <td><div className="skel skel-md" /><div className="skel skel-xs" style={{ marginTop: 5 }} /></td>
+                    <td><div className="skel skel-sm" /></td>
+                    <td><div className="skel skel-sm" /></td>
+                    <td><div className="skel skel-sm" /><div className="skel skel-xs" style={{ marginTop: 5 }} /></td>
+                    <td><div className="skel skel-md" /><div className="skel skel-xs" style={{ marginTop: 5 }} /></td>
+                    <td><div className="skel skel-badge" /></td>
+                    <td><div className="skel skel-md" /></td>
+                    <td><div className="skel skel-icon" style={{ marginLeft: 'auto' }} /></td>
+                  </tr>
+                ))
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan="8">

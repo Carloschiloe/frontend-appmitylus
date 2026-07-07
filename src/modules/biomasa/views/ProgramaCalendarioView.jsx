@@ -375,6 +375,18 @@ export default function ProgramaCalendarioView({
                         <span className="wk-prov-muestreo-inline wk-prov-muestreo--vacio">Sin muestreo</span>
                       )}
                     </div>
+                    {/* Badge de vigencia próxima a vencer */}
+                    {(() => {
+                      if (!programa?.vigenciaHasta || programa.estado !== 'activo') return null;
+                      const msLeft = new Date(programa.vigenciaHasta).getTime() - Date.now();
+                      const dias = Math.ceil(msLeft / 86400000);
+                      if (dias < 0 || dias > 5) return null;
+                      return (
+                        <span className="wk-vence-badge" title={`La vigencia del programa termina ${dias === 0 ? 'hoy' : `en ${dias} día${dias === 1 ? '' : 's'}`}`}>
+                          {dias === 0 ? '⚠ Vence hoy' : `⚠ Vence en ${dias}d`}
+                        </span>
+                      );
+                    })()}
                     {/* Chip de producto + botón en la misma línea */}
                     {programa?.estado === 'pausado' ? (
                       <div className="wk-prov-pausa-info">

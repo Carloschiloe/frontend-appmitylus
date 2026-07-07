@@ -64,10 +64,16 @@ export default function Tratos({ onCrearPrograma }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [mes, setMes] = useState(mesActual);
-  const [showAllMonths, setShowAllMonths] = useState(false);
-  const [responsableFilter, setResponsableFilter] = useState('all');
-  const [estadoFilter, setEstadoFilter] = useState('');
+
+  const _savedFilters = (() => { try { return JSON.parse(sessionStorage.getItem('mx_tratos_filters') || '{}'); } catch { return {}; } })();
+  const [mes, setMes] = useState(_savedFilters.mes || mesActual);
+  const [showAllMonths, setShowAllMonths] = useState(_savedFilters.showAllMonths ?? false);
+  const [responsableFilter, setResponsableFilter] = useState(_savedFilters.responsableFilter || 'all');
+  const [estadoFilter, setEstadoFilter] = useState(_savedFilters.estadoFilter || '');
+
+  useEffect(() => {
+    try { sessionStorage.setItem('mx_tratos_filters', JSON.stringify({ mes, showAllMonths, responsableFilter, estadoFilter })); } catch {}
+  }, [mes, showAllMonths, responsableFilter, estadoFilter]);
 
   const moveMes = useCallback((dir) => {
     setMes((prev) => {
