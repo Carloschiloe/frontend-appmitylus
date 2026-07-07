@@ -306,8 +306,8 @@ export default function Dashboard() {
             />
           </section>
 
-          {/* ── Row 2: Pipeline + Cosecha activa ─────────────────────── */}
-          <div className="dsh-pipeline-grid">
+          {/* ── Row 2: Pipeline + Cosecha + Actividad ───────────────── */}
+          <div className="dsh-trio-grid">
 
             {/* Pipeline funnel */}
             <article className="dsh-card">
@@ -403,11 +403,8 @@ export default function Dashboard() {
                 Ver programa de cosecha <ChevronRight size={12} />
               </Link>
             </article>
-          </div>
 
-          {/* ── Row 3: Actividad + Top Proveedores ───────────────────── */}
-          <div className="dsh-main-grid">
-
+            {/* Actividad Reciente */}
             <article className="dsh-card">
               <div className="dsh-card-header">
                 <h3 className="dsh-card-title">Actividad Reciente</h3>
@@ -443,6 +440,10 @@ export default function Dashboard() {
                 })}
               </div>
             </article>
+          </div>
+
+          {/* ── Row 3: Proveedores · Distribución · Sanitario · Calidad · Proyección */}
+          <div className="dsh-quad-grid">
 
             <article className="dsh-card">
               <div className="dsh-card-header">
@@ -497,10 +498,6 @@ export default function Dashboard() {
                 );
               })()}
             </article>
-          </div>
-
-          {/* ── Row 4: Biomasa · Sanitario · Calidad · Proyección ────── */}
-          <div className="dsh-quad-grid">
 
             {/* Distribución de tratos (donut) */}
             <article className="dsh-card">
