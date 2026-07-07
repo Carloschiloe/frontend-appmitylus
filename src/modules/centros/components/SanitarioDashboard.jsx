@@ -7,6 +7,9 @@ import {
   RefreshCw,
   Search,
   X,
+  ChevronsUpDown,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -105,6 +108,7 @@ export default function SanitarioDashboard() {
   const [estadoFilter,    setEstadoFilter]    = useState('');
   const [sernapescaFilter,setSernapescaFilter] = useState('');
   const [tipoFilter,      setTipoFilter]      = useState('');
+  const [sortConfig,      setSortConfig]      = useState({ key: null, dir: 'asc' });
 
   // Modales
   const [historyModal,  setHistoryModal]  = useState({ open: false, area: null, loading: false, items: [] });
@@ -178,10 +182,10 @@ export default function SanitarioDashboard() {
     return () => ctrl.abort();
   }, [selectedTenantDb]);
 
-  // ── Filtrado client-side — INSTANTÁNEO ────────────────────────
+  // ── Filtrado + orden client-side ────────────────────────────
   const displayedAreas = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return allAreas.filter((area) => {
+    const filtered = allAreas.filter((area) => {
       if (q) {
         const matchesQ =
           (area.areaPSMB  || '').toLowerCase().includes(q) ||
@@ -192,7 +196,40 @@ export default function SanitarioDashboard() {
       if (sernapescaFilter && area.estadoSernapesca !== sernapescaFilter) return false;
       return true;
     });
-  }, [allAreas, searchTerm, estadoFilter, sernapescaFilter]);
+
+    if (sortConfig.key) {
+      const ESTADO_ORD = { rojo: 4, naranja: 3, amarillo: 2, verde: 1, gris: 0 };
+      filtered.sort((a, b) => {
+        let av, bv;
+        if (sortConfig.key === 'estado') {
+          av = ESTADO_ORD[a.estado] ?? 0;
+          bv = ESTADO_ORD[b.estado] ?? 0;
+        } else if (sortConfig.key === 'ultimoMuestreoMrsat') {
+          av = a.ultimoMuestreoMrsat ? new Date(a.ultimoMuestreoMrsat).getTime() : 0;
+          bv = b.ultimoMuestreoMrsat ? new Date(b.ultimoMuestreoMrsat).getTime() : 0;
+        } else if (sortConfig.key === 'centrosCount') {
+          av = a.centrosCount || 0;
+          bv = b.centrosCount || 0;
+        } else {
+          av = String(a[sortConfig.key] || '').toLowerCase();
+          bv = String(b[sortConfig.key] || '').toLowerCase();
+        }
+        if (av < bv) return sortConfig.dir === 'asc' ? -1 : 1;
+        if (av > bv) return sortConfig.dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [allAreas, searchTerm, estadoFilter, sernapescaFilter, sortConfig]);
+
+  const handleSort = useCallback((key) => {
+    setSortConfig(prev =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: 'asc' }
+    );
+  }, []);
 
   // ── Handlers ──────────────────────────────────────────────────
   const handleKpiClick = useCallback((estado) => {
@@ -373,12 +410,23 @@ export default function SanitarioDashboard() {
           <table className="centros-tbl">
             <thead>
               <tr>
-                <th>Estado</th>
-                <th>Código</th>
-                <th>Área PSMB</th>
-                <th>Último muestreo mrSAT</th>
-                <th>Estado SERNAPESCA</th>
-                <th style={{ textAlign: 'center' }}>Centros</th>
+                {[
+                  { label: 'Estado',               key: 'estado' },
+                  { label: 'Código',               key: 'codigoArea' },
+                  { label: 'Área PSMB',            key: 'areaPSMB' },
+                  { label: 'Último muestreo mrSAT',key: 'ultimoMuestreoMrsat' },
+                  { label: 'Estado SERNAPESCA',    key: 'estadoSernapesca' },
+                  { label: 'Centros',              key: 'centrosCount', center: true },
+                ].map(({ label, key, center }) => (
+                  <th key={key} style={center ? { textAlign: 'center' } : undefined}>
+                    <button className="sanitario-th-sort" onClick={() => handleSort(key)}>
+                      {label}
+                      {sortConfig.key === key
+                        ? sortConfig.dir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+                        : <ChevronsUpDown size={12} className="sanitario-th-sort-idle" />}
+                    </button>
+                  </th>
+                ))}
                 <th style={{ textAlign: 'right' }}>Historial</th>
               </tr>
             </thead>

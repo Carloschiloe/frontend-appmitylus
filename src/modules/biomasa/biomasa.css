@@ -2937,7 +2937,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-left: 1px solid #E2E8F0;
   transition: background 0.12s;
 }
-.harvest-week-v2-daycol.is-today { background: #EFF6FF; }
+.harvest-week-v2-daycol.is-today { background: #fff; }
 .harvest-week-v2-dayname {
   font-size: 10px;
   color: #94A3B8;
@@ -3084,9 +3084,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   position: relative;
   min-height: 62px;
 }
-.harvest-week-v2-cell.is-today { background: #F0F6FF; }
-.harvest-week-v2-cell.is-susp  { background: #F4F6F8; }
-.harvest-week-v2-cell.is-prog-pausado { background: #F4F6F8; }
+.harvest-week-v2-cell.is-today { background: #fff; }
+.harvest-week-v2-cell.is-susp  { background: #fff; }
+.harvest-week-v2-cell.is-prog-pausado { background: #fff; }
 
 /* ── Count display ── */
 .harvest-week-v2-count {
@@ -3150,7 +3150,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* ── Día sin programa (fuera de vigencia) ── */
-.harvest-week-v2-cell.is-sinprog { background: #F4F6F8; }
+.harvest-week-v2-cell.is-sinprog { background: #fff; }
 .harvest-week-v2-sinprog {
   font-size: 10.5px;
   font-weight: 500;

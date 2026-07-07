@@ -1385,3 +1385,22 @@
 .skel-xs     { width: 40px; height: 11px; }
 .skel-icon   { width: 22px; height: 22px; border-radius: 50%; }
 .sanitario-skel-row td { padding: 10px 12px; border-bottom: 1px solid #F1F5F9; }
+
+/* ── Sortable column headers ── */
+.sanitario-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+}
+.sanitario-th-sort:hover { color: var(--color-primary, #0FA6A1); }
+.sanitario-th-sort-idle { opacity: 0.35; }
