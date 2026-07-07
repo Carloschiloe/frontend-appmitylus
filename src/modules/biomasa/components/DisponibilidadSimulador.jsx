@@ -369,11 +369,20 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       });
     }
 
-    // Default: continuous simulation
-    if (simulation) {
-      return simulation.monthsData.map(({ year, month, firstDow, days }) => (
-        <MonthGrid key={`${year}-${month}`} year={year} month={month + 1} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(`${year}-${pad(month + 1)}`)} />
-      ));
+    // Default: per-month simulation (usa tons disponibles por mes, no acumulado total)
+    if (tonsPorDia > 0) {
+      return monthStats.map((ms) => {
+        const { firstDow, days } = ms.tonsAvail > 0
+          ? buildMonthlySimulation(ms.y, ms.m, ms.tonsAvail, tonsPorDia, diasOp, fechaInicio)
+          : { firstDow: dayOfWeekFromKey(`${ms.mk}-01`), days: Array.from({ length: new Date(ms.y, ms.m, 0).getDate() }, (_, d) => {
+              const dateKey = `${ms.mk}-${pad(d + 1)}`;
+              const isBeforeStart = dateKey < fechaInicio;
+              const dow = dayOfWeekFromKey(dateKey);
+              const isOp = !isBeforeStart && diasOp.map(Number).includes(dow);
+              return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'exhausted' : 'rest', isStockout: false };
+            }) };
+        return <MonthGrid key={ms.mk} year={ms.y} month={ms.m} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(ms.mk)} />;
+      });
     }
 
     return (
