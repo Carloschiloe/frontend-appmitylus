@@ -233,6 +233,10 @@ export default function Dashboard() {
               sub="Acumulado este mes"
               icon={CheckCircle}
               color="#0A5CFF"
+              tooltip={[
+                `Próximo mes: ${formatTons(data?.acordadoProxMes || 0)}`,
+                ...(data?.topProveedores || []).slice(0, 4).map(p => `${p.nombre}: ${formatTons(p.tons)}`),
+              ]}
             />
             <KpiCard
               title="Programas Activos Hoy"
@@ -240,6 +244,7 @@ export default function Dashboard() {
               sub="Proveedores cosechando"
               icon={Scissors}
               color="#10b981"
+              tooltip={(cosechaData.programasList || []).map(p => `${p.nombre} — hasta ${formatShortDate(p.vigenciaHasta)}`)}
             />
             <KpiCard
               title="Camiones Hoy"
@@ -263,6 +268,12 @@ export default function Dashboard() {
               sub="Oportunidades activas"
               icon={Handshake}
               color="#6366f1"
+              tooltip={(data?.pipeline || [])
+                .filter(p => ['prospecto', 'negociando', 'acordado', 'compra_efectuada'].includes(p.estado) && p.count > 0)
+                .map(p => {
+                  const s = PIPELINE_STAGES.find(s => s.estado === p.estado);
+                  return `${s?.label || p.estado}: ${p.count}${p.tons > 0 ? ' · ' + formatTons(p.tons) : ''}`;
+                })}
             />
             <KpiCard
               title="Alertas Sanitarias"
@@ -270,6 +281,10 @@ export default function Dashboard() {
               sub="Áreas naranja / rojo"
               icon={hasAlerts ? ShieldAlert : ShieldCheck}
               color={hasAlerts ? '#ef4444' : '#10b981'}
+              tooltip={[
+                ...(sanDetalle.rojo?.areas || []).slice(0, 5).map(a => `Rojo: ${a}`),
+                ...(sanDetalle.naranja?.areas || []).slice(0, 5).map(a => `Naranja: ${a}`),
+              ]}
             />
           </section>
 
