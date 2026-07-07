@@ -135,7 +135,7 @@ export default function Biomasa() {
     weekSummaries,
     weekSummaryFull,
     monthSummary,
-  } = useCalendarioPrograma({ mes, currentWeekOffset, programas, calData, filterProducto, filterProveedor, tonsPerTruck });
+  } = useCalendarioPrograma({ mes, currentWeekOffset, programas, calData, disp, filterProducto, filterProveedor, tonsPerTruck });
 
   // Sincronizar el mes cargado cuando cambia la semana seleccionada
   useEffect(() => {

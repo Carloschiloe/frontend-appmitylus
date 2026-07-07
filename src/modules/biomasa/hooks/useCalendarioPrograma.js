@@ -13,10 +13,26 @@ export function useCalendarioPrograma({
   currentWeekOffset,
   programas,
   calData,
+  disp,
   filterProducto,
   filterProveedor,
   tonsPerTruck,
 }) {
+  // ── Calibre registrado por proveedor (disponibilidad), para cuando el
+  //    programa aún no tiene un muestreo propio ──────────────────────────────────
+  const calibreByProveedor = useMemo(() => {
+    const map = new Map();
+    (disp || []).forEach((d) => {
+      if (d.calibreMin == null && d.calibreMax == null) return;
+      const nombre = d.proveedorNombre;
+      if (!nombre) return;
+      const prev = map.get(nombre);
+      if (!prev || String(d.mesKey || '') > String(prev.mesKey || '')) {
+        map.set(nombre, { calibreMin: d.calibreMin ?? null, calibreMax: d.calibreMax ?? null, mesKey: d.mesKey });
+      }
+    });
+    return map;
+  }, [disp]);
   // ── Días del mes ──────────────────────────────────────────────────────────────
   const monthData = useMemo(() => {
     if (!mes) return { days: [], padding: 0 };
@@ -253,6 +269,7 @@ export function useCalendarioPrograma({
           (d) => esFechaEnVigencia(p, d) || calData[d]?.items?.some((x) => String(x.programaId) === String(p._id)),
         );
         if (!hasRelevantDay) return;
+        const calibre = calibreByProveedor.get(p.proveedorNombre) || null;
         data[p._id] = {
           nombre: p.proveedorNombre,
           centro: p.centroNombre,
@@ -260,6 +277,8 @@ export function useCalendarioPrograma({
           uxkg: p.uxkg ?? null,
           rendimiento: p.rendimiento ?? null,
           muestreoFecha: p.muestreoFecha ?? null,
+          calibreMin: calibre?.calibreMin ?? null,
+          calibreMax: calibre?.calibreMax ?? null,
           dias: weekDays.map((d) => {
             const item = calData[d]?.items?.find((x) => x.programaId === p._id);
             const enriched = item ? enrichCalendarItem(item) : null;
@@ -285,7 +304,7 @@ export function useCalendarioPrograma({
         };
       });
     return data;
-  }, [programasFiltrados, calData, weekDays, enrichCalendarItem]);
+  }, [programasFiltrados, calData, weekDays, enrichCalendarItem, calibreByProveedor]);
 
   // ── Resúmenes diarios de semana ───────────────────────────────────────────────
   const weekSummaries = useMemo(() => {

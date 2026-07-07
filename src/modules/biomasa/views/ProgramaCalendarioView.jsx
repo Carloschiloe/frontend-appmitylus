@@ -374,6 +374,10 @@ export default function ProgramaCalendarioView({
                           {formatMuestreoFecha(data.muestreoFecha, 'short') ? `${formatMuestreoFecha(data.muestreoFecha, 'short')}: ` : ''}
                           {formatMuestreoResumen(data)}
                         </span>
+                      ) : (data.calibreMin != null || data.calibreMax != null) ? (
+                        <span className="wk-prov-muestreo-inline">
+                          Calibre {data.calibreMin ?? '?'}–{data.calibreMax ?? '?'} uk
+                        </span>
                       ) : (
                         <span className="wk-prov-muestreo-inline wk-prov-muestreo--vacio">Sin muestreo</span>
                       )}

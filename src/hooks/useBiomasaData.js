@@ -86,6 +86,10 @@ export function useBiomasaData(mes, viewContext = {}) {
         keys.push('calRes');
         promises.push(apiClient.get(`/notas-dia?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
         keys.push('notasRes');
+        // Calibre registrado por proveedor (disponibilidad), para mostrar cuando el
+        // programa aún no tiene muestreo propio.
+        promises.push(getDisponibilidades({ from: '2020-01', to: '2035-12' }).catch(() => []));
+        keys.push('disp');
       }
 
       const results = await Promise.all(promises);
