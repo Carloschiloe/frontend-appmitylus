@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   SlidersHorizontal,
   MapPin,
+  Search,
+  X as XIcon,
 } from 'lucide-react';
 import ProgramaSemanaModal from '../components/ProgramaSemanaModal';
 import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
@@ -75,6 +77,7 @@ export default function ProgramaCalendarioView({
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
   const [mapProvider, setMapProvider] = useState(null);
   const [semanaModal, setSemanaModal] = useState(null);
+  const [provSearch, setProvSearch] = useState('');
   const calViewDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -237,6 +240,20 @@ export default function ProgramaCalendarioView({
             </div>
           </div>
           <div className="harvest-calendar-actions">
+            {calView === 'week' && (
+              <div className="cal-prov-search-wrap">
+                <Search size={13} className="cal-prov-search-icon" />
+                <input
+                  className="cal-prov-search-input"
+                  placeholder="Buscar proveedor…"
+                  value={provSearch}
+                  onChange={e => setProvSearch(e.target.value)}
+                />
+                {provSearch && (
+                  <button className="cal-prov-search-clear" onClick={() => setProvSearch('')}><XIcon size={11} /></button>
+                )}
+              </div>
+            )}
             <select className="mx-select sm" value={calendarMetric} onChange={e => setCalendarMetric(e.target.value)} style={{ fontSize: '13px', padding: '4px 8px' }}>
               <option value="camiones">Camiones</option>
               <option value="tons">Tons</option>
@@ -347,7 +364,11 @@ export default function ProgramaCalendarioView({
               </div>
             </div>
 
-            {Object.entries(weekData).filter(([, data]) => !filterProducto || data.tipoProducto === filterProducto).map(([id, data]) => {
+            {Object.entries(weekData).filter(([, data]) => {
+              if (filterProducto && data.tipoProducto !== filterProducto) return false;
+              if (provSearch && !data.nombre?.toLowerCase().includes(provSearch.toLowerCase())) return false;
+              return true;
+            }).map(([id, data]) => {
               const programa = programasById.get(id);
               const rowTotal = data.dias.reduce((s, c) => ({ camiones: s.camiones + Number(c.camiones || 0), tons: s.tons + Number(c.tonsDia || 0) }), { camiones: 0, tons: 0 });
               return (

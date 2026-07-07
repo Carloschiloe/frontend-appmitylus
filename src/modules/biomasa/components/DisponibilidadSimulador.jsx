@@ -581,16 +581,28 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               title={`Ver detalle de ${MONTHS_ES[ms.m - 1]} ${ms.y}`}
             >
               <span className="disp-sim-mc-name">{MONTHS_SHORT[ms.m - 1]} {ms.y}</span>
-              <span className="disp-sim-mc-avail">{ms.tonsAvail > 0 ? fmtTons(ms.tonsAvail) : '0 t'}</span>
-              <span className="disp-sim-mc-label">disponible</span>
-              {tonsPorDia > 0 && (
+              {ms.tone === 'empty' ? (
+                <span className="disp-sim-mc-no-bio">Sin biomasa</span>
+              ) : (
                 <>
-                  <span className="disp-sim-mc-needed">{fmtTons(ms.tonsNeeded)}</span>
-                  <span className="disp-sim-mc-label">a procesar</span>
-                  <span className={`disp-sim-mc-balance disp-sim-mc-balance--${ms.balance >= 0 ? 'pos' : 'neg'}`}>
-                    {ms.balance >= 0 ? '+' : ''}{fmtTons(ms.balance)}
-                  </span>
-                  <span className="disp-sim-mc-days">{ms.opDays} días hábiles</span>
+                  <span className="disp-sim-mc-avail">{fmtTons(ms.tonsAvail)}</span>
+                  <span className="disp-sim-mc-label">disponible</span>
+                  {tonsPorDia > 0 && (
+                    <>
+                      <span className="disp-sim-mc-needed">{fmtTons(ms.tonsNeeded)}</span>
+                      <span className="disp-sim-mc-label">a procesar</span>
+                      <span className={`disp-sim-mc-balance disp-sim-mc-balance--${ms.balance >= 0 ? 'pos' : 'neg'}`}>
+                        {ms.balance >= 0 ? '+' : ''}{fmtTons(ms.balance)}
+                      </span>
+                      {ms.balance < 0 ? (
+                        <span className="disp-sim-mc-covered">
+                          Solo {Math.max(0, Math.floor(ms.tonsAvail / tonsPorDia))} de {ms.opDays} días cubiertos
+                        </span>
+                      ) : (
+                        <span className="disp-sim-mc-days">{ms.opDays} días hábiles</span>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </button>

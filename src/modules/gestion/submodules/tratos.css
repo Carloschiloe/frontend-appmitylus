@@ -618,8 +618,27 @@
 .tratos-cond-modal-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 5px;
 }
+
+.tratos-cond-mark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.tratos-cond-mark-btn:hover { background: #dcfce7; }
+.tratos-cond-mark-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .tratos-cond-modal-val {
   font-size: 0.84rem;

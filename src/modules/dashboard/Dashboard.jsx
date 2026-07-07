@@ -22,6 +22,8 @@ import {
   Scissors,
   Award,
   Clock,
+  Truck,
+  CalendarClock,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 
@@ -161,7 +163,7 @@ export default function Dashboard() {
     [pipelineMap],
   );
 
-  const cosechaData = data?.cosecha          || { programasHoy: 0, programasList: [] };
+  const cosechaData = data?.cosecha          || { programasHoy: 0, camionesHoy: 0, vencenProximo: 0, programasList: [] };
   const calidadData = data?.calidad          || null;
   const sanDetalle  = data?.sanitarioDetalle || {};
   const hasAlerts   = (data?.alertas || 0) > 0;
@@ -218,7 +220,7 @@ export default function Dashboard() {
             </button>
           </section>
 
-          {/* ── Row 1: 5 KPIs ────────────────────────────────────────── */}
+          {/* ── Row 1: KPIs ──────────────────────────────────────────── */}
           <section className="dsh-kpi-grid">
             <KpiCard
               title="Tons Acordadas (mes)"
@@ -233,6 +235,20 @@ export default function Dashboard() {
               sub="Proveedores cosechando"
               icon={Scissors}
               color="#10b981"
+            />
+            <KpiCard
+              title="Camiones Hoy"
+              value={cosechaData.camionesHoy}
+              sub="Programados para hoy"
+              icon={Truck}
+              color="#0891b2"
+            />
+            <KpiCard
+              title="Vencen en 7 días"
+              value={cosechaData.vencenProximo}
+              sub="Programas por vencer"
+              icon={CalendarClock}
+              color={cosechaData.vencenProximo > 0 ? '#f59e0b' : '#10b981'}
             />
             <KpiCard
               title="En Negociación"

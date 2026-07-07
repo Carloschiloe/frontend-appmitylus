@@ -29,3 +29,7 @@ export async function cerrarExitoso(id, observacion) {
 export async function cerrarPerdido(id, motivoPerdida, observacion, estado = 'perdido') {
   return apiClient.post(`${BASE}/${id}/cerrar-perdido`, { motivoPerdida, observacion: observacion || '', estado });
 }
+
+export async function upsertCondicion(id, payload) {
+  return apiClient.post(`${BASE}/${id}/condiciones`, payload);
+}

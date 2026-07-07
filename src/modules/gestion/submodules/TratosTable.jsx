@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, CalendarPlus, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal } from 'lucide-react';
+import { CalendarCheck, CalendarPlus, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { upsertCondicion } from '../../../api/api-oportunidades';
 import {
   ESTADOS_TRATO,
   calcularFechaTerminoEstimadaTrato,
@@ -119,6 +120,33 @@ export default function TratosTable({
   onCrearPrograma,
 }) {
   const [condModal, setCondModal] = useState(null);
+  const [savingCondId, setSavingCondId] = useState(null);
+
+  const handleMarcarAcordado = useCallback(async (c) => {
+    if (!condModal?._id) return;
+    const key = c._id || c.condicionId || c.nombre;
+    setSavingCondId(key);
+    try {
+      const res = await upsertCondicion(condModal._id, {
+        ...(c._id ? { _id: c._id } : {}),
+        ...(c.condicionId ? { condicionId: c.condicionId } : {}),
+        nombre: c.nombre,
+        estado: 'acordado',
+      });
+      if (res?.item) {
+        setCondModal(prev => prev ? {
+          ...prev,
+          condiciones: prev.condiciones.map(x =>
+            (x._id && x._id === c._id) || x.nombre === c.nombre
+              ? { ...x, estado: 'acordado' }
+              : x
+          ),
+        } : null);
+      }
+    } catch { /* ignore */ } finally {
+      setSavingCondId(null);
+    }
+  }, [condModal]);
 
   return (
     <>
@@ -319,6 +347,17 @@ export default function TratosTable({
                     </div>
                     <div className="tratos-cond-modal-right">
                       <span className={`mx-badge ${meta.cls}`}>{meta.label}</span>
+                      {c.estado !== 'acordado' && (
+                        <button
+                          className="tratos-cond-mark-btn"
+                          title="Marcar como acordado"
+                          disabled={savingCondId === (c._id || c.condicionId || c.nombre)}
+                          onClick={() => handleMarcarAcordado(c)}
+                        >
+                          <CheckCircle2 size={13} />
+                          Acordar
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
