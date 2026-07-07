@@ -40,7 +40,29 @@ function SernapescaBadge({ value }) {
   );
 }
 
-// Cache en módulo para evitar re-cargas entre navegaciones
+const SS_CACHE_KEY = 'mx_sanitario_v1';
+const SS_CACHE_TTL = 15 * 60 * 1000; // 15 min
+
+function ssLoad(tenantDb) {
+  try {
+    const raw = sessionStorage.getItem(SS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed.tenantDb !== tenantDb) return null;
+    if (Date.now() - parsed.ts > SS_CACHE_TTL) return null;
+    return parsed;
+  } catch { return null; }
+}
+function ssSave(tenantDb, areas, resumen, tiposAnalisis) {
+  try {
+    sessionStorage.setItem(SS_CACHE_KEY, JSON.stringify({ tenantDb, ts: Date.now(), areas, resumen, tiposAnalisis }));
+  } catch {}
+}
+function ssClear() {
+  try { sessionStorage.removeItem(SS_CACHE_KEY); } catch {}
+}
+
+// Cache en módulo para evitar re-cargas entre navegaciones dentro de la misma pestaña
 const sanitarioViewCache = {
   tenantDb: '',
   areas: [],
@@ -54,18 +76,29 @@ export default function SanitarioDashboard() {
   const { addToast } = useToast();
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
+  const _ssCache = ssLoad(selectedTenantDb);
   const hasCachedView =
-    sanitarioViewCache.tenantDb === selectedTenantDb &&
-    sanitarioViewCache.areas.length > 0;
+    (_ssCache && _ssCache.areas.length > 0) ||
+    (sanitarioViewCache.tenantDb === selectedTenantDb && sanitarioViewCache.areas.length > 0);
 
   // Estado base — áreas SIN filtrar (se filtran client-side)
-  const [allAreas, setAllAreas] = useState(() => hasCachedView ? sanitarioViewCache.areas : []);
+  const [allAreas, setAllAreas] = useState(() => {
+    if (_ssCache?.areas?.length) return _ssCache.areas;
+    if (sanitarioViewCache.tenantDb === selectedTenantDb) return sanitarioViewCache.areas;
+    return [];
+  });
   const [loading, setLoading]   = useState(() => !hasCachedView);
   const [syncing, setSyncing]   = useState(false);
-  const [resumen, setResumen]   = useState(() => hasCachedView ? sanitarioViewCache.resumen : null);
-  const [tiposAnalisis, setTiposAnalisis] = useState(() =>
-    sanitarioViewCache.tenantDb === selectedTenantDb ? sanitarioViewCache.tiposAnalisis : []
-  );
+  const [resumen, setResumen]   = useState(() => {
+    if (_ssCache?.resumen) return _ssCache.resumen;
+    if (sanitarioViewCache.tenantDb === selectedTenantDb) return sanitarioViewCache.resumen;
+    return null;
+  });
+  const [tiposAnalisis, setTiposAnalisis] = useState(() => {
+    if (_ssCache?.tiposAnalisis?.length) return _ssCache.tiposAnalisis;
+    if (sanitarioViewCache.tenantDb === selectedTenantDb) return sanitarioViewCache.tiposAnalisis;
+    return [];
+  });
 
   // Filtros — todos client-side excepto tipoAnalisis (que cambia el dataset)
   const [searchTerm,      setSearchTerm]      = useState('');
@@ -115,6 +148,7 @@ export default function SanitarioDashboard() {
       sanitarioViewCache.tenantDb = selectedTenantDb;
       sanitarioViewCache.areas    = items;
       sanitarioViewCache.resumen  = resResumen;
+      ssSave(selectedTenantDb, items, resResumen, sanitarioViewCache.tiposAnalisis);
     } catch (err) {
       if (err.name === 'AbortError') return;
       addToast({ title: 'Error', message: 'No se pudieron cargar los datos sanitarios.', type: 'error' });
@@ -138,6 +172,7 @@ export default function SanitarioDashboard() {
         const items = res.items || [];
         setTiposAnalisis(items);
         sanitarioViewCache.tiposAnalisis = items;
+        ssSave(selectedTenantDb, sanitarioViewCache.areas, sanitarioViewCache.resumen, items);
       })
       .catch((err) => { if (err.name !== 'AbortError') setTiposAnalisis([]); });
     return () => ctrl.abort();
@@ -167,6 +202,7 @@ export default function SanitarioDashboard() {
   const handleSyncMrSat = useCallback(async () => {
     if (!selectedTenantDb || syncing) return;
     setSyncing(true);
+    ssClear();
     try {
       await apiClient.post('/sanitario/sync/mrsat', {}, { timeoutMs: MRSAT_SYNC_TIMEOUT_MS });
       await loadData(undefined);
