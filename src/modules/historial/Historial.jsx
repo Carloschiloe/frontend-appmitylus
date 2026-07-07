@@ -899,35 +899,35 @@ export default function Historial() {
           <div className="mx-hero-content">
             <p className="mx-eyebrow">Trazabilidad · Historial</p>
             <h1>{selectedProvider.name}</h1>
-            <p>Aquí vive solo lo que ya pasó: interacciones, visitas, contactos y cambios de seguimiento.</p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-            <button type="button" className="mx-btn mx-btn-outline" style={{ color: '#fff', background: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.28)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, boxShadow: 'none' }}
-              onClick={() => { setSelectedProviderKey(''); setTypeFilter('todos'); const p = new URLSearchParams(searchParams); p.delete('proveedor'); setSearchParams(p, { replace: true }); }}
-            >
-              <ArrowLeft size={18} /> Volver
-            </button>
-            <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
-              onClick={() => window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', { detail: { proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0, contactoId: '' } }))}
-            >
-              <MessageSquare size={15} /> Registrar gestión
-            </button>
-            {selectedProvider.key && (
-              <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
-                onClick={() => { sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({ proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0 })); navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`); }}
-              >
-                <FileText size={15} /> Nueva negociación
-              </button>
-            )}
-            <button type="button" className="mx-btn mx-btn-outline" style={{ color: 'rgba(255,255,255,0.75)', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600, boxShadow: 'none', fontSize: '0.88rem' }}
-              onClick={() => { const q = selectedProvider.name || selectedProvider.key; navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores'); }}
-            >
-              <Building2 size={15} /> Ver en Directorio
-            </button>
           </div>
         </header>
 
         <div className="mx-content-frame historial-content-frame">
+          <div className="historial-action-bar">
+            <button type="button" className="mx-btn mx-btn-outline historial-ab-btn historial-ab-btn--back"
+              onClick={() => { setSelectedProviderKey(''); setTypeFilter('todos'); const p = new URLSearchParams(searchParams); p.delete('proveedor'); setSearchParams(p, { replace: true }); }}
+            >
+              <ArrowLeft size={15} /> Volver
+            </button>
+            <div className="historial-ab-sep" />
+            <button type="button" className="mx-btn mx-btn-outline historial-ab-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', { detail: { proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0, contactoId: '' } }))}
+            >
+              <MessageSquare size={14} /> Registrar gestión
+            </button>
+            {selectedProvider.key && (
+              <button type="button" className="mx-btn mx-btn-outline historial-ab-btn"
+                onClick={() => { sessionStorage.setItem('mitynex:new-trato-context', JSON.stringify({ proveedorKey: selectedProvider.key, proveedorNombre: selectedProvider.name, contactoNombre: selectedProvider.contactoPrincipal || '', contactoTelefono: selectedProvider.contactoTelefono || '', contactoEmail: selectedProvider.contactoEmail || '', comuna: '', centros: 0 })); navigate(`/biomasa/tratos?new=1&proveedor=${encodeURIComponent(selectedProvider.key)}`); }}
+              >
+                <FileText size={14} /> Nueva negociación
+              </button>
+            )}
+            <button type="button" className="mx-btn mx-btn-outline historial-ab-btn"
+              onClick={() => { const q = selectedProvider.name || selectedProvider.key; navigate(q ? `/gestion/proveedores?q=${encodeURIComponent(q)}` : '/gestion/proveedores'); }}
+            >
+              <Building2 size={14} /> Ver en Directorio
+            </button>
+          </div>
           <div className="mx-kpi-grid" style={{ marginTop: '16px' }}>
             <div className="mx-kpi-card">
               <div className="mx-kpi-label">Seguimiento actual</div>

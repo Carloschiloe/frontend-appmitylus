@@ -6,10 +6,40 @@
 /* ── Content frame ────────────────────────────────────────────────────────── */
 .historial-content-frame {
   margin-top: 0;
-  padding-top: 20px;
+  padding-top: 0;
   gap: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Barra de acciones (detalle de proveedor) ─────────────────────────────── */
+.historial-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 14px;
+  flex-wrap: wrap;
+}
+
+.historial-ab-btn {
+  font-size: 13px !important;
+  padding: 5px 12px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.historial-ab-btn--back {
+  font-weight: 700 !important;
+}
+
+.historial-ab-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 /* ── Top bar: search + view tabs ──────────────────────────────────────────── */
