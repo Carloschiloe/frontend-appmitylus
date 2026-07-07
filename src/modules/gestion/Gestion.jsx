@@ -9,20 +9,20 @@ const ErrorReports = lazy(() => import('./soporte/ErrorReports.jsx'));
 
 const PAGE_META = {
   '/gestion/proveedores': {
-    eyebrow: 'Directorio · Proveedores',
+    eyebrow: 'Proveedores · Directorio',
     title: 'Directorio de Proveedores',
   },
   '/gestion/bandeja': {
-    eyebrow: 'Inicio · Resumen',
+    eyebrow: 'Resumen Operativo',
     title: 'Resumen Operativo',
     description: 'Bandeja diaria: seguimiento comercial, visitas, interacciones y muestreos.',
   },
   '/gestion/agenda': {
-    eyebrow: 'Directorio · Agenda',
+    eyebrow: 'Inicio · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/calendario': {
-    eyebrow: 'Directorio · Agenda',
+    eyebrow: 'Inicio · Agenda',
     title: 'Agenda Operacional',
   },
   '/gestion/tratos': {

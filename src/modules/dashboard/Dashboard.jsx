@@ -15,7 +15,7 @@ import {
   ArrowDownRight,
   Handshake,
   AlertTriangle,
-  ClipboardList,
+
   Calendar,
   Droplet,
   TestTube2,
@@ -30,8 +30,8 @@ import { apiClient } from '../../api/apiClient';
 const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
 const QUICK_LINKS = [
-  { label: 'Resumen Operativo', to: '/gestion/bandeja',   icon: ClipboardList },
   { label: 'Agenda',            to: '/gestion/agenda',     icon: Calendar },
+  { label: 'Proveedores',       to: '/gestion/proveedores', icon: Users },
   { label: 'Tratos',            to: '/biomasa/tratos',     icon: Handshake },
   { label: 'Prog. de Cosecha',  to: '/biomasa/programa',   icon: Droplet },
   { label: 'Muestreos',         to: '/biomasa/muestreos',  icon: TestTube2 },

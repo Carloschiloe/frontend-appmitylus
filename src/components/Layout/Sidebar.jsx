@@ -11,15 +11,16 @@ import {
   LogOut,
   Calendar,
   Users,
-  ShieldCheck,
   TableProperties,
   Database,
-  BarChart3,
-  ClipboardList,
   Bug,
   CircleHelp,
   FileUp,
   ArrowLeft,
+  Inbox,
+  Handshake,
+  ShoppingCart,
+  TestTube2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -28,32 +29,33 @@ import './Sidebar.css';
 
 const MENU_STRUCTURE = [
   {
-    id: 'dashboard',
+    id: 'inicio',
     label: 'Inicio',
     icon: LayoutDashboard,
     links: [
-      { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-      { label: 'Resumen', to: '/gestion/bandeja', icon: ClipboardList },
+      { label: 'Dashboard',  to: '/dashboard',     icon: LayoutDashboard },
+      { label: 'Agenda',     to: '/gestion/agenda', icon: Calendar },
     ],
   },
   {
-    id: 'directorio',
-    label: 'Directorio',
+    id: 'proveedores',
+    label: 'Proveedores',
     icon: Building2,
     links: [
-      { label: 'Proveedores', to: '/gestion/proveedores', icon: Building2 },
-      { label: 'Centros', to: '/centros/directorio', icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa'] },
-      { label: 'Agenda', to: '/gestion/agenda', icon: Calendar },
-      { label: 'Biomasa', to: '/biomasa/status', icon: Droplet, activeFor: ['/biomasa/status', '/biomasa/tratos', '/biomasa/programa', '/biomasa/muestreos'] },
+      { label: 'Directorio', to: '/gestion/proveedores', icon: Building2 },
+      { label: 'Historial',  to: '/historial',           icon: History },
+      { label: 'Centros',    to: '/centros/directorio',  icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa', '/centros/sanitario'], alertId: 'sanitario' },
     ],
   },
   {
-    id: 'inteligencia',
-    label: 'Trazabilidad',
-    icon: BarChart3,
+    id: 'operaciones',
+    label: 'Operaciones',
+    icon: Droplet,
     links: [
-      { label: 'Sanitario', to: '/centros/sanitario', icon: ShieldCheck, alertId: 'sanitario' },
-      { label: 'Historial', to: '/historial', icon: History },
+      { label: 'Disponibilidad', to: '/biomasa/status',    icon: Inbox },
+      { label: 'Tratos',         to: '/biomasa/tratos',    icon: Handshake },
+      { label: 'Prog. Cosecha',  to: '/biomasa/programa',  icon: ShoppingCart },
+      { label: 'Muestreos',      to: '/biomasa/muestreos', icon: TestTube2 },
     ],
   },
   {
@@ -70,8 +72,8 @@ const MENU_STRUCTURE = [
     icon: Settings,
     requiereRol: 'admin',
     links: [
-      { label: 'Maestros', to: '/configuracion/maestros', icon: Database },
-      { label: 'Usuarios', to: '/configuracion/usuarios', icon: Users },
+      { label: 'Maestros',      to: '/configuracion/maestros',  icon: Database },
+      { label: 'Usuarios',      to: '/configuracion/usuarios',  icon: Users },
       { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
     ],
   },
@@ -80,7 +82,7 @@ const MENU_STRUCTURE = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [openGroup, setOpenGroup] = useState('dashboard');
+  const [openGroup, setOpenGroup] = useState('inicio');
   const [alerts, setAlerts] = useState({});
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 

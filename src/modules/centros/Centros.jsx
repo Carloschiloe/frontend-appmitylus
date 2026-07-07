@@ -7,6 +7,7 @@ import {
   FileUp,
   TableProperties,
   RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { syncSernapescaAreas } from '../../api/api-centros';
 import { useToast } from '../../context/ToastContext';
@@ -24,36 +25,36 @@ import './centros.css';
 
 const CENTROS_TABS = [
   { id: 'directorio', label: 'Directorio', to: '/centros/directorio', icon: TableProperties, preload: loadCentrosTable },
-  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon, preload: loadCentrosMap }
+  { id: 'mapa',       label: 'Mapa',       to: '/centros/mapa',       icon: MapIcon,         preload: loadCentrosMap },
+  { id: 'sanitario',  label: 'Sanitario',  to: '/centros/sanitario',  icon: ShieldCheck,     preload: loadSanitarioDashboard },
 ];
 
 const getPageMeta = (pathname) => {
   if (pathname.startsWith('/centros/sanitario')) {
     return {
-      eyebrow: 'Trazabilidad · Sanitario',
+      eyebrow: 'Centros · Sanitario',
       title: 'Estado Sanitario',
-      showActions: false
+      showActions: false,
     };
   }
 
   if (pathname.startsWith('/centros/mapa')) {
     return {
-      eyebrow: 'Directorio · Mapa',
+      eyebrow: 'Centros · Mapa',
       title: 'Mapa de Centros',
-      showActions: true
+      showActions: true,
     };
   }
 
   return {
-    eyebrow: 'Directorio · Centros',
+    eyebrow: 'Proveedores · Centros',
     title: 'Directorio de Centros',
-    showActions: true
+    showActions: true,
   };
 };
 
 export default function Centros() {
   const location = useLocation();
-  const isSanitarioView = location.pathname.startsWith('/centros/sanitario');
   const pageMeta = getPageMeta(location.pathname);
   const { addToast } = useToast();
   const queryClient = useQueryClient();
@@ -91,46 +92,44 @@ export default function Centros() {
       </header>
 
       <div className="mx-content-frame centros-content-frame">
-        {!isSanitarioView && (
-          <div className="mx-tabs-container centros-tabs-row">
-            <div className="mx-tabs">
-              {CENTROS_TABS.map(tab => (
-                <NavLink
-                  key={tab.id}
-                  to={tab.to}
-                  onMouseEnter={tab.preload}
-                  onFocus={tab.preload}
-                  className={({ isActive }) => `mx-tab ${isActive ? 'active' : ''}`}
-                >
-                  <tab.icon size={18} />
-                  {tab.label}
-                </NavLink>
-              ))}
-            </div>
-            {pageMeta.showActions && (
-              <div className="centros-tab-actions">
-                <button
-                  className="mx-btn mx-btn-outline centros-import-btn"
-                  onClick={handleSyncSernapesca}
-                  disabled={syncing}
-                  title="Descargar estado actualizado de áreas desde SERNAPESCA"
-                >
-                  <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
-                  {syncing ? 'Actualizando...' : 'Actualizar Est. Áreas'}
-                </button>
-                <button
-                  className="mx-btn mx-btn-outline centros-import-btn"
-                  onClick={notifyImportCentros}
-                >
-                  <FileUp size={18} /> Importar
-                </button>
-                <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
-                  <Plus size={20} /> Nuevo Centro
-                </button>
-              </div>
-            )}
+        <div className="mx-tabs-container centros-tabs-row">
+          <div className="mx-tabs">
+            {CENTROS_TABS.map(tab => (
+              <NavLink
+                key={tab.id}
+                to={tab.to}
+                onMouseEnter={tab.preload}
+                onFocus={tab.preload}
+                className={({ isActive }) => `mx-tab ${isActive ? 'active' : ''}`}
+              >
+                <tab.icon size={18} />
+                {tab.label}
+              </NavLink>
+            ))}
           </div>
-        )}
+          {pageMeta.showActions && (
+            <div className="centros-tab-actions">
+              <button
+                className="mx-btn mx-btn-outline centros-import-btn"
+                onClick={handleSyncSernapesca}
+                disabled={syncing}
+                title="Descargar estado actualizado de áreas desde SERNAPESCA"
+              >
+                <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
+                {syncing ? 'Actualizando...' : 'Actualizar Est. Áreas'}
+              </button>
+              <button
+                className="mx-btn mx-btn-outline centros-import-btn"
+                onClick={notifyImportCentros}
+              >
+                <FileUp size={18} /> Importar
+              </button>
+              <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
+                <Plus size={20} /> Nuevo Centro
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="mx-submodule-body">
           <Suspense fallback={
