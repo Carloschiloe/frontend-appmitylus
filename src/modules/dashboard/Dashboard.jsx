@@ -86,32 +86,50 @@ function formatShortDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
-const KpiCard = ({ title, value, sub, icon: Icon, color, trend, tooltip }) => (
-  <div className="dsh-kpi-card" style={{ '--accent': color }}>
-    <div className="dsh-kpi-accent" />
-    <div className="dsh-kpi-header">
-      <p className="dsh-kpi-title">{title}</p>
-      <div className="dsh-kpi-icon" style={{ background: `${color}18`, color }}>
-        <Icon size={17} />
+function KpiCard({ title, value, sub, icon: Icon, color, trend, tooltip }) {
+  const [open, setOpen] = React.useState(false);
+  const hasTooltip = tooltip && tooltip.length > 0;
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open]);
+
+  return (
+    <div
+      ref={ref}
+      className={`dsh-kpi-card${open ? ' is-open' : ''}`}
+      style={{ '--accent': color, cursor: hasTooltip ? 'pointer' : 'default' }}
+      onClick={() => hasTooltip && setOpen(o => !o)}
+    >
+      <div className="dsh-kpi-accent" />
+      <div className="dsh-kpi-header">
+        <p className="dsh-kpi-title">{title}</p>
+        <div className="dsh-kpi-icon" style={{ background: `${color}18`, color }}>
+          <Icon size={17} />
+        </div>
       </div>
-    </div>
-    <h4 className="dsh-kpi-value">{value ?? '—'}</h4>
-    <div className="dsh-kpi-footer">
-      {trend != null && (
-        <span className={`dsh-kpi-trend ${trend >= 0 ? 'up' : 'down'}`}>
-          {trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-          {Math.abs(trend)}%
-        </span>
+      <h4 className="dsh-kpi-value">{value ?? '—'}</h4>
+      <div className="dsh-kpi-footer">
+        {trend != null && (
+          <span className={`dsh-kpi-trend ${trend >= 0 ? 'up' : 'down'}`}>
+            {trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+            {Math.abs(trend)}%
+          </span>
+        )}
+        {sub && <span className="dsh-kpi-sub">{sub}</span>}
+      </div>
+      {hasTooltip && open && (
+        <div className="dsh-kpi-tooltip" onClick={e => e.stopPropagation()}>
+          {tooltip.map((line, i) => <div key={i} className="dsh-kpi-tooltip-row">{line}</div>)}
+        </div>
       )}
-      {sub && <span className="dsh-kpi-sub">{sub}</span>}
     </div>
-    {tooltip && tooltip.length > 0 && (
-      <div className="dsh-kpi-tooltip">
-        {tooltip.map((line, i) => <div key={i} className="dsh-kpi-tooltip-row">{line}</div>)}
-      </div>
-    )}
-  </div>
-);
+  );
+}
 
 export default function Dashboard() {
   const [data, setData]       = useState(null);
