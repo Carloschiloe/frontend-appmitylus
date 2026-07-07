@@ -1,15 +1,11 @@
 import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
-import { useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { useLocation, Navigate } from 'react-router-dom';
 import './biomasa.css';
 import {
   Plus,
-  Inbox,
-  ShoppingCart,
   Activity,
   LayoutGrid,
   List as ListIcon,
-  Handshake,
-  TestTube2,
 } from 'lucide-react';
 import { maestrosApi } from '../../api/api-maestros';
 import { useToast } from '../../context/ToastContext';
@@ -32,7 +28,6 @@ const Tratos = lazy(() => import('../gestion/submodules/Tratos'));
 export default function Biomasa() {
   const { addToast } = useToast();
   const location = useLocation();
-  const navigate = useNavigate();
   const isStatusView = location.pathname.includes('/status');
   const isTratosView = location.pathname.includes('/tratos');
   const isProgramView = location.pathname.includes('/programa');
@@ -343,14 +338,6 @@ export default function Biomasa() {
       </header>
 
       <div className={`mx-content-frame biomasa-content-frame ${isMuestreosView ? 'biomasa-content-frame--muestreos' : ''}`}>
-        <div className="mx-toolbar mx-module-nav">
-          <div className="mx-toggle-group">
-            <button className={`mx-toggle-btn ${isStatusView ? 'active' : ''}`} onClick={() => navigate('/biomasa/status')}><Inbox size={14} /> Disponibilidad</button>
-            <button className={`mx-toggle-btn ${isTratosView ? 'active' : ''}`} onClick={() => navigate('/biomasa/tratos')}><Handshake size={14} /> Tratos</button>
-            <button className={`mx-toggle-btn ${isProgramView ? 'active' : ''}`} onClick={() => navigate('/biomasa/programa')}><ShoppingCart size={14} /> Prog. de Cosecha</button>
-            <button className={`mx-toggle-btn ${isMuestreosView ? 'active' : ''}`} onClick={() => navigate('/biomasa/muestreos')}><TestTube2 size={14} /> Muestreos</button>
-          </div>
-        </div>
         {isProgramView && (
         <div className="prog-sub-nav-bar">
           <div className="prog-sub-nav" data-tour="programa-vistas">

@@ -108,7 +108,7 @@ function RowStatus({ fila }) {
   return <span className="importar-row-status ok">OK</span>;
 }
 
-export default function ImportarDatos() {
+export default function ImportarDatos({ noPage = false }) {
   const { addToast }  = useToast();
   const [searchParams] = useSearchParams();
   const [step, setStep]                     = useState(0);
@@ -222,7 +222,7 @@ export default function ImportarDatos() {
   };
 
   return (
-    <div className="importar-page">
+    <div className={noPage ? 'importar-page importar-page--embedded' : 'importar-page'}>
       <StepBar step={step} />
 
       {/* PASO 0: Seleccionar tipo */}

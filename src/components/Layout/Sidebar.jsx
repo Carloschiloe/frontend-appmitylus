@@ -10,12 +10,9 @@ import {
   ChevronRight,
   LogOut,
   Calendar,
-  Users,
   TableProperties,
-  Database,
   Bug,
   CircleHelp,
-  FileUp,
   ArrowLeft,
   Inbox,
   Handshake,
@@ -72,9 +69,7 @@ const MENU_STRUCTURE = [
     icon: Settings,
     requiereRol: 'admin',
     links: [
-      { label: 'Maestros',      to: '/configuracion/maestros',  icon: Database },
-      { label: 'Usuarios',      to: '/configuracion/usuarios',  icon: Users },
-      { label: 'Importar datos', to: '/configuracion/importar', icon: FileUp },
+      { label: 'Configuración', to: '/configuracion', icon: Settings, activeFor: ['/configuracion/maestros', '/configuracion/usuarios', '/configuracion/importar'] },
     ],
   },
 ];
@@ -203,52 +198,90 @@ export default function Sidebar() {
       )}
 
       <nav className="mx-sidebar-menu">
-        {filteredMenu.map((group) => (
-          <div key={group.id} className={`mx-menu-group ${openGroup === group.id ? 'is-open' : ''}`}>
-            <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
-              <span className="mx-menu-head-label">
-                <group.icon size={18} />
-                {group.label}
-              </span>
-              {openGroup === group.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </button>
-            <div className="mx-submenu">
-              {group.links.map((link) => {
-                if (link.onClick) {
+        {filteredMenu.map((group) => {
+          const realLinks = group.links.filter((l) => !l.onClick && !l.mobileOnly);
+          const mobileActions = group.links.filter((l) => l.mobileOnly);
+
+          // Single real-link group → render as a direct NavLink (no accordion)
+          if (realLinks.length === 1) {
+            const directLink = realLinks[0];
+            const isActive = directLink.activeFor
+              ? directLink.activeFor.some((p) => location.pathname.startsWith(p))
+              : location.pathname.startsWith(directLink.to.split('?')[0]);
+            return (
+              <div key={group.id} className="mx-menu-group">
+                <NavLink
+                  to={directLink.to}
+                  className={`mx-menu-head${isActive ? ' is-active' : ''}`}
+                >
+                  <span className="mx-menu-head-label">
+                    <group.icon size={18} />
+                    {group.label}
+                  </span>
+                </NavLink>
+                {mobileActions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    className="mx-submenu-action mx-submenu-action--mobile-only"
+                    onClick={action.onClick}
+                  >
+                    <action.icon size={16} />
+                    <span>{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          }
+
+          // Multi-link group → accordion (existing behavior)
+          return (
+            <div key={group.id} className={`mx-menu-group ${openGroup === group.id ? 'is-open' : ''}`}>
+              <button className="mx-menu-head" onClick={() => toggleGroup(group.id)}>
+                <span className="mx-menu-head-label">
+                  <group.icon size={18} />
+                  {group.label}
+                </span>
+                {openGroup === group.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+              <div className="mx-submenu">
+                {group.links.map((link) => {
+                  if (link.onClick) {
+                    return (
+                      <button
+                        key={link.label}
+                        type="button"
+                        className={link.mobileOnly ? 'mx-submenu-action mx-submenu-action--mobile-only' : 'mx-submenu-action'}
+                        onClick={link.onClick}
+                      >
+                        <link.icon size={16} />
+                        <span>{link.label}</span>
+                      </button>
+                    );
+                  }
                   return (
-                    <button
+                    <NavLink
                       key={link.label}
-                      type="button"
-                      className={link.mobileOnly ? 'mx-submenu-action mx-submenu-action--mobile-only' : 'mx-submenu-action'}
-                      onClick={link.onClick}
+                      to={link.to}
+                      className={({ isActive }) => {
+                        if (link.activeFor) {
+                          return link.activeFor.some((p) => location.pathname.startsWith(p)) ? 'is-active' : '';
+                        }
+                        return isActive ? 'is-active' : '';
+                      }}
                     >
                       <link.icon size={16} />
                       <span>{link.label}</span>
-                    </button>
+                      {link.alertId && alerts[link.alertId] > 0 && (
+                        <span className="mx-sidebar-alert">{alerts[link.alertId]}</span>
+                      )}
+                    </NavLink>
                   );
-                }
-                return (
-                  <NavLink
-                    key={link.label}
-                    to={link.to}
-                    className={({ isActive }) => {
-                      if (link.activeFor) {
-                        return link.activeFor.some((p) => location.pathname.startsWith(p)) ? 'is-active' : '';
-                      }
-                      return isActive ? 'is-active' : '';
-                    }}
-                  >
-                    <link.icon size={16} />
-                    <span>{link.label}</span>
-                    {link.alertId && alerts[link.alertId] > 0 && (
-                      <span className="mx-sidebar-alert">{alerts[link.alertId]}</span>
-                    )}
-                  </NavLink>
-                );
-              })}
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Reportar problema — botón standalone al fondo del sidebar ── */}

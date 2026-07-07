@@ -67,7 +67,7 @@ function getApiErrorMessage(error, fallback) {
   return detail || error?.data?.message || error?.data?.error || error?.message || fallback;
 }
 
-export default function Usuarios() {
+export default function Usuarios({ noPage = false }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const { user: currentUser } = useAuth();
@@ -252,16 +252,7 @@ export default function Usuarios() {
     return emp ? emp.nombre : '—';
   };
 
-  return (
-    <div className="mx-page" onClick={() => setActiveMenu(null)}>
-      <header className="mx-hero">
-        <div className="mx-hero-content">
-          <p className="mx-eyebrow">Administración - Usuarios</p>
-          <h1>Gestión de Usuarios</h1>
-          <p>Control de acceso, roles y permisos de la plataforma.</p>
-        </div>
-      </header>
-
+  const contentBody = (<>
       <div className="mx-content-frame usuarios-content-frame">
         <div className="mx-toolbar usuarios-toolbar">
           <div className="mx-search-box usuarios-search-box">
@@ -579,6 +570,19 @@ export default function Usuarios() {
           </div>
         </div>
       )}
+    </>
+  );
+  if (noPage) return <div onClick={() => setActiveMenu(null)}>{contentBody}</div>;
+  return (
+    <div className="mx-page" onClick={() => setActiveMenu(null)}>
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Administración - Usuarios</p>
+          <h1>Gestión de Usuarios</h1>
+          <p>Control de acceso, roles y permisos de la plataforma.</p>
+        </div>
+      </header>
+      {contentBody}
     </div>
   );
 }

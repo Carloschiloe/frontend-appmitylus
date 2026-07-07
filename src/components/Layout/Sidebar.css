@@ -107,6 +107,17 @@
   color: #fff;
 }
 
+a.mx-menu-head {
+  text-decoration: none;
+}
+
+a.mx-menu-head.is-active {
+  background: var(--mx-gradient-cta);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(10, 92, 255, 0.24);
+}
+
 .mx-menu-head-label {
   display: flex;
   align-items: center;

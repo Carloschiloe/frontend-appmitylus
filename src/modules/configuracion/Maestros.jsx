@@ -66,7 +66,7 @@ const formatCLP = (value) => {
     : '—';
 };
 
-export default function Maestros() {
+export default function Maestros({ noPage = false }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -327,6 +327,20 @@ export default function Maestros() {
 
   const activeTenant = localStorage.getItem('selected_tenant_db');
   if (!activeTenant) {
+    const noTenantContent = (
+      <div className="mx-content-frame" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', background: 'white', borderRadius: '12px', marginTop: '24px' }}>
+        <div style={{ maxWidth: '400px', padding: '40px', textAlign: 'center' }}>
+          <div style={{ background: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <Settings2 size={32} style={{ color: '#64748b' }} />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Empresa no seleccionada</h2>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            Para configurar categorías, reglas de calidad y otros maestros, primero debes seleccionar una empresa en el panel superior.
+          </p>
+        </div>
+      </div>
+    );
+    if (noPage) return noTenantContent;
     return (
       <div className="mx-page">
         <header className="mx-hero">
@@ -335,34 +349,15 @@ export default function Maestros() {
             <h1>Maestros del Sistema</h1>
           </div>
         </header>
-        <div className="mx-content-frame" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', background: 'white', borderRadius: '12px', marginTop: '24px' }}>
-          <div style={{ maxWidth: '400px', padding: '40px', textAlign: 'center' }}>
-            <div style={{ background: '#f1f5f9', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <Settings2 size={32} style={{ color: '#64748b' }} />
-            </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Empresa no seleccionada</h2>
-            <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
-              Para configurar categorías, reglas de calidad y otros maestros, primero debes seleccionar una empresa en el panel superior.
-            </p>
-          </div>
-        </div>
+        {noTenantContent}
       </div>
     );
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="mx-page">
-      <header className="mx-hero">
-        <div className="mx-hero-content">
-          <p className="mx-eyebrow">Administración - Parámetros</p>
-          <h1>Maestros del Sistema</h1>
-          <p>Administración dinámica de categorías y parámetros operativos.</p>
-        </div>
-      </header>
-
-      <div className="mx-content-frame maestros-content-frame">
+  const contentFrame = (<>
+    <div className="mx-content-frame maestros-content-frame">
         <div className="mx-table-card maestros-layout">
 
           {/* ── Nav lateral de categorías ── */}
@@ -902,6 +897,19 @@ export default function Maestros() {
         onConfirm={handleDelete}
         itemName={itemToDelete?.nombre}
       />
+    </>
+  );
+  if (noPage) return contentFrame;
+  return (
+    <div className="mx-page">
+      <header className="mx-hero">
+        <div className="mx-hero-content">
+          <p className="mx-eyebrow">Administración - Parámetros</p>
+          <h1>Maestros del Sistema</h1>
+          <p>Administración dinámica de categorías y parámetros operativos.</p>
+        </div>
+      </header>
+      {contentFrame}
     </div>
   );
 }

@@ -30,6 +30,7 @@ const Dashboard = lazy(() => import('./modules/dashboard/Dashboard.jsx'));
 const Biomasa   = lazy(() => import('./modules/biomasa/Biomasa.jsx'));
 const Centros   = lazy(() => import('./modules/centros/Centros.jsx'));
 const Gestion   = lazy(() => import('./modules/gestion/Gestion.jsx'));
+const Configuracion = lazy(() => import('./modules/configuracion/Configuracion.jsx'));
 const Maestros  = lazy(() => import('./modules/configuracion/Maestros.jsx'));
 const Usuarios  = lazy(() => import('./modules/configuracion/Usuarios.jsx'));
 const Historial = lazy(() => import('./modules/historial/Historial.jsx'));
@@ -351,15 +352,9 @@ export default function App() {
                     </TenantScopedRoute>
                   } />
 
-                  <Route path="/configuracion/maestros" element={
+                  <Route path="/configuracion/*" element={
                     <AdminRoute>
-                      <Maestros />
-                    </AdminRoute>
-                  } />
-
-                  <Route path="/configuracion/usuarios" element={
-                    <AdminRoute>
-                      <Usuarios />
+                      <Configuracion />
                     </AdminRoute>
                   } />
 
@@ -367,12 +362,6 @@ export default function App() {
                     <SuperAdminRoute>
                       <Empresas />
                     </SuperAdminRoute>
-                  } />
-
-                  <Route path="/configuracion/importar" element={
-                    <AdminRoute>
-                      <ImportarDatos />
-                    </AdminRoute>
                   } />
 
                   <Route path="/historial" element={
