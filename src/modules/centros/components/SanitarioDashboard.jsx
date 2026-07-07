@@ -348,12 +348,20 @@ export default function SanitarioDashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
-                    <div className="mx-spinner" style={{ margin: '0 auto 12px' }} />
-                    <p>Cargando datos sanitarios...</p>
-                  </td>
-                </tr>
+                Array.from({ length: 10 }).map((_, i) => (
+                  <tr key={i} className="sanitario-skel-row">
+                    <td><div className="skel skel-badge" /></td>
+                    <td><div className="skel skel-sm" /></td>
+                    <td>
+                      <div className="skel skel-md" />
+                      <div className="skel skel-xs" style={{ marginTop: 5 }} />
+                    </td>
+                    <td><div className="skel skel-sm" /></td>
+                    <td><div className="skel skel-badge" /></td>
+                    <td style={{ textAlign: 'center' }}><div className="skel skel-xs" style={{ margin: '0 auto' }} /></td>
+                    <td style={{ textAlign: 'right' }}><div className="skel skel-icon" style={{ marginLeft: 'auto' }} /></td>
+                  </tr>
+                ))
               ) : displayedAreas.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '40px' }}>
