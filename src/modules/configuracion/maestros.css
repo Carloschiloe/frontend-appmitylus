@@ -492,3 +492,75 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
 }
+
+/* ── Mobile: sidenav pasa a barra horizontal, topbar se apila ─────────────── */
+@media (max-width: 768px) {
+  .maestros-layout {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .maestros-sidenav {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    padding: 8px 8px;
+    gap: 4px;
+  }
+
+  .maestros-sidenav-label {
+    display: none;
+  }
+
+  .maestros-sidenav-btn {
+    flex-shrink: 0;
+    width: auto;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 8px 8px 0 0;
+    margin-right: 0;
+  }
+
+  .maestros-sidenav-btn.active {
+    border-left-color: transparent;
+    border-bottom-color: #0A5CFF;
+  }
+
+  .maestros-topbar {
+    flex-wrap: wrap;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .maestros-topbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .maestros-search-box {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 160px;
+  }
+
+  .maestros-tipo-filter {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 140px;
+  }
+
+  /* Drag & drop no aplica en touch: se oculta la columna/handle en la vista de tarjetas */
+  .maestros-drag-th,
+  .maestros-drag-cell {
+    display: none;
+  }
+
+  /* La celda de Reglas de Calidad puede traer varios chips: ocupa el ancho completo de la tarjeta */
+  .maestros-table-inner td[data-label="Configuración"] {
+    grid-column: 1 / -1;
+  }
+}

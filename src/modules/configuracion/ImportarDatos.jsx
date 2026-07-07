@@ -325,12 +325,12 @@ export default function ImportarDatos({ noPage = false }) {
               <tbody>
                 {preview.filas.map((f) => (
                   <tr key={f._fila} className={!f._ok ? 'row-error' : f._duplicado ? 'row-duplicado' : 'row-ok'}>
-                    <td>{f._fila}</td>
-                    <td><RowStatus fila={f} /></td>
+                    <td data-label="#">{f._fila}</td>
+                    <td data-label="Estado"><RowStatus fila={f} /></td>
                     {tableColumnas.map((c) => (
-                      <td key={c.key}>{getCellValue(f, c)}</td>
+                      <td key={c.key} data-label={c.label}>{getCellValue(f, c)}</td>
                     ))}
-                    <td style={{ fontSize: 11, color: !f._ok ? '#b91c1c' : f._duplicado ? '#92400e' : undefined }}>
+                    <td data-label="Detalle" style={{ fontSize: 11, color: !f._ok ? '#b91c1c' : f._duplicado ? '#92400e' : undefined }}>
                       {!f._ok ? f._errores?.join(', ') : f._duplicado ? 'Ya existe' : ''}
                     </td>
                   </tr>

@@ -217,20 +217,20 @@ export default function DisponibilidadProyeccionAnual({
                           const meta = stateMeta(item.estado || 'disponible');
                           return (
                             <tr key={item._id}>
-                              <td className="disponibilidad-provider"><DisponibilidadProviderCell item={item} /></td>
-                              <td>{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
-                              <td className="disponibilidad-tons">
+                              <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
+                              <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
+                              <td className="disponibilidad-tons" data-label="Toneladas">
                                 <div>{fmtTons(itemTons(item))}</div>
                                 <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
                               </td>
-                              <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
-                              <td className="disp-calibre-cell">
+                              <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
+                              <td className="disp-calibre-cell" data-label="Calibres">
                                 {item.calibreMin || item.calibreMax
                                   ? `${item.calibreMin ?? '?'}–${item.calibreMax ?? '?'} uk`
                                   : '—'}
                               </td>
-                              <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
-                              <td>
+                              <td className="disponibilidad-observation" data-label="Observación" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
+                              <td data-label="Acciones">
                                 <div className="disponibilidad-row-actions">
                                   <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
                                   {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (

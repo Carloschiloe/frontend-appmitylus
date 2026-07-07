@@ -931,7 +931,7 @@ export default function Directorio() {
 
                   return (
                     <tr key={provider.providerKey} className={`dir-row-${provider.seguimientoEstado || 'none'}`}>
-                      <td>
+                      <td data-label="Proveedor">
                         <div className="dir-provider-cell">
                           <div className={`dir-provider-avatar is-${provider.seguimientoEstado || 'none'}`}>
                             {provider.nombre.charAt(0).toUpperCase()}
@@ -949,7 +949,7 @@ export default function Directorio() {
                         </div>
                       </td>
 
-                      <td>
+                      <td data-label="Contacto principal">
                         <div className={`dir-primary-text${provider.contactoPrincipal === 'Primer contacto pendiente' ? ' is-pending' : ''}`}>{provider.contactoPrincipal}</div>
                         {provider.contactoPrincipal !== 'Primer contacto pendiente' && (
                           <div className="dir-contact-meta">
@@ -960,7 +960,7 @@ export default function Directorio() {
                         )}
                       </td>
 
-                      <td>
+                      <td data-label="Estado comercial">
                         <span className={`mx-badge mx-badge-${provider.seguimientoEstado === 'activo' ? 'success' : provider.seguimientoEstado === 'pausado' ? 'warning' : provider.seguimientoEstado === 'acordado' ? 'primary' : 'muted'}`}>
                           <StatusIcon size={12} />
                           {status.label}
@@ -972,7 +972,7 @@ export default function Directorio() {
                         ) : null}
                       </td>
 
-                      <td>
+                      <td data-label="Última gestión">
                         {provider.ultimaInteraccionFecha ? (
                           <>
                             <div className="dir-reg-date">{formatDaysAgo(provider.ultimaInteraccionFecha)}</div>
@@ -983,7 +983,7 @@ export default function Directorio() {
                         )}
                       </td>
 
-                      <td>
+                      <td data-label="Próxima acción">
                         <div className="dir-clamped-text" title={provider.proximaAccion}>
                           {provider.proximaAccion || '—'}
                         </div>
@@ -992,7 +992,7 @@ export default function Directorio() {
                         )}
                       </td>
 
-                      <td className="dir-actions-cell">
+                      <td className="dir-actions-cell" data-label="Acciones">
                         <div className="dir-menu-wrap">
                           <button
                             className="mx-action-btn dir-menu-trigger"
@@ -1017,11 +1017,11 @@ export default function Directorio() {
               ) : (
                 filteredItems.map((contact, index) => (
                   <tr key={contact._id || index}>
-                    <td>
+                    <td data-label="Nombre contacto">
                       <div className="dir-contact-name">{contact.nombre || contact.contactoNombre}</div>
                       <div className="dir-contact-id">ID: {contact._id?.slice(-6) || '-'}</div>
                     </td>
-                    <td>
+                    <td data-label="Empresa">
                       {contact.proveedorNombre ? (
                         <div>
                           <div>{contact.proveedorNombre}</div>
@@ -1037,14 +1037,14 @@ export default function Directorio() {
                         <span className="mx-badge mx-badge-error dir-contact-small-badge">Sin empresa</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Correo / telefono">
                       <div className="dir-contact-channel">
                         <span><Mail size={10} /> {contact.email || contact.contactoEmail || '-'}</span>
                         <span><Phone size={10} /> {contact.telefono || contact.contactoTelefono || '-'}</span>
                       </div>
                     </td>
-                    <td><span className="mx-badge mx-badge-muted">{contact.cargo || 'Contacto'}</span></td>
-                    <td className="dir-actions-cell">
+                    <td data-label="Cargo / rol"><span className="mx-badge mx-badge-muted">{contact.cargo || 'Contacto'}</span></td>
+                    <td className="dir-actions-cell" data-label="Acciones">
                       <div className="mx-table-actions-cell dir-actions">
                         <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(contact)}>
                           <Edit size={14} />

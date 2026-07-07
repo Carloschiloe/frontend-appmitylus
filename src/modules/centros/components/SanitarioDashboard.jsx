@@ -562,19 +562,19 @@ export default function SanitarioDashboard() {
                   <tbody>
                     {historyModal.items.map((item) => (
                       <tr key={item._id}>
-                        <td>{formatDate(item.fechaExtraccion || item.createdAt)}</td>
-                        <td>{item.categoriaTipo || '—'}</td>
-                        <td>{item.tipoAnalisis || '—'}</td>
-                        <td>{item.recurso || '—'}</td>
-                        <td>{item.bancaNatural || '—'}</td>
-                        <td>
+                        <td data-label="Fecha">{formatDate(item.fechaExtraccion || item.createdAt)}</td>
+                        <td data-label="Categoría">{item.categoriaTipo || '—'}</td>
+                        <td data-label="Análisis">{item.tipoAnalisis || '—'}</td>
+                        <td data-label="Recurso">{item.recurso || '—'}</td>
+                        <td data-label="B. Natural">{item.bancaNatural || '—'}</td>
+                        <td data-label="Glosa">
                           <span className={item.resultadoPositivo ? 'sanitario-result is-alert' : 'sanitario-result'}>
                             {item.glosaResultado || (item.resultadoPositivo ? 'Positivo' : 'Sin alerta')}
                           </span>
                         </td>
-                        <td>{[item.valorNumerico, item.unidad].filter(Boolean).join(' ') || '—'}</td>
-                        <td>{item.agenteCausal || '—'}</td>
-                        <td>{item.laboratorio || '—'}</td>
+                        <td data-label="Valor">{[item.valorNumerico, item.unidad].filter(Boolean).join(' ') || '—'}</td>
+                        <td data-label="Agente">{item.agenteCausal || '—'}</td>
+                        <td data-label="Laboratorio">{item.laboratorio || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -613,11 +613,11 @@ export default function SanitarioDashboard() {
                   <tbody>
                     {centersModal.items.map((centro) => (
                       <tr key={`${centro.code}-${centro.proveedor}`}>
-                        <td><code>{centro.code || '—'}</code></td>
-                        <td>{centro.proveedor || '—'}</td>
-                        <td>{centro.comuna || '—'}</td>
-                        <td>{centro.codigoArea || '—'}</td>
-                        <td><SernapescaBadge value={centro.estadoAreaSernapesca || null} /></td>
+                        <td data-label="Código centro"><code>{centro.code || '—'}</code></td>
+                        <td data-label="Titular">{centro.proveedor || '—'}</td>
+                        <td data-label="Comuna">{centro.comuna || '—'}</td>
+                        <td data-label="Código área">{centro.codigoArea || '—'}</td>
+                        <td data-label="Estado área"><SernapescaBadge value={centro.estadoAreaSernapesca || null} /></td>
                       </tr>
                     ))}
                   </tbody>

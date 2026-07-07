@@ -429,14 +429,14 @@ export default function CentrosTable() {
               ) : (
                 visibleRows.map((centro) => (
                   <tr key={centro._id} className="centros-row">
-                    <td>
+                    <td data-label="Proveedor">
                       <div className="centros-cell-main">
                         <span className="ct-cell-name">{centro.proveedor}</span>
                         <span className="centros-cell-sub">{centro.comuna}</span>
                       </div>
                     </td>
-                    <td><code className="ct-code">{centro.code}</code></td>
-                    <td>
+                    <td data-label="Código"><code className="ct-code">{centro.code}</code></td>
+                    <td data-label="Área PSMB">
                       {centro.areaPSMB ? (
                         <div className="centros-area-cell">
                           <strong>{centro.areaPSMB}</strong>
@@ -446,7 +446,7 @@ export default function CentrosTable() {
                         <span className="centros-muted">Sin área</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Estado área">
                       <span className={`mx-badge ct-estado-badge mx-badge-${
                         centro.estadoAreaSernapesca === 'Abierta' ? 'success' :
                         (centro.estadoAreaSernapesca === 'Inactiva' || centro.estadoAreaSernapesca === 'Eliminada') ? 'error' :
@@ -455,10 +455,10 @@ export default function CentrosTable() {
                         {centro.estadoAreaSernapesca || '—'}
                       </span>
                     </td>
-                    <td className="ct-col-right">
+                    <td className="ct-col-right" data-label="Hectáreas">
                       {Number(centro.hectareas || 0).toLocaleString('es-CL', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="ct-col-actions">
+                    <td className="ct-col-actions" data-label="Acciones">
                       <div className="ct-menu-wrap">
                         <button
                           className="mx-action-btn"

@@ -683,7 +683,7 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                     const StatusIcon = status.icon;
                     return (
                       <tr key={provider.key} className="historial-list-row" style={{ borderLeft: `3px solid ${status.color}` }}>
-                        <td>
+                        <td data-label="Proveedor">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div className="hpc-avatar-sm" style={{ background: getAvatarColor(provider.name) }}>
                               {getInitials(provider.name)}
@@ -696,12 +696,12 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Estado">
                           <span className="mx-badge" style={{ color: status.color, background: status.bg }}>
                             <StatusIcon size={12} /> {status.label}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Última actividad">
                           <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                             {provider.lastActivity ? formatDate(provider.lastActivity) : '—'}
                           </div>
@@ -709,18 +709,18 @@ function ProviderCardsView({ loading, providers, searchTerm, onSelectProvider })
                             {relativeText(provider.lastActivity)}
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Última gestión">
                           <div className="am-line-clamp-2" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', maxWidth: 260 }}>
                             {provider.lastInteraction || '—'}
                           </div>
                         </td>
-                        <td style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <td data-label="Responsable" style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                           {provider.lastResponsable || '—'}
                         </td>
-                        <td style={{ textAlign: 'center', fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                        <td data-label="Eventos" style={{ textAlign: 'center', fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
                           {provider.totalEventos}
                         </td>
-                        <td>
+                        <td data-label="Acciones">
                           <button type="button" className="hpc-cta-btn" onClick={() => onSelectProvider(provider.key)}>
                             Expediente <ChevronRight size={13} />
                           </button>

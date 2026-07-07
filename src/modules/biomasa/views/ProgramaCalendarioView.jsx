@@ -13,8 +13,6 @@ import {
   AlertTriangle,
   SlidersHorizontal,
   MapPin,
-  Search,
-  X as XIcon,
 } from 'lucide-react';
 import ProgramaSemanaModal from '../components/ProgramaSemanaModal';
 import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
@@ -77,7 +75,6 @@ export default function ProgramaCalendarioView({
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
   const [mapProvider, setMapProvider] = useState(null);
   const [semanaModal, setSemanaModal] = useState(null);
-  const [provSearch, setProvSearch] = useState('');
   const calViewDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -240,20 +237,6 @@ export default function ProgramaCalendarioView({
             </div>
           </div>
           <div className="harvest-calendar-actions">
-            {calView === 'week' && (
-              <div className="cal-prov-search-wrap">
-                <Search size={13} className="cal-prov-search-icon" />
-                <input
-                  className="cal-prov-search-input"
-                  placeholder="Buscar proveedor…"
-                  value={provSearch}
-                  onChange={e => setProvSearch(e.target.value)}
-                />
-                {provSearch && (
-                  <button className="cal-prov-search-clear" onClick={() => setProvSearch('')}><XIcon size={11} /></button>
-                )}
-              </div>
-            )}
             <select className="mx-select sm" value={calendarMetric} onChange={e => setCalendarMetric(e.target.value)} style={{ fontSize: '13px', padding: '4px 8px' }}>
               <option value="camiones">Camiones</option>
               <option value="tons">Tons</option>
@@ -366,7 +349,6 @@ export default function ProgramaCalendarioView({
 
             {Object.entries(weekData).filter(([, data]) => {
               if (filterProducto && data.tipoProducto !== filterProducto) return false;
-              if (provSearch && !data.nombre?.toLowerCase().includes(provSearch.toLowerCase())) return false;
               return true;
             }).map(([id, data]) => {
               const programa = programasById.get(id);
@@ -458,7 +440,7 @@ export default function ProgramaCalendarioView({
                         ) : isSinPrograma ? (
                           <span className="harvest-week-v2-sinprog">Sin programa</span>
                         ) : isSusp ? (
-                          <div className="harvest-week-v2-susp">{cell.ajusteMotivo || 'Sin programa'}</div>
+                          <span className="harvest-week-v2-sinprog">Sin programa</span>
                         ) : cell.camiones > 0 || programa ? (
                           <>
                             {cell.camiones > 0 ? (
@@ -474,7 +456,6 @@ export default function ProgramaCalendarioView({
                             ) : (
                               <span className="harvest-week-v2-empty">—</span>
                             )}
-                            {cell.esDiaEspecial && cell.camiones > 0 && <div className="harvest-week-v2-adj">★ {cell.ajusteMotivo || 'Ajuste'}</div>}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
                                 <button className="wk-btn-ajustar" onClick={() => abrirAjustarDia(programa, dia, cell, 'sumar')} data-tour="programa-ajustar">

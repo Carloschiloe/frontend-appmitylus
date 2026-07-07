@@ -201,6 +201,10 @@
   background: rgba(10, 92, 255, 0.05);
 }
 
+.error-reports-table {
+  min-width: 920px;
+}
+
 @media (max-width: 640px) {
   .quick-capture-provider-row {
     grid-template-columns: 1fr;
@@ -210,5 +214,8 @@
   }
   .qc-fab-label {
     display: none;
+  }
+  .error-reports-table.mx-table:has(td[data-label]) {
+    min-width: 0;
   }
 }

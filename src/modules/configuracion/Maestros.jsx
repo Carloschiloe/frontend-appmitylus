@@ -59,6 +59,8 @@ const TIPO_CAMION_LABELS = TIPO_CAMION_OPTIONS.reduce((acc, item) => {
   return acc;
 }, {});
 
+const EMPTY_LIST = [];
+
 const formatCLP = (value) => {
   const number = Number(value || 0);
   return number
@@ -98,13 +100,13 @@ export default function Maestros({ noPage = false }) {
     });
   }, [queryClient]);
 
-  const { data: maestros = [], isLoading: loading } = useQuery({
+  const { data: maestros = EMPTY_LIST, isLoading: loading } = useQuery({
     queryKey: ['maestros', tipo],
     queryFn: () => maestrosApi.getMaestros(tipo),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: catMuestreo = [] } = useQuery({
+  const { data: catMuestreo = EMPTY_LIST } = useQuery({
     queryKey: ['maestros', 'categoria-muestreo', 'activos'],
     queryFn: () => maestrosApi.getMaestrosActivos('categoria-muestreo'),
     enabled: tipo === 'regla_calidad',
@@ -490,14 +492,14 @@ export default function Maestros({ noPage = false }) {
                           <GripVertical size={16} />
                         </td>
                       )}
-                      <td>
+                      <td data-label={tipo === 'transportista' ? 'Transportista' : 'Nombre / Valor'}>
                         <span style={{ fontWeight: 500 }}>{item.nombre}</span>
                         {tipo === 'transportista' && item.rut && (
                           <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: 2 }}>RUT: {item.rut}</div>
                         )}
                       </td>
                       {tipo === 'categoria-muestreo' && (
-                        <td>
+                        <td data-label="Tipo Categoría">
                           <span className={`mx-badge mx-badge-${
                             item.tipoCat === 'procesable' ? 'success'
                               : item.tipoCat === 'rechazo' ? 'danger'
@@ -509,7 +511,7 @@ export default function Maestros({ noPage = false }) {
                         </td>
                       )}
                       {tipo === 'regla_calidad' && (
-                        <td>
+                        <td data-label="Configuración">
                           <div className="maestros-params-grid">
                             {item.parametros?.map((p, i) => (
                               <div key={i} className="maestros-param-chip">
@@ -520,40 +522,40 @@ export default function Maestros({ noPage = false }) {
                           </div>
                         </td>
                       )}
-                      {tipo === 'condicion_negociacion' && <td><code>{item.tipoValor}</code></td>}
+                      {tipo === 'condicion_negociacion' && <td data-label="Tipo Valor"><code>{item.tipoValor}</code></td>}
                       {tipo === 'tipo_transporte' && (
-                        <td>
+                        <td data-label="Modo">
                           <span className={`mx-badge mx-badge-${item.modo === 'maritimo' ? 'info' : 'muted'}`}>
                             {item.modo === 'maritimo' ? 'Marítimo' : item.modo === 'terrestre' ? 'Terrestre' : '—'}
                           </span>
                         </td>
                       )}
-                      {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.maxisPorUnidad ?? '—'}</td>}
-                      {tipo === 'tipo_transporte' && <td style={{ textAlign: 'center' }}>{item.kgPorMaxiRef ? `${item.kgPorMaxiRef} kg` : '—'}</td>}
+                      {tipo === 'tipo_transporte' && <td data-label="Maxis/Un." style={{ textAlign: 'center' }}>{item.maxisPorUnidad ?? '—'}</td>}
+                      {tipo === 'tipo_transporte' && <td data-label="Kg/Maxi ref." style={{ textAlign: 'center' }}>{item.kgPorMaxiRef ? `${item.kgPorMaxiRef} kg` : '—'}</td>}
                       {tipo === 'tipo_transporte' && (() => {
                         const tons = tonsPorCamionDeTipo(item);
                         const kg = kgRefDeTipo(item);
                         return (
-                          <td style={{ textAlign: 'center' }} title={tons != null ? `${item.maxisPorUnidad} × ${item.kgPorMaxiRef} kg = ${kg.toLocaleString('es-CL')} kg` : 'Faltan datos para calcular'}>
+                          <td data-label="Total ref." style={{ textAlign: 'center' }} title={tons != null ? `${item.maxisPorUnidad} × ${item.kgPorMaxiRef} kg = ${kg.toLocaleString('es-CL')} kg` : 'Faltan datos para calcular'}>
                             {tons != null ? <strong>{tons.toLocaleString('es-CL', { maximumFractionDigits: 1 })} t</strong> : '—'}
                           </td>
                         );
                       })()}
-                      {tipo === 'transportista' && <td>{item.comunaOrigen || '—'}</td>}
+                      {tipo === 'transportista' && <td data-label="Comuna Origen">{item.comunaOrigen || '—'}</td>}
                       {tipo === 'transportista' && (
-                        <td>
+                        <td data-label="Tipo Camión">
                           <span className="mx-badge mx-badge-info">
                             {TIPO_CAMION_LABELS[item.tipoCamion] || item.tipoCamion || '—'}
                           </span>
                         </td>
                       )}
-                      {tipo === 'transportista' && <td style={{ textAlign: 'right' }}>{formatCLP(item.precio)}</td>}
-                      {tipo === 'transportista' && <td style={{ textAlign: 'center' }}>{item.toneladas != null ? `${item.toneladas} t` : '—'}</td>}
-                      {tipo === 'transportista' && <td style={{ textAlign: 'center' }}>{item.maxisPorCamion ?? '—'}</td>}
+                      {tipo === 'transportista' && <td data-label="Precio" style={{ textAlign: 'right' }}>{formatCLP(item.precio)}</td>}
+                      {tipo === 'transportista' && <td data-label="Toneladas" style={{ textAlign: 'center' }}>{item.toneladas != null ? `${item.toneladas} t` : '—'}</td>}
+                      {tipo === 'transportista' && <td data-label="Maxis/Camión" style={{ textAlign: 'center' }}>{item.maxisPorCamion ?? '—'}</td>}
                       {tipo === 'categoria-muestreo' && !isDragMode && (
-                        <td style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>
+                        <td data-label="Orden" style={{ textAlign: 'center' }}>{item.orden ?? 0}</td>
                       )}
-                      <td>
+                      <td data-label="Estado">
                         <button
                           type="button"
                           className="maestros-toggle"
@@ -567,7 +569,7 @@ export default function Maestros({ noPage = false }) {
                           </span>
                         </button>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td data-label="Acciones" style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                           <button className="mx-action-btn edit" onClick={() => handleEdit(item)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" onClick={() => askDelete(item)}><Trash2 size={14} /></button>
@@ -847,18 +849,18 @@ export default function Maestros({ noPage = false }) {
                       <tbody>
                         {transportistasImport.preview.filas?.map((fila) => (
                           <tr key={fila._fila}>
-                            <td>{fila._fila}</td>
-                            <td style={{ color: fila._ok ? '#059669' : '#dc2626' }}>
+                            <td data-label="#">{fila._fila}</td>
+                            <td data-label="Estado" style={{ color: fila._ok ? '#059669' : '#dc2626' }}>
                               {fila._ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
                             </td>
-                            <td>{fila.nombre}</td>
-                            <td>{fila.rut || '—'}</td>
-                            <td>{fila.comunaOrigen || '—'}</td>
-                            <td>{TIPO_CAMION_LABELS[fila.tipoCamion] || fila.tipoCamion || '—'}</td>
-                            <td>{formatCLP(fila.precio)}</td>
-                            <td>{fila.toneladas ?? '—'}</td>
-                            <td>{fila.maxisPorCamion ?? '—'}</td>
-                            <td style={{ color: fila._ok ? '#64748b' : '#dc2626', fontSize: 12 }}>
+                            <td data-label="Transportista">{fila.nombre}</td>
+                            <td data-label="RUT">{fila.rut || '—'}</td>
+                            <td data-label="Comuna Origen">{fila.comunaOrigen || '—'}</td>
+                            <td data-label="Tipo Camión">{TIPO_CAMION_LABELS[fila.tipoCamion] || fila.tipoCamion || '—'}</td>
+                            <td data-label="Precio">{formatCLP(fila.precio)}</td>
+                            <td data-label="Toneladas">{fila.toneladas ?? '—'}</td>
+                            <td data-label="Maxis">{fila.maxisPorCamion ?? '—'}</td>
+                            <td data-label="Detalle" style={{ color: fila._ok ? '#64748b' : '#dc2626', fontSize: 12 }}>
                               {fila._errores?.join(', ') || ''}
                             </td>
                           </tr>

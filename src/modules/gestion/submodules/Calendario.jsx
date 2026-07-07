@@ -533,7 +533,7 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
         <tbody>
           {items.length ? items.map((item) => (
             <tr key={item.id}>
-              <td className="agenda-provider-cell">
+              <td className="agenda-provider-cell" data-label="Proveedor">
                 {item.provider}
                 {item.contactoNombre && item.contactoNombre !== item.provider && (
                   <span className="agenda-provider-contacto">{item.contactoNombre}</span>
@@ -541,9 +541,9 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
               </td>
               {completedView ? (
                 <>
-                  <td><AgendaType kind={item.kind} /></td>
-                  <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
-                  <td>
+                  <td data-label="Tipo de contacto"><AgendaType kind={item.kind} /></td>
+                  <td className="agenda-cell-date" data-label="Fecha gestión">{formatShortDate(item.date)}</td>
+                  <td data-label="Notas / resumen">
                     <div className="agenda-action-cell">
                       <span className="agenda-action-title">{item.title}</span>
                       {item.description && item.description !== item.title
@@ -551,21 +551,21 @@ function AgendaTable({ items, emptyText, completedView, onViewCalendar, onEdit, 
                         : null}
                     </div>
                   </td>
-                  <td>{item.nextStep || '—'}</td>
-                  <td className="agenda-cell-date">{formatShortDate(item.nextStepDate)}</td>
+                  <td data-label="Próximo paso">{item.nextStep || '—'}</td>
+                  <td className="agenda-cell-date" data-label="Fecha próximo paso">{formatShortDate(item.nextStepDate)}</td>
                 </>
               ) : (
                 <>
-                  <td>
+                  <td data-label="Próxima acción">
                     <div className="agenda-action-cell">
                       <span className="agenda-action-title">{item.title}</span>
                     </div>
                   </td>
-                  <td><AgendaStatus status={item.status} /></td>
-                  <td className="agenda-cell-date">{formatShortDate(item.date)}</td>
+                  <td data-label="Estado"><AgendaStatus status={item.status} /></td>
+                  <td className="agenda-cell-date" data-label="Fecha programada">{formatShortDate(item.date)}</td>
                 </>
               )}
-              <td>
+              <td data-label="Acciones">
                 <AgendaActions
                   item={item}
                   onViewCalendar={onViewCalendar}

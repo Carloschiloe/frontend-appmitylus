@@ -335,6 +335,61 @@
   background: rgba(254, 243, 199, 0.6);
 }
 
+@media (max-width: 640px) {
+  .importar-preview-table {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .importar-preview-table thead {
+    display: none;
+  }
+
+  .importar-preview-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .importar-preview-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #dbe4ef;
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .importar-preview-table td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .importar-preview-table td::before {
+    content: attr(data-label);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .importar-preview-table td:first-child,
+  .importar-preview-table td[data-label="Detalle"] {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Botones de acción */
 .importar-actions {
   display: flex;

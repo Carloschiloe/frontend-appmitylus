@@ -415,7 +415,7 @@ export default function ErrorReports() {
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table className="mx-table" style={{ minWidth: 920 }}>
+            <table className="mx-table error-reports-table">
               <thead>
                 <tr>
                   <th>Codigo</th>
@@ -433,16 +433,16 @@ export default function ErrorReports() {
               <tbody>
                 {items.map((item) => (
                   <tr key={item._id} style={{ background: selectedId === item._id ? '#eff6ff' : undefined }}>
-                    <td>{item.errorCode}</td>
-                    <td>{item.title || item.description}</td>
-                    <td>{item.module || '-'}</td>
-                    <td>{item.userName || item.userEmail || '-'}</td>
-                    <td><Badge type="severity" value={item.severity} /></td>
-                    <td><Badge type="status" value={item.status} /></td>
-                    <td><Badge type="source" value={item.source} short /></td>
-                    <td>{item.occurrences}</td>
-                    <td>{formatDate(item.lastSeenAt)}</td>
-                    <td>
+                    <td data-label="Codigo">{item.errorCode}</td>
+                    <td data-label="Problema">{item.title || item.description}</td>
+                    <td data-label="Modulo">{item.module || '-'}</td>
+                    <td data-label="Usuario">{item.userName || item.userEmail || '-'}</td>
+                    <td data-label="Urgencia"><Badge type="severity" value={item.severity} /></td>
+                    <td data-label="Estado"><Badge type="status" value={item.status} /></td>
+                    <td data-label="Origen"><Badge type="source" value={item.source} short /></td>
+                    <td data-label="Veces">{item.occurrences}</td>
+                    <td data-label="Fecha">{formatDate(item.lastSeenAt)}</td>
+                    <td data-label="Accion">
                       <button type="button" className="mx-btn mx-btn-outline" onClick={() => openDetail(item._id)}>
                         Ver detalle
                       </button>

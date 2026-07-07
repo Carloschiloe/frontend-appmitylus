@@ -35,15 +35,15 @@ export default function InteraccionesTable({
             ) : (
               items.map((item) => (
                 <tr key={item._id}>
-                  <td className="interacciones-date-cell">{new Date(item.fecha).toLocaleDateString()}</td>
-                  <td className="interacciones-provider-cell">{item.proveedorNombre}</td>
-                  <td>
+                  <td className="interacciones-date-cell" data-label="Fecha">{new Date(item.fecha).toLocaleDateString()}</td>
+                  <td className="interacciones-provider-cell" data-label="Proveedor">{item.proveedorNombre}</td>
+                  <td data-label="Tipo">
                     <span className={`mx-badge interacciones-type-badge is-${item.tipo || 'interaccion'}`}>
                       {getTipoLabel(item.tipo)}
                     </span>
                   </td>
-                  <td>{item.resumen}</td>
-                  <td className="interacciones-actions-cell">
+                  <td data-label="Resumen de Gestion">{item.resumen}</td>
+                  <td className="interacciones-actions-cell" data-label="Acciones">
                     <div className="mx-table-actions-cell interacciones-actions">
                       <button
                         type="button"

@@ -179,5 +179,9 @@
   .interacciones-form-row {
     flex-direction: column;
   }
+
+  .mx-table:has(td[data-label]) td[data-label="Resumen de Gestion"] {
+    grid-column: 1 / -1;
+  }
 }
 
