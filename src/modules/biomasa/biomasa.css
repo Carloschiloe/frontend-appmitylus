@@ -3065,10 +3065,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #F1F5F9;
   color: #475569;
 }
-.harvest-week-v2-prov.product-entero     .wk-product-chip { background: #DBEAFE; color: #1D4ED8; }
-.harvest-week-v2-prov.product-carne      .wk-product-chip { background: #FFE4E6; color: #BE123C; }
-.harvest-week-v2-prov.product-mc         .wk-product-chip { background: #DCFCE7; color: #15803D; }
-.harvest-week-v2-prov.product-sin_definir .wk-product-chip { background: #F1F5F9; color: #64748B; }
+/* Todos los chips en neutro — el borde izquierdo ya identifica el tipo */
+.harvest-week-v2-prov.product-entero     .wk-product-chip,
+.harvest-week-v2-prov.product-carne      .wk-product-chip,
+.harvest-week-v2-prov.product-mc         .wk-product-chip,
+.harvest-week-v2-prov.product-sin_definir .wk-product-chip { background: #F1F5F9; color: #475569; }
 
 /* ── Day cells ── */
 .harvest-week-v2-cell {
@@ -3083,9 +3084,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   position: relative;
   min-height: 62px;
 }
-.harvest-week-v2-cell.is-today { background: #F8FBFF; }
-.harvest-week-v2-cell.is-susp  { background: #FAFAFA; }
-.harvest-week-v2-cell.is-prog-pausado { background: #FFFEFA; }
+.harvest-week-v2-cell.is-today { background: #F0F6FF; }
+.harvest-week-v2-cell.is-susp  { background: #F4F6F8; }
+.harvest-week-v2-cell.is-prog-pausado { background: #F4F6F8; }
 
 /* ── Count display ── */
 .harvest-week-v2-count {
@@ -3131,9 +3132,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   gap: 3px;
   font-size: 9px;
   font-weight: 600;
-  color: #B45309;
-  background: #FEF9C3;
-  border: 1px solid #FDE68A;
+  color: #475569;
+  background: #EEF2F7;
+  border: 1px solid #CBD5E1;
   padding: 2px 5px;
   border-radius: 4px;
   z-index: 1;
@@ -3149,11 +3150,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* ── Día sin programa (fuera de vigencia) ── */
-.harvest-week-v2-cell.is-sinprog { background: #FCFCFD; }
+.harvest-week-v2-cell.is-sinprog { background: #F4F6F8; }
 .harvest-week-v2-sinprog {
   font-size: 10.5px;
-  font-weight: 600;
-  color: #B6C0CE;
+  font-weight: 500;
+  color: #C1CBD8;
   letter-spacing: 0.02em;
   user-select: none;
 }
@@ -5042,9 +5043,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-radius: 5px;
 }
 .wk-estado-label.pausado {
-  background: #FEF9C3;
-  color: #B45309;
-  border: 1px solid #FDE68A;
+  background: #F4F6F8;
+  color: #64748B;
+  border: 1px solid #CBD5E1;
 }
 .wk-estado-label.finalizado {
   background: #F1F5F9;
