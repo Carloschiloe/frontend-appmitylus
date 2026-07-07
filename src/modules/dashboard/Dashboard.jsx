@@ -86,7 +86,7 @@ function formatShortDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
-const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
+const KpiCard = ({ title, value, sub, icon: Icon, color, trend, tooltip }) => (
   <div className="dsh-kpi-card" style={{ '--accent': color }}>
     <div className="dsh-kpi-accent" />
     <div className="dsh-kpi-header">
@@ -105,6 +105,11 @@ const KpiCard = ({ title, value, sub, icon: Icon, color, trend }) => (
       )}
       {sub && <span className="dsh-kpi-sub">{sub}</span>}
     </div>
+    {tooltip && tooltip.length > 0 && (
+      <div className="dsh-kpi-tooltip">
+        {tooltip.map((line, i) => <div key={i} className="dsh-kpi-tooltip-row">{line}</div>)}
+      </div>
+    )}
   </div>
 );
 
@@ -163,7 +168,7 @@ export default function Dashboard() {
     [pipelineMap],
   );
 
-  const cosechaData = data?.cosecha          || { programasHoy: 0, camionesHoy: 0, vencenProximo: 0, programasList: [] };
+  const cosechaData = data?.cosecha          || { programasHoy: 0, camionesHoy: 0, camionesHoyDetalle: [], vencenProximo: 0, vencenProximoDetalle: [], programasList: [] };
   const calidadData = data?.calidad          || null;
   const sanDetalle  = data?.sanitarioDetalle || {};
   const hasAlerts   = (data?.alertas || 0) > 0;
@@ -242,6 +247,7 @@ export default function Dashboard() {
               sub="Programados para hoy"
               icon={Truck}
               color="#0891b2"
+              tooltip={(cosechaData.camionesHoyDetalle || []).map(p => `${p.nombre}: ${p.camiones} cam`)}
             />
             <KpiCard
               title="Vencen en 7 días"
@@ -249,6 +255,7 @@ export default function Dashboard() {
               sub="Programas por vencer"
               icon={CalendarClock}
               color={cosechaData.vencenProximo > 0 ? '#f59e0b' : '#10b981'}
+              tooltip={(cosechaData.vencenProximoDetalle || []).map(p => `${p.nombre} — ${formatShortDate(p.vigenciaHasta)}`)}
             />
             <KpiCard
               title="En Negociación"
@@ -256,13 +263,6 @@ export default function Dashboard() {
               sub="Oportunidades activas"
               icon={Handshake}
               color="#6366f1"
-            />
-            <KpiCard
-              title="Rendimiento Activo"
-              value={calidadData?.avgRendimiento != null ? `${calidadData.avgRendimiento}%` : '—'}
-              sub="Último muestreo c/proveedor"
-              icon={Award}
-              color="#f59e0b"
             />
             <KpiCard
               title="Alertas Sanitarias"
