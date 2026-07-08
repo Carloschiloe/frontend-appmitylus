@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, X, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, X, Zap, FileUp } from 'lucide-react';
 
 export default function SpeedDialFab() {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -18,6 +20,11 @@ export default function SpeedDialFab() {
 
   const openQuickCapture = () => {
     window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open'));
+    setExpanded(false);
+  };
+
+  const openImportar = () => {
+    navigate('/configuracion/importar');
     setExpanded(false);
   };
 
@@ -41,6 +48,15 @@ export default function SpeedDialFab() {
         >
           <Zap size={15} />
           <span>Acción rápida</span>
+        </button>
+        <button
+          type="button"
+          className="speed-dial-action speed-dial-action--importar"
+          onClick={openImportar}
+          tabIndex={expanded ? 0 : -1}
+        >
+          <FileUp size={15} />
+          <span>Importar</span>
         </button>
       </div>
 

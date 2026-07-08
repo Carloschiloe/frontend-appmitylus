@@ -56,6 +56,10 @@
   background: linear-gradient(135deg, #0f5132 0%, #198754 100%);
 }
 
+.speed-dial-action--importar {
+  background: linear-gradient(135deg, #7c2d12 0%, #ea580c 100%);
+}
+
 .speed-dial-main {
   display: inline-flex;
   align-items: center;

@@ -194,6 +194,39 @@
   padding: 2px 0 4px;
 }
 
+/* Buscador + descarga van juntos en una sola fila, incluso en móvil */
+.dir-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mx-toolbar .dir-search-row .dir-toolbar-search {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.dir-search-row-download {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .mx-toolbar .dir-search-row {
+    width: 100%;
+  }
+
+  .mx-toolbar .dir-search-row .dir-search-row-download {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+}
+
 /* Gap del flex column y am-mt-16 sueltos */
 .gestion-content-frame .mx-submodule-body > .mx-page.am-p-0 {
   gap: 4px;

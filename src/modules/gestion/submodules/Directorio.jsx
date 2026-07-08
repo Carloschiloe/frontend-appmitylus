@@ -14,7 +14,6 @@ import {
   MessageSquare,
   FileText,
   FileDown,
-  FileUp,
   Trash2,
   Clock3,
   CheckCircle2,
@@ -821,26 +820,22 @@ export default function Directorio() {
           </button>
         </div>
 
-        <div className="mx-search-box dir-toolbar-search">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder={tab === 'proveedores' ? 'Buscar proveedor, accion o comuna...' : 'Buscar contacto, empresa o correo...'}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="dir-search-row">
+          <div className="mx-search-box dir-toolbar-search">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder={tab === 'proveedores' ? 'Buscar proveedor, accion o comuna...' : 'Buscar contacto, empresa o correo...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <button className="mx-btn-icon dir-search-row-download" onClick={handleExportarExcel} disabled={exportandoDir} title="Exportar a Excel">
+            <FileDown size={16} />
+          </button>
         </div>
 
-        <button className="mx-btn-icon sm" onClick={handleExportarExcel} disabled={exportandoDir} title="Exportar a Excel">
-          <FileDown size={16} />
-        </button>
-        <button
-          className="mx-btn mx-btn-outline sm"
-          onClick={() => navigate(`/configuracion/importar?tipo=${tab === 'proveedores' ? 'proveedores' : 'contactos'}`)}
-          title="Importar desde Excel"
-        >
-          <FileUp size={16} /> Importar
-        </button>
         <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
           <Plus size={18} /> {tab === 'proveedores' ? 'Registrar proveedor' : 'Contacto'}
         </button>
