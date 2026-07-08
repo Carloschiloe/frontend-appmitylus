@@ -1182,4 +1182,24 @@ button.dir-status-item.is-active .dir-status-label {
     width: 100%;
     justify-content: center;
   }
+
+  /* Tira de estados: en vez de comprimir/cortar los ítems, se hace carrusel */
+  .dir-status-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .dir-status-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dir-status-item {
+    flex: 0 0 auto;
+    min-width: 128px;
+  }
+
+  .dir-strip-right {
+    flex: 0 0 auto;
+  }
 }
