@@ -1434,6 +1434,27 @@
     justify-content: center;
   }
 
+  /* Directorio: los dos buscadores (proveedor/código y área PSMB) se apilan */
+  .ct-search-group {
+    flex-direction: column;
+  }
+
+  .ct-search,
+  .ct-search-area {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .ct-filter-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .ct-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   /* Toolbar del mapa: buscador, contador, densidad y acciones se apilan */
   .map-toolbar {
     flex-direction: column;
