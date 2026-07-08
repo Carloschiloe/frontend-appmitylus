@@ -1412,6 +1412,53 @@
     flex-basis: 100%;
   }
 
+  /* Fila de pestañas (Directorio/Mapa/Sanitario) + acciones: se apilan */
+  .centros-tabs-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .centros-tabs-row .mx-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .centros-tab-actions {
+    flex-direction: column;
+    padding-bottom: 4px;
+  }
+
+  .centros-tab-actions .mx-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Toolbar del mapa: buscador, contador, densidad y acciones se apilan */
+  .map-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .map-toolbar-left,
+  .map-toolbar-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .map-search.centros-search-wrap {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .map-toolbar-sep {
+    display: none;
+  }
+
+  .map-density-group {
+    flex-wrap: wrap;
+  }
+
   .sanitario-history-table {
     width: 100%;
     min-width: 0;
