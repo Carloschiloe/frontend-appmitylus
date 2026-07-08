@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Map as MapIcon,
   Plus,
-  FileUp,
   TableProperties,
   RefreshCw,
   ShieldCheck,
@@ -121,8 +120,9 @@ export default function Centros() {
               <button
                 className="mx-btn mx-btn-outline centros-import-btn"
                 onClick={notifyImportCentros}
+                title="Sincronizar centros desde SUBPESCA"
               >
-                <FileUp size={18} /> Importar
+                <RefreshCw size={16} /> Actualizar Centros
               </button>
               <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
                 <Plus size={20} /> Nuevo Centro
