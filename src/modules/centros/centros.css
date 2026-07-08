@@ -1412,6 +1412,22 @@
     flex-basis: 100%;
   }
 
+  /* Tira de estadísticas (Centros/Hectáreas/Áreas cultivo/Tons máx): carrusel */
+  .ct-status-strip {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .ct-status-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ct-status-item {
+    flex: 0 0 auto;
+    min-width: 150px;
+  }
+
   /* Fila de pestañas (Directorio/Mapa/Sanitario) + acciones: se apilan */
   .centros-tabs-row {
     flex-direction: column;
