@@ -216,6 +216,7 @@
 /* ── Cards base ──────────────────────────────────────────────────────── */
 
 .dsh-card {
+  min-width: 0;
   background: var(--color-surface);
   border-radius: 16px;
   padding: 22px 24px;
