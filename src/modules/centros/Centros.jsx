@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,8 +7,9 @@ import {
   TableProperties,
   RefreshCw,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
-import { syncSernapescaAreas } from '../../api/api-centros';
+import { syncSernapescaAreas, getUltimaSyncSernapesca } from '../../api/api-centros';
 import { useToast } from '../../context/ToastContext';
 
 // Lazy loading con preload para que el cambio entre pestanas sea fluido.
@@ -58,6 +59,15 @@ export default function Centros() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
   const [syncing, setSyncing] = useState(false);
+  const [ultimaSync, setUltimaSync] = useState(null);
+
+  const loadUltimaSync = useCallback(() => {
+    getUltimaSyncSernapesca().then(setUltimaSync).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadUltimaSync();
+  }, [loadUltimaSync]);
 
   const notifyCreateCentro = () => {
     window.dispatchEvent(new CustomEvent('centros:open-create'));
@@ -74,11 +84,18 @@ export default function Centros() {
       const result = await syncSernapescaAreas();
       addToast({ title: 'Áreas SERNAPESCA actualizadas', message: `Se sincronizaron ${result?.areas || 0} áreas.`, type: 'success' });
       queryClient.invalidateQueries({ queryKey: ['centros'] });
+      loadUltimaSync();
     } catch (err) {
       addToast({ title: 'Error al sincronizar', message: err?.data?.error || err?.message || 'No se pudo conectar con SERNAPESCA.', type: 'error' });
     } finally {
       setSyncing(false);
     }
+  };
+
+  const formatUltimaSync = (value) => {
+    if (!value) return 'Nunca';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? 'Nunca' : d.toLocaleString('es-CL');
   };
 
   return (
@@ -108,15 +125,20 @@ export default function Centros() {
           </div>
           {pageMeta.showActions && (
             <div className="centros-tab-actions">
-              <button
-                className="mx-btn mx-btn-outline centros-import-btn"
-                onClick={handleSyncSernapesca}
-                disabled={syncing}
-                title="Descargar estado actualizado de áreas desde SERNAPESCA"
-              >
-                <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
-                {syncing ? 'Actualizando...' : 'Actualizar Est. Áreas'}
-              </button>
+              <div className="centros-sync-group">
+                <button
+                  className="mx-btn mx-btn-outline centros-import-btn"
+                  onClick={handleSyncSernapesca}
+                  disabled={syncing}
+                  title="Descargar estado actualizado de áreas desde SERNAPESCA"
+                >
+                  <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
+                  {syncing ? 'Actualizando...' : 'Actualizar Est. Áreas'}
+                </button>
+                <span className="centros-sync-caption">
+                  <Clock size={11} /> Última actualización: {formatUltimaSync(ultimaSync)}
+                </span>
+              </div>
               <button
                 className="mx-btn mx-btn-outline centros-import-btn"
                 onClick={notifyImportCentros}

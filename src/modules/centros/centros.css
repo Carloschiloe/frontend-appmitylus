@@ -449,6 +449,25 @@
   color: var(--color-primary);
 }
 
+.centros-sync-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.centros-sync-caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  padding: 0 2px;
+}
+
+.centros-sync-caption svg {
+  flex-shrink: 0;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

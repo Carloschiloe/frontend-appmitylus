@@ -55,3 +55,8 @@ export async function syncSubpesca() {
 export async function syncSernapescaAreas() {
   return apiClient.post(`${BASE}/sync-sernapesca`);
 }
+
+export async function getUltimaSyncSernapesca() {
+  const res = await apiClient.get(`${BASE}/sync-sernapesca/status`);
+  return res?.ultimaSync || null;
+}
