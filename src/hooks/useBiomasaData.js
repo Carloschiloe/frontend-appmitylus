@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../api/apiClient';
 import { getDisponibilidades, getAsignaciones } from '../api/api-mmpp.js';
 import { useToast } from '../context/ToastContext';
@@ -38,13 +38,25 @@ export function useBiomasaData(mes, viewContext = {}) {
   const [tratosBiomasa, setTratosBiomasa] = useState([]);
   const [perdidasBiomasa, setPerdidasBiomasa] = useState([]);
 
+  // Cache del calendario ya cargado por mes, para que ir y volver entre
+  // meses visitados sea instantáneo y no "parpadee" con el mes anterior
+  // mientras llega la respuesta del nuevo.
+  const calCacheRef = useRef(new Map());
+
   const load = useCallback(async (signal) => {
     if (isMuestreosView) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    const isCalendario = isProgramView && progSubTab === 'calendario';
+    const cached = isCalendario ? calCacheRef.current.get(mes) : null;
+    if (cached) {
+      setCalData(cached.calendario);
+      setNotasDia(cached.notas);
+    }
+
+    setLoading(!cached);
     try {
       const promises = [];
       const keys = [];
@@ -99,8 +111,13 @@ export function useBiomasaData(mes, viewContext = {}) {
       if (resMap.disp) setDisp(resMap.disp || []);
       if (resMap.asig) setAsig(resMap.asig || []);
       if (resMap.progRes) setProgramas(resMap.progRes.items || []);
-      if (resMap.calRes) setCalData(resMap.calRes.calendario || {});
-      if (resMap.notasRes) setNotasDia(resMap.notasRes.notas || {});
+      if (resMap.calRes || resMap.notasRes) {
+        const calendario = resMap.calRes?.calendario || {};
+        const notas = resMap.notasRes?.notas || {};
+        setCalData(calendario);
+        setNotasDia(notas);
+        if (isCalendario) calCacheRef.current.set(mes, { calendario, notas });
+      }
       if (resMap.tratosRes) setTratosAcordados(resMap.tratosRes.items || []);
 
       if (resMap.tratosBiomasaRes) {

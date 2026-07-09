@@ -280,7 +280,7 @@ export default function ProgramaCalendarioView({
               return (
                 <div
                   key={dayNum}
-                  onClick={() => setSelectedDay(prev => prev?.key === dateKey ? null : { key: dateKey, items: dayItems, total: totalCam, summary: daySummary })}
+                  onClick={() => setSelectedDay(prev => prev?.key === dateKey ? null : { key: dateKey, items: dayItems.filter(it => Number(it.camiones) > 0), total: totalCam, summary: daySummary })}
                   className={`cal-day-cell ${calendarDayToneClass(dateKey)} ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''} ${isSinPrograma ? 'is-sinprog' : ''} ${totalCam > 0 ? `has-data ${getProductClass(primaryProduct)}` : ''}`}
                 >
                   <div className="cal-month-cell-top">
