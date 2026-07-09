@@ -93,6 +93,23 @@
   margin-bottom: 14px;
 }
 
+@media (min-width: 900px) {
+  .centros-filters.sanitario-actual-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
+  }
+
+  .sanitario-actual-filters > * {
+    flex-shrink: 0;
+  }
+
+  .sanitario-actual-filters .centros-search-wrap {
+    flex-shrink: 1;
+    min-width: 160px;
+  }
+}
+
 .sanitario-historico-filters {
   align-items: flex-end;
 }

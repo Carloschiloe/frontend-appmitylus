@@ -431,9 +431,9 @@ export default function SanitarioDashboard() {
       {viewMode === 'actual' && (
       <>
       {/* Filtros */}
-      <div className="centros-filters">
+      <div className="centros-filters sanitario-actual-filters">
         {/* Búsqueda — client-side, respuesta instantánea */}
-        <div className="centros-search-wrap" style={{ maxWidth: '340px' }}>
+        <div className="centros-search-wrap" style={{ maxWidth: '240px' }}>
           <Search size={16} />
           <input
             type="text"
@@ -482,7 +482,7 @@ export default function SanitarioDashboard() {
 
         <select
           className="mx-input"
-          style={{ width: 'auto', minWidth: '190px' }}
+          style={{ width: 'auto', minWidth: '150px' }}
           value={tipoFilter}
           onChange={(e) => setTipoFilter(e.target.value)}
         >
@@ -492,9 +492,9 @@ export default function SanitarioDashboard() {
 
         <div style={{ flex: 1 }} />
 
-        <div className="mx-sync-badge">
+        <div className="mx-sync-badge" title="Última sincronización mrSAT">
           <Clock size={14} />
-          <span>Sincronizado: {formatDateTime(resumen?.ultimaSync)}</span>
+          <span>{formatDateTime(resumen?.ultimaSync)}</span>
         </div>
         <button className="mx-btn mx-btn-outline" onClick={handleSyncMrSat} disabled={syncing}>
           <RefreshCw size={16} style={syncing ? { animation: 'spin 1s linear infinite' } : {}} />
