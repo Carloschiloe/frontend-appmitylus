@@ -3146,8 +3146,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .harvest-week-v2-semcol .harvest-week-v2-dayname { color: #475569; letter-spacing: 0.1em; }
 .harvest-week-v2-semcol .harvest-week-v2-daynum  { color: #1E293B; font-weight: 700; font-size: 20px; }
 .harvest-week-v2-total {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: #1E293B;
   background: #F1F5F9;
   border-left: 2px solid #CBD5E1;
