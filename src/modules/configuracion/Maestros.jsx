@@ -397,6 +397,7 @@ export default function Maestros({ noPage = false }) {
                     <option value="procesable">Procesable</option>
                     <option value="rechazo">Rechazo</option>
                     <option value="defecto">Defecto</option>
+                    <option value="caracteristica">Característica</option>
                   </select>
                 )}
                 <div className="mx-search-box maestros-search-box">
@@ -504,7 +505,8 @@ export default function Maestros({ noPage = false }) {
                             item.tipoCat === 'procesable' ? 'success'
                               : item.tipoCat === 'rechazo' ? 'danger'
                                 : item.tipoCat === 'defecto' ? 'info'
-                                  : 'muted'
+                                  : item.tipoCat === 'caracteristica' ? 'primary'
+                                    : 'muted'
                           }`}>
                             {item.tipoCat?.toUpperCase()}
                           </span>
@@ -607,6 +609,7 @@ export default function Maestros({ noPage = false }) {
                       <option value="procesable">Procesable</option>
                       <option value="rechazo">Rechazo</option>
                       <option value="defecto">Defecto</option>
+                      <option value="caracteristica">Característica</option>
                     </select>
                   </div>
                 )}
