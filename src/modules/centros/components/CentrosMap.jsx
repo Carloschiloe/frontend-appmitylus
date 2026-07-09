@@ -21,6 +21,14 @@ const HARVEST_COLOR = '#f59e0b';
 const CLOSED_COLOR = '#ef4444';
 const SUSPENDED_COLOR = '#f97316';
 
+const SANITARIO_STATUS_CONFIG = {
+  rojo:     { label: 'Bloqueada',   badge: 'mx-badge-danger'  },
+  naranja:  { label: 'Alerta',      badge: 'mx-badge-warning' },
+  amarillo: { label: 'Observación', badge: 'mx-badge-warning' },
+  verde:    { label: 'OK',          badge: 'mx-badge-success' },
+  gris:     { label: 'Sin datos',   badge: 'mx-badge-muted'   },
+};
+
 function getPolygonColor(centro, isHarvestActive) {
   if (isHarvestActive) return HARVEST_COLOR;
   const estado = String(centro.estadoAreaSernapesca || '').toLowerCase();
@@ -740,6 +748,14 @@ export default function CentrosMap() {
                     {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
                   </span>
                 </div>
+                {selectedCentro.sanitario && (
+                  <div className="map-panel-row">
+                    <span className="map-panel-label">Estado Sanitario</span>
+                    <span className={`mx-badge ${SANITARIO_STATUS_CONFIG[selectedCentro.sanitario.estado || 'gris']?.badge || 'mx-badge-muted'}`}>
+                      {SANITARIO_STATUS_CONFIG[selectedCentro.sanitario.estado || 'gris']?.label || 'Sin datos'}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="map-panel-divider" />
               <div className="map-panel-section">
