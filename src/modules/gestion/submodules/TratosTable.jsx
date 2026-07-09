@@ -37,8 +37,11 @@ function formatCondVal(c) {
   if (c.modoCondicion === 'fijo') {
     return c.valor != null && c.valor !== '' ? `Fijo ${c.valor}%` : 'Fijo';
   }
-  if (c.valor != null && c.valor !== '') return String(c.valor);
-  return null;
+  if (c.valor == null || c.valor === '') return null;
+  if (c.tipoValor === 'moneda') return formatMoney(c.valor);
+  if (c.tipoValor === 'porcentaje') return `${c.valor}%`;
+  if (c.tipoValor === 'dias') return `${c.valor} día${Number(c.valor) === 1 ? '' : 's'}`;
+  return String(c.valor);
 }
 
 const COND_BADGE = {
@@ -321,32 +324,36 @@ export default function TratosTable({
         <div className="tratos-cond-overlay" onClick={() => setCondModal(null)}>
           <div className="tratos-cond-modal" onClick={e => e.stopPropagation()}>
             <div className="tratos-cond-modal-header">
-              <span className="tratos-cond-modal-title">{condModal.proveedorNombre}</span>
+              <div className="tratos-cond-modal-header-text">
+                <span className="tratos-cond-modal-eyebrow">Condiciones del trato</span>
+                <span className="tratos-cond-modal-title">{condModal.proveedorNombre}</span>
+              </div>
               <button className="tratos-cond-modal-close" onClick={() => setCondModal(null)}>
                 <X size={16} />
               </button>
             </div>
             <div className="tratos-cond-modal-body">
-              {deduplicarCondiciones(condModal.condiciones).map((c, i) => {
-                const meta = COND_BADGE[c.estado] || COND_BADGE.pendiente;
-                const isCamionesDia = c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia');
-                const transporteTrato = isCamionesDia && condModal.transportes?.[0] ? condModal.transportes[0] : null;
+              <div className="tratos-cond-grid">
+                {deduplicarCondiciones(condModal.condiciones).map((c, i) => {
+                  const meta = COND_BADGE[c.estado] || COND_BADGE.pendiente;
+                  const isCamionesDia = c.nombre.toLowerCase().includes('camiones') && c.nombre.toLowerCase().includes('dia');
+                  const transporteTrato = isCamionesDia && condModal.transportes?.[0] ? condModal.transportes[0] : null;
+                  const valorTexto = isCamionesDia && transporteTrato
+                    ? `${formatCondVal(c) || 0} ${transporteTrato.nombre || 'Camion Simple'}`
+                    : formatCondVal(c) || 'ACORDADO';
 
-                return (
-                  <div key={i} className="tratos-cond-modal-row">
-                    <div className="tratos-cond-modal-left">
-                      <span className="tratos-cond-modal-name">{c.nombre}</span>
-                      <span className="tratos-cond-modal-val">
-                        {isCamionesDia && transporteTrato ? `${formatCondVal(c) || 0} ${transporteTrato.nombre || 'Camion Simple'}` : formatCondVal(c) || 'ACORDADO'}
-                      </span>
+                  return (
+                    <div key={i} className="tratos-cond-card">
+                      <div className="tratos-cond-card-top">
+                        <span className="tratos-cond-card-label">{c.nombre}</span>
+                        <span className={`mx-badge ${meta.cls} tratos-cond-card-badge`}>{meta.label}</span>
+                      </div>
+                      <div className="tratos-cond-card-val">{valorTexto}</div>
                       {isCamionesDia && transporteTrato && transporteTrato.maxisPorUnidad > 0 && transporteTrato.kgPorMaxiRef > 0 && (
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-subtle)', marginTop: 2 }}>
+                        <div className="tratos-cond-card-sub">
                           Capacidad: {formatInteger((transporteTrato.maxisPorUnidad * transporteTrato.kgPorMaxiRef) / 1000)} t/camión
                         </div>
                       )}
-                    </div>
-                    <div className="tratos-cond-modal-right">
-                      <span className={`mx-badge ${meta.cls}`}>{meta.label}</span>
                       {c.estado !== 'acordado' && (
                         <button
                           className="tratos-cond-mark-btn"
@@ -355,13 +362,13 @@ export default function TratosTable({
                           onClick={() => handleMarcarAcordado(c)}
                         >
                           <CheckCircle2 size={13} />
-                          Acordar
+                          Marcar acordado
                         </button>
                       )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

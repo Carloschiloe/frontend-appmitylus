@@ -555,12 +555,13 @@
 }
 
 .tratos-cond-modal {
-  width: 380px;
-  max-height: 480px;
+  width: 540px;
+  max-width: calc(100vw - 32px);
+  max-height: 560px;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border-radius: 16px;
+  border-radius: 18px;
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
   overflow: hidden;
 }
@@ -569,13 +570,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 18px 22px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.tratos-cond-modal-title {
-  font-size: 0.95rem;
+.tratos-cond-modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tratos-cond-modal-eyebrow {
+  font-size: 10.5px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.tratos-cond-modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--color-text);
 }
 
@@ -590,61 +605,84 @@
   border-radius: 8px;
   color: #64748b;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .tratos-cond-modal-body {
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 18px;
+  background: #f8fafc;
 }
 
-.tratos-cond-modal-row {
+.tratos-cond-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.tratos-cond-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.tratos-cond-modal-row:last-child {
-  border-bottom: none;
-}
-
-.tratos-cond-modal-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.tratos-cond-modal-right {
-  display: flex;
-  align-items: center;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+  background: #fff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.tratos-cond-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tratos-cond-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+}
+
+.tratos-cond-card-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.tratos-cond-card-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--color-text);
+  line-height: 1.15;
+}
+
+.tratos-cond-card-sub {
+  font-size: 0.7rem;
+  color: var(--color-text-subtle);
 }
 
 .tratos-cond-mark-btn {
+  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  margin-top: 2px;
+  padding: 4px 9px;
   font-size: 11px;
   font-weight: 600;
   color: #15803d;
   background: #f0fdf4;
   border: 1px solid #86efac;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.12s;
 }
 .tratos-cond-mark-btn:hover { background: #dcfce7; }
 .tratos-cond-mark-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.tratos-cond-modal-val {
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: var(--color-primary);
-}
 
 @media (max-width: 768px) {
   .tratos-search-wrap {
@@ -1016,8 +1054,11 @@
   }
 
   .tratos-form-row,
-  .tratos-condition-row,
-  .tratos-cond-modal-row {
+  .tratos-condition-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tratos-cond-grid {
     grid-template-columns: 1fr;
   }
 
