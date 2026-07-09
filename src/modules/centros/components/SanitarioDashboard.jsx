@@ -10,6 +10,8 @@ import {
   ChevronsUpDown,
   ChevronUp,
   ChevronDown,
+  History,
+  LayoutGrid,
 } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
@@ -114,6 +116,13 @@ export default function SanitarioDashboard() {
   const [historyModal,  setHistoryModal]  = useState({ open: false, area: null, loading: false, items: [] });
   const [centersModal,  setCentersModal]  = useState({ open: false, area: null, items: [] });
 
+  // Vista: estado actual vs. histórico por rango de fechas
+  const [viewMode, setViewMode] = useState('actual'); // 'actual' | 'historico'
+  const [rangoDesde, setRangoDesde] = useState('');
+  const [rangoHasta, setRangoHasta] = useState('');
+  const [historicoItems, setHistoricoItems] = useState([]);
+  const [historicoLoading, setHistoricoLoading] = useState(false);
+
   // ── Helpers de formato ─────────────────────────────────────────
   const formatDate = useCallback((value) => {
     if (!value) return '—';
@@ -125,6 +134,14 @@ export default function SanitarioDashboard() {
     if (!value) return 'Nunca';
     const d = new Date(value);
     return Number.isNaN(d.getTime()) ? 'Nunca' : d.toLocaleString('es-CL');
+  }, []);
+
+  // Reformatea un string YYYY-MM-DD (de <input type="date">) a DD-MM-YYYY
+  // sin pasar por Date() para evitar el corrimiento de un día por zona horaria.
+  const formatISOAsCL = useCallback((value) => {
+    if (!value) return '—';
+    const [y, m, d] = value.split('-');
+    return y && m && d ? `${d}-${m}-${y}` : '—';
   }, []);
 
   // ── Carga de datos — sin filtros de búsqueda (carga TODO) ──────
@@ -286,6 +303,45 @@ export default function SanitarioDashboard() {
     setCentersModal({ open: false, area: null, items: [] });
   }, []);
 
+  // ── Histórico por rango de fechas ────────────────────────────
+  const toISODate = (d) => d.toISOString().slice(0, 10);
+
+  const setPresetSemana = useCallback(() => {
+    const hoy = new Date();
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+    setRangoDesde(toISODate(lunes));
+    setRangoHasta(toISODate(hoy));
+  }, []);
+
+  const setPresetMes = useCallback(() => {
+    const hoy = new Date();
+    setRangoDesde(toISODate(new Date(hoy.getFullYear(), hoy.getMonth(), 1)));
+    setRangoHasta(toISODate(hoy));
+  }, []);
+
+  const setPresetMesAnterior = useCallback(() => {
+    const hoy = new Date();
+    setRangoDesde(toISODate(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)));
+    setRangoHasta(toISODate(new Date(hoy.getFullYear(), hoy.getMonth(), 0)));
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'historico' && !rangoDesde && !rangoHasta) setPresetSemana();
+  }, [viewMode, rangoDesde, rangoHasta, setPresetSemana]);
+
+  useEffect(() => {
+    if (viewMode !== 'historico' || !rangoDesde || !rangoHasta || !selectedTenantDb) return undefined;
+    const ctrl = new AbortController();
+    setHistoricoLoading(true);
+    const params = new URLSearchParams({ from: rangoDesde, to: rangoHasta, limit: '500' });
+    apiClient.get(`/sanitario/historial-rango?${params.toString()}`, { signal: ctrl.signal })
+      .then((res) => setHistoricoItems(res.items || []))
+      .catch((err) => { if (err.name !== 'AbortError') setHistoricoItems([]); })
+      .finally(() => setHistoricoLoading(false));
+    return () => ctrl.abort();
+  }, [viewMode, rangoDesde, rangoHasta, selectedTenantDb]);
+
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="sanitario-dashboard">
@@ -297,6 +353,24 @@ export default function SanitarioDashboard() {
           </span>
         </div>
       )}
+
+      {/* Toggle: estado actual vs. histórico */}
+      <div className="mx-toggle-group sanitario-view-toggle">
+        <button
+          type="button"
+          className={`mx-toggle-btn ${viewMode === 'actual' ? 'active' : ''}`}
+          onClick={() => setViewMode('actual')}
+        >
+          <LayoutGrid size={14} /> Estado actual
+        </button>
+        <button
+          type="button"
+          className={`mx-toggle-btn ${viewMode === 'historico' ? 'active' : ''}`}
+          onClick={() => setViewMode('historico')}
+        >
+          <History size={14} /> Histórico
+        </button>
+      </div>
 
       {/* KPIs — clickables para filtrar */}
       <div className="centros-kpis sanitario-kpis">
@@ -332,6 +406,8 @@ export default function SanitarioDashboard() {
         })}
       </div>
 
+      {viewMode === 'actual' && (
+      <>
       {/* Filtros */}
       <div className="centros-filters">
         {/* Búsqueda — client-side, respuesta instantánea */}
@@ -523,6 +599,93 @@ export default function SanitarioDashboard() {
               : `${displayedAreas.length} de ${allAreas.length} áreas`}
           </span>
         </div>
+      )}
+      </>
+      )}
+
+      {viewMode === 'historico' && (
+        <>
+          {/* Selector de período */}
+          <div className="centros-filters sanitario-historico-filters">
+            <div className="mx-toggle-group">
+              <button type="button" className="mx-toggle-btn" onClick={setPresetSemana}>Esta semana</button>
+              <button type="button" className="mx-toggle-btn" onClick={setPresetMes}>Este mes</button>
+              <button type="button" className="mx-toggle-btn" onClick={setPresetMesAnterior}>Mes anterior</button>
+            </div>
+            <label className="sanitario-historico-date-field">
+              Desde
+              <input
+                type="date"
+                className="mx-input"
+                value={rangoDesde}
+                max={rangoHasta || undefined}
+                onChange={(e) => setRangoDesde(e.target.value)}
+              />
+            </label>
+            <label className="sanitario-historico-date-field">
+              Hasta
+              <input
+                type="date"
+                className="mx-input"
+                value={rangoHasta}
+                min={rangoDesde || undefined}
+                onChange={(e) => setRangoHasta(e.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Tabla de histórico */}
+          <div className="centros-table-card">
+            <div className="centros-table-wrap">
+              <table className="centros-tbl sanitario-historico-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Área PSMB</th>
+                    <th>Fuente</th>
+                    <th>Categoría</th>
+                    <th>Detalle</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historicoLoading ? (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}><div className="mx-spinner" style={{ margin: '0 auto' }} /></td></tr>
+                  ) : historicoItems.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
+                        <p style={{ color: 'var(--color-text-muted)' }}>Sin registros en el período seleccionado.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    historicoItems.map((item) => (
+                      <tr key={item._id}>
+                        <td data-label="Fecha">{formatDateTime(item.fechaExtraccion || item.createdAt)}</td>
+                        <td data-label="Área PSMB" style={{ fontWeight: 600 }}>{item.areaPSMB}</td>
+                        <td data-label="Fuente">
+                          <span className={`mx-badge ${item.fuente === 'mrsat' ? 'mx-badge-info' : 'mx-badge-muted'}`}>
+                            {item.fuente === 'mrsat' ? 'mrSAT' : 'SERNAPESCA'}
+                          </span>
+                        </td>
+                        <td data-label="Categoría">{item.categoriaTipo || item.tipoAnalisis || '—'}</td>
+                        <td data-label="Detalle">
+                          <span className={item.resultadoPositivo ? 'sanitario-result is-alert' : 'sanitario-result'}>
+                            {item.glosaResultado || '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {!historicoLoading && historicoItems.length > 0 && (
+            <div className="centros-pagination-footer">
+              <span>{historicoItems.length} registros entre {formatISOAsCL(rangoDesde)} y {formatISOAsCL(rangoHasta)}</span>
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal historial */}
