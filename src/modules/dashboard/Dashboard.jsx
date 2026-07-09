@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Users,
   ChevronRight,
+  ChevronLeft,
   ArrowUpRight,
   ArrowDownRight,
   Handshake,
@@ -86,6 +87,24 @@ function formatShortDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
+const MESES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function mesActualKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function mesLabel(key) {
+  const [y, m] = String(key).split('-');
+  return `${MESES_ES[parseInt(m, 10) - 1] || ''} ${y}`;
+}
+
+function sumarMeses(key, delta) {
+  const [y, m] = String(key).split('-').map(Number);
+  const d = new Date(y, (m - 1) + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 function KpiCard({ title, value, sub, icon: Icon, color, trend, tooltip }) {
   const [open, setOpen] = React.useState(false);
   const hasTooltip = tooltip && tooltip.length > 0;
@@ -135,12 +154,14 @@ export default function Dashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
+  const [mesSeleccionado, setMesSeleccionado] = useState(mesActualKey);
+  const esMesActual = mesSeleccionado === mesActualKey();
 
-  async function loadData(signal) {
+  async function loadData(signal, mes = mesSeleccionado) {
     setLoading(true);
     setError(null);
     try {
-      const json = await apiClient.get('/dashboard/summary', { signal });
+      const json = await apiClient.get(`/dashboard/summary?mes=${mes}`, { signal });
       setData(json);
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -152,9 +173,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     const ctrl = new AbortController();
-    loadData(ctrl.signal);
+    loadData(ctrl.signal, mesSeleccionado);
     return () => ctrl.abort();
-  }, []);
+  }, [mesSeleccionado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const speciesData = useMemo(() => ({
     labels:   ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
@@ -238,6 +259,34 @@ export default function Dashboard() {
                 </Link>
               ))}
             </div>
+            <div className="dsh-month-picker">
+              <button
+                type="button"
+                className="dsh-month-picker-arrow"
+                title="Mes anterior"
+                onClick={() => setMesSeleccionado((prev) => sumarMeses(prev, -1))}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span className="dsh-month-picker-label">{mesLabel(mesSeleccionado)}</span>
+              <button
+                type="button"
+                className="dsh-month-picker-arrow"
+                title="Mes siguiente"
+                onClick={() => setMesSeleccionado((prev) => sumarMeses(prev, 1))}
+              >
+                <ChevronRight size={14} />
+              </button>
+              {!esMesActual && (
+                <button
+                  type="button"
+                  className="dsh-month-picker-today"
+                  onClick={() => setMesSeleccionado(mesActualKey())}
+                >
+                  Hoy
+                </button>
+              )}
+            </div>
             <button className="mx-btn mx-btn-outline dsh-refresh-btn" onClick={() => loadData()}>
               <RotateCcw size={13} /> Actualizar
             </button>
@@ -246,13 +295,13 @@ export default function Dashboard() {
           {/* ── Row 1: KPIs ──────────────────────────────────────────── */}
           <section className="dsh-kpi-grid">
             <KpiCard
-              title="Tons Acordadas (mes)"
+              title={`Tons Acordadas (${mesLabel(mesSeleccionado)})`}
               value={formatTons(data?.acordadoMes)}
-              sub="Acumulado este mes"
+              sub={esMesActual ? 'Acumulado este mes' : 'Acumulado ese mes'}
               icon={CheckCircle}
               color="#0A5CFF"
               tooltip={[
-                `Próximo mes: ${formatTons(data?.acordadoProxMes || 0)}`,
+                `${mesLabel(sumarMeses(mesSeleccionado, 1))}: ${formatTons(data?.acordadoProxMes || 0)}`,
                 ...(data?.topProveedores || []).slice(0, 4).map(p => `${p.nombre}: ${formatTons(p.tons)}`),
               ]}
             />
@@ -596,7 +645,7 @@ export default function Dashboard() {
               </h3>
               <div className="dsh-projection">
                 <div className="dsh-proj-month">
-                  <span className="dsh-proj-label">Este mes</span>
+                  <span className="dsh-proj-label">{esMesActual ? 'Este mes' : mesLabel(mesSeleccionado)}</span>
                   <span className="dsh-proj-value">{formatTons(data?.acordadoMes)}</span>
                 </div>
                 <div className="dsh-proj-arrow">
@@ -614,7 +663,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 <div className="dsh-proj-month">
-                  <span className="dsh-proj-label">Próximo mes</span>
+                  <span className="dsh-proj-label">{esMesActual ? 'Próximo mes' : mesLabel(sumarMeses(mesSeleccionado, 1))}</span>
                   <span className="dsh-proj-value">{formatTons(data?.acordadoProxMes)}</span>
                 </div>
               </div>
