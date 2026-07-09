@@ -206,7 +206,8 @@ export default function SanitarioDashboard() {
       if (q) {
         const matchesQ =
           (area.areaPSMB  || '').toLowerCase().includes(q) ||
-          String(area.codigoArea || '').toLowerCase().includes(q);
+          String(area.codigoArea || '').toLowerCase().includes(q) ||
+          (area.centros || []).some((c) => (c.proveedor || '').toLowerCase().includes(q));
         if (!matchesQ) return false;
       }
       if (estadoFilter && area.estado !== estadoFilter) return false;
@@ -342,6 +343,27 @@ export default function SanitarioDashboard() {
     return () => ctrl.abort();
   }, [viewMode, rangoDesde, rangoHasta, selectedTenantDb]);
 
+  // Áreas cuyo listado de centros incluye un proveedor que matchea la búsqueda,
+  // para poder filtrar el histórico también por proveedor (no solo por área).
+  const areasPorProveedor = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return null;
+    const set = new Set();
+    allAreas.forEach((area) => {
+      const matches = (area.centros || []).some((c) => (c.proveedor || '').toLowerCase().includes(q));
+      if (matches) set.add(area.areaPSMB);
+    });
+    return set;
+  }, [allAreas, searchTerm]);
+
+  const displayedHistoricoItems = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return historicoItems;
+    return historicoItems.filter((item) =>
+      (item.areaPSMB || '').toLowerCase().includes(q) || areasPorProveedor?.has(item.areaPSMB)
+    );
+  }, [historicoItems, searchTerm, areasPorProveedor]);
+
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="sanitario-dashboard">
@@ -415,7 +437,7 @@ export default function SanitarioDashboard() {
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar área o código..."
+            placeholder="Buscar área, código o proveedor..."
             className="centros-search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -607,6 +629,27 @@ export default function SanitarioDashboard() {
         <>
           {/* Selector de período */}
           <div className="centros-filters sanitario-historico-filters">
+            <div className="centros-search-wrap" style={{ maxWidth: '280px' }}>
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Buscar área o proveedor..."
+                className="centros-search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoComplete="off"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center', color: 'var(--color-text-muted)' }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
             <div className="mx-toggle-group">
               <button type="button" className="mx-toggle-btn" onClick={setPresetSemana}>Esta semana</button>
               <button type="button" className="mx-toggle-btn" onClick={setPresetMes}>Este mes</button>
@@ -650,14 +693,16 @@ export default function SanitarioDashboard() {
                 <tbody>
                   {historicoLoading ? (
                     <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}><div className="mx-spinner" style={{ margin: '0 auto' }} /></td></tr>
-                  ) : historicoItems.length === 0 ? (
+                  ) : displayedHistoricoItems.length === 0 ? (
                     <tr>
                       <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
-                        <p style={{ color: 'var(--color-text-muted)' }}>Sin registros en el período seleccionado.</p>
+                        <p style={{ color: 'var(--color-text-muted)' }}>
+                          {searchTerm ? 'Sin registros que coincidan con la búsqueda.' : 'Sin registros en el período seleccionado.'}
+                        </p>
                       </td>
                     </tr>
                   ) : (
-                    historicoItems.map((item) => (
+                    displayedHistoricoItems.map((item) => (
                       <tr key={item._id}>
                         <td data-label="Fecha">{formatDateTime(item.fechaExtraccion || item.createdAt)}</td>
                         <td data-label="Área PSMB" style={{ fontWeight: 600 }}>{item.areaPSMB}</td>
@@ -682,7 +727,11 @@ export default function SanitarioDashboard() {
 
           {!historicoLoading && historicoItems.length > 0 && (
             <div className="centros-pagination-footer">
-              <span>{historicoItems.length} registros entre {formatISOAsCL(rangoDesde)} y {formatISOAsCL(rangoHasta)}</span>
+              <span>
+                {displayedHistoricoItems.length === historicoItems.length
+                  ? `${historicoItems.length} registros entre ${formatISOAsCL(rangoDesde)} y ${formatISOAsCL(rangoHasta)}`
+                  : `${displayedHistoricoItems.length} de ${historicoItems.length} registros entre ${formatISOAsCL(rangoDesde)} y ${formatISOAsCL(rangoHasta)}`}
+              </span>
             </div>
           )}
         </>
