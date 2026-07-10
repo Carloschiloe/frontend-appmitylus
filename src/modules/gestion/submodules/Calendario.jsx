@@ -623,6 +623,7 @@ export default function Calendario() {
   const [range, setRange] = useState('month');
   const [listPeriod, setListPeriod] = useState('month');
   const [monthDetailsOpen, setMonthDetailsOpen] = useState(false);
+  const [expandedYearMonth, setExpandedYearMonth] = useState(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [nextStepFilter, setNextStepFilter] = useState('all');
@@ -849,6 +850,16 @@ export default function Calendario() {
     () => Array.from({ length: 12 }, (_, m) => ({ monthIndex: m, ...buildYearMonthDays(year, m, yearEventsByDay) })),
     [year, yearEventsByDay]
   );
+
+  const expandedYearMonthIndex = expandedYearMonth ? Number(expandedYearMonth.slice(5, 7)) - 1 : null;
+  const expandedYearGrid = expandedYearMonth ? buildYearMonthDays(year, expandedYearMonthIndex, yearEventsByDay) : null;
+  const expandedYearItems = useMemo(() => {
+    if (!expandedYearMonth) return [];
+    return agendaItems
+      .filter((item) => `${item.date.getFullYear()}-${pad2(item.date.getMonth() + 1)}` === expandedYearMonth)
+      .sort(compareCalendarItems);
+  }, [agendaItems, expandedYearMonth]);
+
   function clearListFilters() {
     setSearch('');
     setTypeFilter('all');
@@ -893,6 +904,7 @@ export default function Calendario() {
 
   function changeYear(delta) {
     setCurrentDate(new Date(year + delta, month, 1));
+    setExpandedYearMonth(null);
   }
 
   function goToDayDetail(date) {
@@ -1308,31 +1320,96 @@ export default function Calendario() {
             )}
 
             {viewMode === 'year' && (
-              <div className="agenda-year-grid">
-                {yearMonthsData.map(({ monthIndex, firstDow, days }) => (
-                  <div key={monthIndex} className="agenda-year-month">
-                    <div className="agenda-year-month-title">{MONTHS[monthIndex]} {year}</div>
-                    <div className="agenda-year-month-grid">
-                      {DOW.map((d) => <div key={d} className="agenda-year-dow">{d}</div>)}
-                      {Array.from({ length: firstDow }).map((_, i) => (
-                        <div key={`pad-${i}`} className="agenda-year-day agenda-year-day--pad" />
-                      ))}
-                      {days.map(({ date, day, key, count, tone }) => (
-                        <button
-                          type="button"
-                          key={key}
-                          className={`agenda-year-day agenda-year-day--${tone}`}
-                          onClick={() => goToDayDetail(date)}
-                          title={count ? `${day} ${MONTHS[monthIndex]} · ${count} compromiso${count !== 1 ? 's' : ''}` : `${day} ${MONTHS[monthIndex]}`}
-                        >
-                          <span className="agenda-year-day-num">{day}</span>
-                          {count > 0 && <span className="agenda-year-day-count">{count}</span>}
-                        </button>
-                      ))}
-                    </div>
+              <>
+                {expandedYearMonth && (
+                  <div className="agenda-year-expanded-header">
+                    <button type="button" className="agenda-year-back-btn" onClick={() => setExpandedYearMonth(null)}>
+                      <ChevronLeft size={16} /> Volver
+                    </button>
+                    <span>Detalle: {MONTHS[expandedYearMonthIndex]} {year}</span>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {expandedYearMonth && expandedYearGrid ? (
+                  <div className="agenda-year-expanded-layout">
+                    <div className="agenda-year-month agenda-year-month--expanded">
+                      <div className="agenda-year-month-grid">
+                        {DOW.map((d) => <div key={d} className="agenda-year-dow">{d}</div>)}
+                        {Array.from({ length: expandedYearGrid.firstDow }).map((_, i) => (
+                          <div key={`pad-${i}`} className="agenda-year-day agenda-year-day--pad" />
+                        ))}
+                        {expandedYearGrid.days.map(({ date, day, key, count, tone }) => (
+                          <button
+                            type="button"
+                            key={key}
+                            className={`agenda-year-day agenda-year-day--${tone}`}
+                            onClick={() => goToDayDetail(date)}
+                            title={count ? `${day} ${MONTHS[expandedYearMonthIndex]} · ${count} compromiso${count !== 1 ? 's' : ''}` : `${day} ${MONTHS[expandedYearMonthIndex]}`}
+                          >
+                            <span className="agenda-year-day-num">{day}</span>
+                            {count > 0 && <span className="agenda-year-day-count">{count}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <aside className="agenda-year-exp-list">
+                      <div className="agenda-year-exp-title">
+                        <CalendarDays size={14} /> {MONTHS[expandedYearMonthIndex]} {year}
+                      </div>
+                      <div className="agenda-year-exp-total">
+                        {expandedYearItems.length} compromiso{expandedYearItems.length !== 1 ? 's' : ''}
+                      </div>
+                      <div className="agenda-year-exp-items">
+                        {expandedYearItems.length === 0 ? (
+                          <div className="agenda-year-exp-empty">Sin compromisos este mes</div>
+                        ) : (
+                          expandedYearItems.map((item) => (
+                            <button
+                              type="button"
+                              key={item.id}
+                              className={`agenda-year-exp-row is-${item.status}`}
+                              onClick={() => goToDayDetail(item.date)}
+                            >
+                              <span className="agenda-year-exp-row-date">{item.date.getDate()}</span>
+                              <span className="agenda-year-exp-row-main">
+                                <strong>{item.provider}</strong>
+                                <em>{item.title}</em>
+                              </span>
+                              <AgendaStatus status={item.status} />
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </aside>
+                  </div>
+                ) : (
+                  <div className="agenda-year-grid">
+                    {yearMonthsData.map(({ monthIndex, firstDow, days }) => (
+                      <button
+                        type="button"
+                        key={monthIndex}
+                        className="agenda-year-month agenda-year-month--clickable"
+                        onClick={() => setExpandedYearMonth(`${year}-${pad2(monthIndex + 1)}`)}
+                        title={`Ver ${MONTHS[monthIndex]} ${year} en detalle`}
+                      >
+                        <div className="agenda-year-month-title">{MONTHS[monthIndex]} {year}</div>
+                        <div className="agenda-year-month-grid">
+                          {DOW.map((d) => <div key={d} className="agenda-year-dow">{d}</div>)}
+                          {Array.from({ length: firstDow }).map((_, i) => (
+                            <div key={`pad-${i}`} className="agenda-year-day agenda-year-day--pad" />
+                          ))}
+                          {days.map(({ day, key, count, tone }) => (
+                            <div key={key} className={`agenda-year-day agenda-year-day--${tone}`}>
+                              <span className="agenda-year-day-num">{day}</span>
+                              {count > 0 && <span className="agenda-year-day-count">{count}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {viewMode === 'calendar' && (

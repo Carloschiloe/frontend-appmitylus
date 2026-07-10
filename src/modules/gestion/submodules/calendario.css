@@ -775,6 +775,28 @@
   flex: 1 1 260px;
 }
 
+button.agenda-year-month {
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.agenda-year-month--clickable {
+  cursor: pointer;
+}
+
+.agenda-year-month--clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  border-color: var(--color-primary);
+}
+
+.agenda-year-month--clickable:hover .agenda-year-month-title {
+  color: var(--color-primary);
+}
+
 .agenda-year-month-title {
   font-size: 0.88rem;
   font-weight: 600;
@@ -810,8 +832,12 @@
   gap: 1px;
   font-size: 0.7rem;
   font-family: inherit;
-  cursor: pointer;
+  cursor: default;
   padding: 0;
+}
+
+button.agenda-year-day {
+  cursor: pointer;
 }
 
 .agenda-year-day--pad {
@@ -852,10 +878,209 @@
   color: #b91c1c;
 }
 
-.agenda-year-day:hover:not(.agenda-year-day--pad) {
+button.agenda-year-day:hover:not(.agenda-year-day--pad) {
   filter: brightness(0.95);
   outline: 1px solid currentColor;
   outline-offset: -1px;
+}
+
+/* ── Vista Año: mes expandido con detalle al lado (tipo simulador) ── */
+.agenda-year-expanded-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+
+.agenda-year-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.agenda-year-back-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.agenda-year-expanded-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.agenda-year-month--expanded {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.agenda-year-month--expanded .agenda-year-month-grid {
+  gap: 6px;
+}
+
+.agenda-year-month--expanded .agenda-year-day {
+  min-height: 80px;
+  border-radius: 8px;
+  padding: 6px 4px;
+}
+
+.agenda-year-month--expanded .agenda-year-day-num {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.agenda-year-month--expanded .agenda-year-day-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.agenda-year-month--expanded .agenda-year-dow {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.agenda-year-exp-list {
+  flex: 0 0 280px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-self: flex-start;
+}
+
+.agenda-year-exp-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.agenda-year-exp-total {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2px;
+}
+
+.agenda-year-exp-items {
+  display: flex;
+  flex-direction: column;
+  max-height: 480px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.agenda-year-exp-empty {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  padding: 10px 0;
+  text-align: center;
+}
+
+.agenda-year-exp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-border);
+  min-width: 0;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.agenda-year-exp-row:last-child {
+  border-bottom: none;
+}
+
+.agenda-year-exp-row:hover {
+  background: var(--color-bg);
+}
+
+.agenda-year-exp-row-date {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  min-width: 18px;
+}
+
+.agenda-year-exp-row-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.agenda-year-exp-row-main strong {
+  font-size: 0.82rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-year-exp-row-main em {
+  font-size: 0.72rem;
+  font-style: normal;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .agenda-year-expanded-layout {
+    flex-direction: column;
+  }
+  .agenda-year-exp-list {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .agenda-year-month--expanded .agenda-year-day {
+    min-height: 38px;
+    border-radius: 5px;
+    padding: 3px 2px;
+  }
+  .agenda-year-month--expanded .agenda-year-day-num {
+    font-size: 0.82rem;
+  }
+  .agenda-year-month--expanded .agenda-year-day-count {
+    font-size: 0.62rem;
+  }
 }
 
 @media (max-width: 768px) {
