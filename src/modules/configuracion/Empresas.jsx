@@ -172,13 +172,12 @@ export default function Empresas() {
       </header>
 
       <div className="mx-content-frame">
-        <div className="centros-filters usuarios-toolbar">
-          <div className="centros-search-wrap usuarios-search-box">
-            <Search size={18} />
+        <div className="mx-toolbar usuarios-toolbar">
+          <div className="mx-search-box usuarios-search-box">
+            <Search size={16} />
             <input
               type="text"
               placeholder="Buscar empresas..."
-              className="centros-search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
