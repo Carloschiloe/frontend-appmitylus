@@ -1531,7 +1531,7 @@
 .disponibilidad-analysis-drawer {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
-  width: min(94vw, 480px);
+  width: min(90vw, 400px);
   height: 100%;
   padding: 20px;
   background: var(--color-surface);
@@ -1592,7 +1592,7 @@
 
 .disponibilidad-analysis-detail-record {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
