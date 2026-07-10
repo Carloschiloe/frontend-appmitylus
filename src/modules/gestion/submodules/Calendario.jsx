@@ -15,6 +15,7 @@ import {
   Eye,
   Info,
   History,
+  LayoutGrid,
   ListChecks,
   Mail,
   MapPin,
@@ -51,7 +52,26 @@ const VIEW_OPTIONS = [
   { id: 'list', label: 'Lista operativa', icon: ListChecks },
   { id: 'week', label: 'Semana', icon: CalendarRange },
   { id: 'calendar', label: 'Mes', icon: CalendarDays },
+  { id: 'year', label: 'Año', icon: LayoutGrid },
 ];
+
+// Prioridad para colorear cada dia en la vista Año: lo mas urgente gana.
+const YEAR_DAY_STATUS_PRIORITY = ['overdue', 'active', 'paused'];
+
+function buildYearMonthDays(year, monthIndex, eventsByDay) {
+  const firstDay = new Date(year, monthIndex, 1);
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstDow = (firstDay.getDay() + 6) % 7;
+  const days = [];
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const date = new Date(year, monthIndex, d);
+    const key = dateKey(date);
+    const items = eventsByDay.get(key) || [];
+    const tone = YEAR_DAY_STATUS_PRIORITY.find((status) => items.some((item) => item.status === status)) || 'empty';
+    days.push({ date, day: d, key, count: items.length, tone });
+  }
+  return { firstDow, days };
+}
 
 // Order: vencidos, realizados, pendiente, pausados (as specified)
 const STATUS_OPTIONS = [
@@ -812,6 +832,23 @@ export default function Calendario() {
 
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
+
+  // Vista Año: siempre agendaItems completo (vencido/pendiente/pausado), sin
+  // los toggles de responsable/gestiones que aplican solo a semana y mes.
+  const yearEventsByDay = useMemo(() => {
+    const map = new Map();
+    agendaItems.forEach((item) => {
+      const key = dateKey(item.date);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    });
+    return map;
+  }, [agendaItems]);
+
+  const yearMonthsData = useMemo(
+    () => Array.from({ length: 12 }, (_, m) => ({ monthIndex: m, ...buildYearMonthDays(year, m, yearEventsByDay) })),
+    [year, yearEventsByDay]
+  );
   function clearListFilters() {
     setSearch('');
     setTypeFilter('all');
@@ -852,6 +889,17 @@ export default function Calendario() {
 
   function changeWeek(delta) {
     setCurrentDate((prev) => addDays(prev, delta * 7));
+  }
+
+  function changeYear(delta) {
+    setCurrentDate(new Date(year + delta, month, 1));
+  }
+
+  function goToDayDetail(date) {
+    setCurrentDate(date);
+    setSelectedDate(date);
+    setViewMode('calendar');
+    setMonthDetailsOpen(true);
   }
 
   function changeListPeriod(delta) {
@@ -1003,6 +1051,16 @@ export default function Calendario() {
               >
                 <ClipboardCheck size={15} /> Mostrar gestiones
               </button>
+            </div>
+          )}
+
+          {viewMode === 'year' && (
+            <div className="cal-toolbar-right">
+              <div className="cal-period-nav">
+                <button type="button" onClick={() => changeYear(-1)}><ChevronLeft size={18} /></button>
+                <strong>{year}</strong>
+                <button type="button" onClick={() => changeYear(1)}><ChevronRight size={18} /></button>
+              </div>
             </div>
           )}
 
@@ -1247,6 +1305,34 @@ export default function Calendario() {
                 </>
               )}
               </>
+            )}
+
+            {viewMode === 'year' && (
+              <div className="agenda-year-grid">
+                {yearMonthsData.map(({ monthIndex, firstDow, days }) => (
+                  <div key={monthIndex} className="agenda-year-month">
+                    <div className="agenda-year-month-title">{MONTHS[monthIndex]} {year}</div>
+                    <div className="agenda-year-month-grid">
+                      {DOW.map((d) => <div key={d} className="agenda-year-dow">{d}</div>)}
+                      {Array.from({ length: firstDow }).map((_, i) => (
+                        <div key={`pad-${i}`} className="agenda-year-day agenda-year-day--pad" />
+                      ))}
+                      {days.map(({ date, day, key, count, tone }) => (
+                        <button
+                          type="button"
+                          key={key}
+                          className={`agenda-year-day agenda-year-day--${tone}`}
+                          onClick={() => goToDayDetail(date)}
+                          title={count ? `${day} ${MONTHS[monthIndex]} · ${count} compromiso${count !== 1 ? 's' : ''}` : `${day} ${MONTHS[monthIndex]}`}
+                        >
+                          <span className="agenda-year-day-num">{day}</span>
+                          {count > 0 && <span className="agenda-year-day-count">{count}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {viewMode === 'calendar' && (
