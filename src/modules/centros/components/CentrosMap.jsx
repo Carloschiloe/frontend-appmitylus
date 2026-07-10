@@ -635,7 +635,7 @@ export default function CentrosMap() {
             preferCanvas
             scrollWheelZoom
             style={{
-              height: isFullscreen ? '100vh' : 'calc(100vh - 220px)',
+              height: isFullscreen ? '100vh' : 'calc(100vh - 160px)',
               minHeight: '400px',
               width: '100%',
               borderRadius: isFullscreen ? '0' : '12px',
