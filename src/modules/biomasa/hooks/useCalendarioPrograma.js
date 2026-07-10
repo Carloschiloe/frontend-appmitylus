@@ -122,10 +122,15 @@ export function useCalendarioPrograma({
       })();
 
       // Toneladas del día.
-      //  1) Con desglose por tipo (override persistido o mezcla del programa) → suma exacta.
-      //  2) Sin desglose, incluidos los días de ajuste creados con +/− → camiones × tons/camión efectivo.
+      //  1) Último día calculado por saldo (backend): tonsDia es el remanente
+      //     exacto, nunca se recalcula por camiones × tons/camión (podría
+      //     sobrepasar lo acordado o mostrar más de lo que realmente falta).
+      //  2) Con desglose por tipo (override persistido o mezcla del programa) → suma exacta.
+      //  3) Sin desglose, incluidos los días de ajuste creados con +/− → camiones × tons/camión efectivo.
       let tonsDia = 0;
-      if (desgloseDia) {
+      if (item?.esUltimoDiaCalculado && item?.tonsDia != null) {
+        tonsDia = Number(item.tonsDia);
+      } else if (desgloseDia) {
         tonsDia = desgloseDia.reduce((s, l) => s + Number(l.cantidad || 0) * Number(l.toneladasPorCamion || 0), 0);
       } else if (camiones > 0 && effectiveTonsPerTruck != null) {
         tonsDia = camiones * effectiveTonsPerTruck;
@@ -138,6 +143,8 @@ export function useCalendarioPrograma({
         desgloseDia,
         tonsEstimadas: item?.tonsEstimadas ?? programa?.tonsEstimadas ?? null,
         tonsDia,
+        esUltimoDiaCalculado: Boolean(item?.esUltimoDiaCalculado),
+        capacidadTeoricaTons: item?.capacidadTeoricaTons ?? null,
         uxkg: item?.uxkg ?? programa?.uxkg ?? null,
         rendimiento: item?.rendimiento ?? programa?.rendimiento ?? null,
         muestreoFecha: item?.muestreoFecha ?? programa?.muestreoFecha ?? null,

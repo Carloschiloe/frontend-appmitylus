@@ -460,6 +460,14 @@ export default function ProgramaCalendarioView({
                             ) : (
                               <span className="harvest-week-v2-empty">—</span>
                             )}
+                            {cell.esUltimoDiaCalculado && cell.capacidadTeoricaTons != null && Math.abs(cell.capacidadTeoricaTons - cell.tonsDia) >= 0.5 && (
+                              <span
+                                className="wk-ultimo-dia-badge"
+                                title={`Último día del programa: quedan ${fmtTonsInt(cell.tonsDia)} t por consumir, la capacidad de ${cell.camiones} camión(es) es ${fmtTonsInt(cell.capacidadTeoricaTons)} t (van parcialmente cargados)`}
+                              >
+                                parcial
+                              </span>
+                            )}
                             {programa && !isReadOnly && (
                               <div className="harvest-week-v2-actions">
                                 <button className="wk-btn-ajustar" onClick={() => abrirAjustarDia(programa, dia, cell, 'sumar')} data-tour="programa-ajustar">

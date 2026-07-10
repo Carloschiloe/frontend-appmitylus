@@ -3173,6 +3173,20 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin-top: 1px;
 }
 
+.wk-ultimo-dia-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #fef9c3;
+  color: #854d0e;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: help;
+}
+
 /* ── Día sin programa (fuera de vigencia o suspendido) ── */
 .harvest-week-v2-cell.is-sinprog { background: #fff; }
 .harvest-week-v2-sinprog {
