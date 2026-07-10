@@ -4,10 +4,13 @@ const BASE_URL = '/auth/usuarios';
 
 export const usuariosApi = {
   /**
-   * Obtiene la lista de todos los usuarios
+   * Obtiene la lista de todos los usuarios.
+   * params.scope = 'all' fuerza ver todas las empresas (panel saas-admin),
+   * ignorando la empresa seleccionada en el selector de tenant.
    */
-  getUsuarios: async () => {
-    const data = await apiClient.get(BASE_URL);
+  getUsuarios: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const data = await apiClient.get(`${BASE_URL}${query ? `?${query}` : ''}`);
     return data.items || [];
   },
 

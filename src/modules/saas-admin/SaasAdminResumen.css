@@ -1,0 +1,61 @@
+.sar-content-frame {
+  padding: 20px var(--page-padding) 40px var(--page-padding);
+  gap: 16px;
+}
+
+.sar-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.sar-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.sar-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sar-kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+  line-height: 1.1;
+}
+
+.sar-kpi-label {
+  font-size: 12.5px;
+  color: var(--color-text-muted, #64748b);
+  margin-top: 2px;
+}
+
+.sar-kpi-sub {
+  font-size: 11px;
+  color: var(--color-text-subtle, #94a3b8);
+  margin-top: 2px;
+}
+
+.sar-recent-card {
+  margin-top: 4px;
+}
+
+.sar-recent-header {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}

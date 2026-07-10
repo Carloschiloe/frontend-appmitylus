@@ -1,5 +1,18 @@
 /* src/modules/configuracion/usuarios.css */
 
+.usuarios-scope-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 var(--page-padding);
+  padding: 10px 14px;
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 .usuarios-content-frame {
   padding: 12px var(--page-padding) 40px var(--page-padding);
   margin-top: 0;

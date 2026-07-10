@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { 
-  Building2, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
+import { useNavigate } from 'react-router-dom';
+import {
+  Building2,
+  Plus,
+  Edit,
+  Trash2,
+  Search,
   X,
   Globe,
   Database,
+  RotateCcw,
+  LogIn,
+  Users,
+  Clock,
 } from 'lucide-react';
 
  import { empresasApi } from '../../api/api-empresas';
+ import { usuariosApi } from '../../api/api-usuarios';
  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
  import { useToast } from '../../context/ToastContext';
 import './usuarios.css'; // Reutilizamos estilos de usuarios para consistencia
@@ -18,9 +24,25 @@ import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const MAX_LOGO_BYTES = 200 * 1024; // 200 KB
 
+function timeAgo(dateStr) {
+  if (!dateStr) return 'Sin actividad';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Ahora mismo';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `Hace ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `Hace ${days}d`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `Hace ${weeks} sem`;
+  return new Date(dateStr).toLocaleDateString('es-CL');
+}
+
 export default function Empresas() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState(null);
@@ -31,6 +53,45 @@ export default function Empresas() {
   const { data: empresas = [], isLoading: loading } = useQuery({
     queryKey: ['empresas'],
     queryFn: empresasApi.getEmpresas,
+  });
+
+  // Usuarios de todas las empresas, para calcular cantidad + última actividad por empresa
+  const { data: usuarios = [] } = useQuery({
+    queryKey: ['usuarios', 'all'],
+    queryFn: () => usuariosApi.getUsuarios({ scope: 'all' }),
+  });
+
+  const statsPorEmpresa = React.useMemo(() => {
+    const map = {};
+    for (const u of usuarios) {
+      if (!u.empresaId) continue;
+      if (!map[u.empresaId]) map[u.empresaId] = { count: 0, ultimaActividad: null };
+      map[u.empresaId].count += 1;
+      if (u.ultimoLogin && (!map[u.empresaId].ultimaActividad || new Date(u.ultimoLogin) > new Date(map[u.empresaId].ultimaActividad))) {
+        map[u.empresaId].ultimaActividad = u.ultimoLogin;
+      }
+    }
+    return map;
+  }, [usuarios]);
+
+  const handleEntrarComo = (emp) => {
+    localStorage.setItem('selected_tenant_db', emp.dbName);
+    localStorage.setItem('selected_tenant_id', emp._id || '');
+    localStorage.setItem('selected_tenant_nombre', emp.nombre || '');
+    localStorage.setItem('selected_tenant_logo', emp.config?.logo || '');
+    navigate('/dashboard');
+    window.location.reload();
+  };
+
+  const reactivarMutation = useMutation({
+    mutationFn: (id) => empresasApi.updateEmpresa(id, { activo: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empresas'] });
+      addToast({ title: 'Éxito', message: 'Empresa reactivada.', type: 'success' });
+    },
+    onError: () => {
+      addToast({ title: 'Error', message: 'No se pudo reactivar la empresa.', type: 'error' });
+    },
   });
 
   // React Query: Mutaciones
@@ -132,18 +193,22 @@ export default function Empresas() {
             <table className="mx-table">
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Empresa</th>
+                  <th style={{ width: '26%' }}>Empresa</th>
                   <th>ID / Slug</th>
                   <th>Base de Datos</th>
+                  <th style={{ textAlign: 'center' }}>Usuarios</th>
+                  <th>Última actividad</th>
                   <th>Estado</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="5" className="usuarios-empty-state"><div className="mx-spinner usuarios-spinner-center"></div></td></tr>
+                  <tr><td colSpan="7" className="usuarios-empty-state"><div className="mx-spinner usuarios-spinner-center"></div></td></tr>
                 ) : (
-                  filteredEmpresas.map(emp => (
+                  filteredEmpresas.map(emp => {
+                    const stats = statsPorEmpresa[emp._id] || { count: 0, ultimaActividad: null };
+                    return (
                     <tr key={emp._id}>
                       <td data-label="Empresa">
                         <div className="usuarios-avatar-wrapper">
@@ -169,13 +234,29 @@ export default function Empresas() {
                           <Database size={14} /> {emp.dbName}
                         </div>
                       </td>
+                      <td data-label="Usuarios" style={{ textAlign: 'center' }}>
+                        <span className="mx-badge mx-badge-muted"><Users size={11} /> {stats.count}</span>
+                      </td>
+                      <td data-label="Última actividad">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }} title={stats.ultimaActividad ? new Date(stats.ultimaActividad).toLocaleString('es-CL') : ''}>
+                          <Clock size={13} /> {timeAgo(stats.ultimaActividad)}
+                        </div>
+                      </td>
                       <td data-label="Estado">
                         <span className={`mx-badge ${emp.activo ? 'mx-badge-success' : 'mx-badge-muted'}`}>
                           {emp.activo ? 'ACTIVA' : 'INACTIVA'}
                         </span>
                       </td>
                        <td data-label="Acciones" style={{ textAlign: 'right' }}>
-                         <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%' }}>
+                         <div className="mx-table-actions-cell" style={{ display: 'inline-flex', justifyContent: 'flex-end', width: '100%', gap: '6px' }}>
+                           <button className="mx-action-btn" title="Entrar como esta empresa" onClick={() => handleEntrarComo(emp)}>
+                             <LogIn size={14} />
+                           </button>
+                           {!emp.activo && (
+                             <button className="mx-action-btn" title="Reactivar empresa" onClick={() => reactivarMutation.mutate(emp._id)} disabled={reactivarMutation.isPending}>
+                               <RotateCcw size={14} />
+                             </button>
+                           )}
                            <button className="mx-action-btn edit" onClick={() => openModal(emp)}><Edit size={14} /></button>
                            <button className="mx-action-btn delete" onClick={() => setConfirmDeleteEmpresa(emp)}>
                              <Trash2 size={14} />
@@ -183,7 +264,8 @@ export default function Empresas() {
                          </div>
                        </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

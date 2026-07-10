@@ -67,7 +67,7 @@ function getApiErrorMessage(error, fallback) {
   return detail || error?.data?.message || error?.data?.error || error?.message || fallback;
 }
 
-export default function Usuarios({ noPage = false }) {
+export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const { user: currentUser } = useAuth();
@@ -82,8 +82,8 @@ export default function Usuarios({ noPage = false }) {
   const [confirmModal, setConfirmModal] = useState(EMPTY_CONFIRM);
 
   const { data: usuarios = [], isLoading: loading } = useQuery({
-    queryKey: ['usuarios'],
-    queryFn: usuariosApi.getUsuarios,
+    queryKey: ['usuarios', forceAllEmpresas ? 'all' : 'scoped'],
+    queryFn: () => usuariosApi.getUsuarios(forceAllEmpresas ? { scope: 'all' } : {}),
   });
 
   const { data: empresas = [] } = useQuery({
@@ -253,6 +253,11 @@ export default function Usuarios({ noPage = false }) {
   };
 
   const contentBody = (<>
+      {forceAllEmpresas && (
+        <div className="usuarios-scope-banner">
+          <ShieldCheck size={14} /> Viendo usuarios de <strong>todas las empresas</strong>, sin importar la empresa seleccionada.
+        </div>
+      )}
       <div className="mx-content-frame usuarios-content-frame">
         <div className="mx-toolbar usuarios-toolbar">
           <div className="mx-search-box usuarios-search-box">

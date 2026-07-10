@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Building2, Bug, LogOut, ShieldCheck } from 'lucide-react';
+import { Building2, Bug, LogOut, ShieldCheck, LayoutDashboard, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
 import './SaasAdminShell.css';
 
+const Resumen = React.lazy(() => import('./SaasAdminResumen.jsx'));
 const Empresas = React.lazy(() => import('../configuracion/Empresas.jsx'));
+const Usuarios = React.lazy(() => import('../configuracion/Usuarios.jsx'));
 const ErrorReports = React.lazy(() => import('../gestion/soporte/ErrorReports.jsx'));
 
 export default function SaasAdminShell() {
@@ -39,11 +41,25 @@ export default function SaasAdminShell() {
 
         <nav className="saas-nav">
           <NavLink
+            to="/saas-admin/resumen"
+            className={({ isActive }) => `saas-nav-link${isActive ? ' is-active' : ''}`}
+          >
+            <LayoutDashboard size={16} />
+            <span>Resumen</span>
+          </NavLink>
+          <NavLink
             to="/saas-admin/empresas"
             className={({ isActive }) => `saas-nav-link${isActive ? ' is-active' : ''}`}
           >
             <Building2 size={16} />
             <span>Empresas</span>
+          </NavLink>
+          <NavLink
+            to="/saas-admin/usuarios"
+            className={({ isActive }) => `saas-nav-link${isActive ? ' is-active' : ''}`}
+          >
+            <Users size={16} />
+            <span>Usuarios</span>
           </NavLink>
           <NavLink
             to="/saas-admin/soporte"
@@ -70,10 +86,12 @@ export default function SaasAdminShell() {
       <main className="saas-main">
         <React.Suspense fallback={<div className="saas-loading"><div className="mx-spinner" /></div>}>
           <Routes>
-            <Route index element={<Navigate to="/saas-admin/empresas" replace />} />
+            <Route index element={<Navigate to="/saas-admin/resumen" replace />} />
+            <Route path="resumen" element={<Resumen />} />
             <Route path="empresas" element={<Empresas />} />
+            <Route path="usuarios" element={<Usuarios noPage forceAllEmpresas />} />
             <Route path="soporte" element={<ErrorReports />} />
-            <Route path="*" element={<Navigate to="/saas-admin/empresas" replace />} />
+            <Route path="*" element={<Navigate to="/saas-admin/resumen" replace />} />
           </Routes>
         </React.Suspense>
       </main>
