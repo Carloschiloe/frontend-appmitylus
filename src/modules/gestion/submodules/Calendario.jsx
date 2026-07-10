@@ -834,17 +834,23 @@ export default function Calendario() {
   const selectedDayItems = eventsByDay.get(dateKey(selectedDate)) || [];
   const periodLabel = `${MONTHS[month]} ${year}`;
 
-  // Vista Año: siempre agendaItems completo (vencido/pendiente/pausado), sin
-  // los toggles de responsable/gestiones que aplican solo a semana y mes.
+  // Vista Año: agendaItems completo (vencido/pendiente/pausado), filtrado por
+  // responsable igual que Semana y Mes (Mostrar gestiones no aplica aquí).
+  const yearItems = useMemo(() => (
+    responsibleFilter === 'all'
+      ? agendaItems
+      : agendaItems.filter((item) => normalizeAccents(item.responsible) === normalizeAccents(responsibleFilter))
+  ), [agendaItems, responsibleFilter]);
+
   const yearEventsByDay = useMemo(() => {
     const map = new Map();
-    agendaItems.forEach((item) => {
+    yearItems.forEach((item) => {
       const key = dateKey(item.date);
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(item);
     });
     return map;
-  }, [agendaItems]);
+  }, [yearItems]);
 
   const yearMonthsData = useMemo(
     () => Array.from({ length: 12 }, (_, m) => ({ monthIndex: m, ...buildYearMonthDays(year, m, yearEventsByDay) })),
@@ -855,10 +861,10 @@ export default function Calendario() {
   const expandedYearGrid = expandedYearMonth ? buildYearMonthDays(year, expandedYearMonthIndex, yearEventsByDay) : null;
   const expandedYearItems = useMemo(() => {
     if (!expandedYearMonth) return [];
-    return agendaItems
+    return yearItems
       .filter((item) => `${item.date.getFullYear()}-${pad2(item.date.getMonth() + 1)}` === expandedYearMonth)
       .sort(compareCalendarItems);
-  }, [agendaItems, expandedYearMonth]);
+  }, [yearItems, expandedYearMonth]);
 
   function clearListFilters() {
     setSearch('');
@@ -1073,6 +1079,7 @@ export default function Calendario() {
                 <strong>{year}</strong>
                 <button type="button" onClick={() => changeYear(1)}><ChevronRight size={18} /></button>
               </div>
+              {ResponsableSelect}
             </div>
           )}
 
