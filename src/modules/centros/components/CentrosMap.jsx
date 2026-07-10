@@ -740,22 +740,31 @@ export default function CentrosMap() {
                   <span className="map-panel-value">{selectedCentro.codigoArea || '—'}</span>
                 </div>
                 <div className="map-panel-row">
-                  <span className="map-panel-label">Estado Sernapesca</span>
-                  <span className={`mx-badge mx-badge-${
-                    selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                    (selectedCentro.estadoAreaSernapesca === 'Inactiva' || selectedCentro.estadoAreaSernapesca === 'Eliminada') ? 'error' : 'muted'
-                  }`}>
-                    {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
-                  </span>
+                  <span className="map-panel-label">Estado Sanitario</span>
+                  {(() => {
+                    const sanitario = selectedCentro.sanitario;
+                    const estado = sanitario?.estado || 'gris';
+                    if (!sanitario || estado === 'gris') {
+                      return <span className="mx-badge mx-badge-muted">Sin muestreo sanitario</span>;
+                    }
+                    if (estado === 'verde') {
+                      return <span className="mx-badge mx-badge-success">OK</span>;
+                    }
+                    const detalle = sanitario.detalle || [];
+                    if (detalle.length) {
+                      return (
+                        <span className={`mx-badge ${SANITARIO_STATUS_CONFIG[estado]?.badge || 'mx-badge-warning'}`} title={detalle.map(d => `${d.tipoAnalisis}: ${d.glosaResultado || d.agenteCausal || 'Positivo'}`).join(' · ')}>
+                          {detalle.map(d => d.glosaResultado || d.tipoAnalisis || d.agenteCausal || 'Positivo').join(' · ')}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className={`mx-badge ${SANITARIO_STATUS_CONFIG[estado]?.badge || 'mx-badge-muted'}`}>
+                        {SANITARIO_STATUS_CONFIG[estado]?.label || 'Sin datos'}
+                      </span>
+                    );
+                  })()}
                 </div>
-                {selectedCentro.sanitario && (
-                  <div className="map-panel-row">
-                    <span className="map-panel-label">Estado Sanitario</span>
-                    <span className={`mx-badge ${SANITARIO_STATUS_CONFIG[selectedCentro.sanitario.estado || 'gris']?.badge || 'mx-badge-muted'}`}>
-                      {SANITARIO_STATUS_CONFIG[selectedCentro.sanitario.estado || 'gris']?.label || 'Sin datos'}
-                    </span>
-                  </div>
-                )}
               </div>
               <div className="map-panel-divider" />
               <div className="map-panel-section">
