@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, CalendarCheck } from 'lucide-react';
 import { esFechaEnVigencia } from '../utils/programaImpacto';
-import { fmtTonsInt } from '../utils/programaCalculos';
+import { fmtTonsInt, tonsPorCamionDeTipo } from '../utils/programaCalculos';
 
 const DAY_LABELS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
@@ -12,8 +12,7 @@ function defaultTipoId(programa, tiposTransporte) {
 }
 
 function tpcFromTipo(tipo) {
-  if (!tipo) return 0;
-  return (Number(tipo.maxisPorUnidad || 0) * Number(tipo.kgPorMaxiRef || 0)) / 1000;
+  return tonsPorCamionDeTipo(tipo) ?? 0;
 }
 
 function fallbackTpc(programa) {

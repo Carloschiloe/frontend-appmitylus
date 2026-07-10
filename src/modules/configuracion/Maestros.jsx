@@ -256,6 +256,7 @@ export default function Maestros({ noPage = false }) {
       body.prioridad = { Entero: 1, 'Media Concha': 2, Carne: 3 }[body.tipoPrincipal] || 99;
     }
     if (tipo === 'tipo_transporte') {
+      body.toneladasPorCamion = body.toneladasPorCamion !== '' ? Number(body.toneladasPorCamion) : null;
       body.maxisPorUnidad = body.maxisPorUnidad !== '' ? Number(body.maxisPorUnidad) : null;
       body.kgPorMaxiRef   = body.kgPorMaxiRef   !== '' ? Number(body.kgPorMaxiRef)   : null;
     }
@@ -444,6 +445,7 @@ export default function Maestros({ noPage = false }) {
                   {tipo === 'regla_calidad' && <th>Configuración</th>}
                   {tipo === 'condicion_negociacion' && <th>Tipo Valor</th>}
                   {tipo === 'tipo_transporte' && <th>Modo</th>}
+                  {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>T/camión</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
@@ -530,6 +532,11 @@ export default function Maestros({ noPage = false }) {
                           <span className={`mx-badge mx-badge-${item.modo === 'maritimo' ? 'info' : 'muted'}`}>
                             {item.modo === 'maritimo' ? 'Marítimo' : item.modo === 'terrestre' ? 'Terrestre' : '—'}
                           </span>
+                        </td>
+                      )}
+                      {tipo === 'tipo_transporte' && (
+                        <td data-label="T/camión" style={{ textAlign: 'center' }}>
+                          {item.toneladasPorCamion != null ? <strong>{item.toneladasPorCamion} t</strong> : '—'}
                         </td>
                       )}
                       {tipo === 'tipo_transporte' && <td data-label="Maxis/Un." style={{ textAlign: 'center' }}>{item.maxisPorUnidad ?? '—'}</td>}
@@ -694,11 +701,16 @@ export default function Maestros({ noPage = false }) {
                       </select>
                     </div>
                     <div className="mx-form-group">
-                      <label className="mx-label">Maxis por unidad</label>
+                      <label className="mx-label">Toneladas por camión</label>
+                      <input name="toneladasPorCamion" type="number" min="0.1" step="0.1" className="mx-input" defaultValue={editingItem?.toneladasPorCamion ?? ''} placeholder="Ej: 11" />
+                      <span className="mx-form-help">Es el dato oficial que usan los programas de cosecha. Los campos de abajo son solo referencia opcional.</span>
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Maxis por unidad (opcional)</label>
                       <input name="maxisPorUnidad" type="number" min="1" step="1" className="mx-input" defaultValue={editingItem?.maxisPorUnidad ?? ''} placeholder="Ej: 20" />
                     </div>
                     <div className="mx-form-group">
-                      <label className="mx-label">Kg por maxi (referencia)</label>
+                      <label className="mx-label">Kg por maxi (referencia, opcional)</label>
                       <input name="kgPorMaxiRef" type="number" min="1" step="1" className="mx-input" defaultValue={editingItem?.kgPorMaxiRef ?? ''} placeholder="Ej: 1100" />
                     </div>
                   </>

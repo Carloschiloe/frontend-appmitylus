@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X, Plus, CheckCircle2 } from 'lucide-react';
-import { fmtTonsInt } from '../utils/programaCalculos';
+import { fmtTonsInt, tonsPorCamionDeTipo } from '../utils/programaCalculos';
 import { getTipoProductoLabel } from '../utils/productoLabels';
 import { tiposDescontables } from '../utils/programaImpacto';
 
@@ -81,7 +81,7 @@ export default function ProgramaAjustarDiaModal({
 
   const elegirTipoSumar = (id) => {
     const t = (tiposTransporte || []).find((x) => String(x._id) === id);
-    const tpc = t ? ((Number(t.maxisPorUnidad) || 0) * (Number(t.kgPorMaxiRef) || 0)) / 1000 : '';
+    const tpc = t ? (tonsPorCamionDeTipo(t) ?? '') : '';
     setTipoTransporteId(id);
     setTipoTransporteNombre(t?.nombre || '');
     setToneladasPorCamion(tpc || '');
@@ -193,8 +193,8 @@ export default function ProgramaAjustarDiaModal({
                     <select className="mx-select" required value={tipoTransporteId} onChange={(e) => elegirTipoSumar(e.target.value)}>
                       <option value="">— Selecciona —</option>
                       {(Array.isArray(tiposTransporte) ? tiposTransporte : []).map((t) => {
-                        const tpc = t.maxisPorUnidad && t.kgPorMaxiRef ? ((t.maxisPorUnidad * t.kgPorMaxiRef) / 1000).toFixed(1) : null;
-                        return <option key={String(t._id)} value={String(t._id)}>{t.nombre}{tpc ? ` — ${tpc} t` : ''}</option>;
+                        const tpc = tonsPorCamionDeTipo(t);
+                        return <option key={String(t._id)} value={String(t._id)}>{t.nombre}{tpc != null ? ` — ${tpc.toFixed(1)} t` : ''}</option>;
                       })}
                     </select>
                   </div>

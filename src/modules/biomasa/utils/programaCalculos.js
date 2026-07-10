@@ -29,10 +29,13 @@ const pickNum = (obj, aliases) => {
   return NaN;
 };
 
-// Toneladas por camión de un tipo de transporte (maestro): maxis/unidad * kg/maxi ref / 1000.
-// Soporta variantes de nombre de campo. Devuelve null si los datos no permiten calcular
-// (nunca cae a un valor por defecto como 11).
+// Toneladas por camión de un tipo de transporte (maestro). Fuente oficial:
+// el campo directo toneladasPorCamion cargado en Maestros. Si un maestro
+// antiguo no lo tiene, se estima con maxis/unidad * kg/maxi ref / 1000 como
+// respaldo. Devuelve null si no hay ningún dato para calcular.
 export const tonsPorCamionDeTipo = (tipo) => {
+  const directo = pickNum(tipo, ['toneladasPorCamion']);
+  if (Number.isFinite(directo) && directo > 0) return directo;
   const maxis = pickNum(tipo, ['maxisPorUnidad', 'maxisUnidad', 'maxisUn', 'maxis']);
   const kg = pickNum(tipo, ['kgPorMaxiRef', 'kgMaxiRef', 'kgPorMaxi', 'kgRef']);
   if (!Number.isFinite(maxis) || !Number.isFinite(kg) || maxis <= 0 || kg <= 0) return null;
@@ -303,8 +306,8 @@ export const getEffectiveTonsPerTruck = (programa, fallback = 10, tiposTransport
     if (tipoId) {
       const master = tiposTransporte.find((t) => String(t._id) === String(tipoId));
       if (master) {
-        const tpc = (Number(master.maxisPorUnidad || 0) * Number(master.kgPorMaxiRef || 0)) / 1000;
-        if (tpc > 0) return tpc;
+        const tpc = tonsPorCamionDeTipo(master);
+        if (tpc != null && tpc > 0) return tpc;
       }
     }
   }

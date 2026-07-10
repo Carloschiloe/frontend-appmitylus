@@ -7,7 +7,7 @@ import {
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import ProgramaAjustarDiaModal from '../components/ProgramaAjustarDiaModal';
 import ProgramaImpactoModal from '../components/ProgramaImpactoModal';
-import { calcTerminoPrograma, fmtNumber, ADJUST_MOTIVOS } from '../utils/programaCalculos';
+import { calcTerminoPrograma, fmtNumber, ADJUST_MOTIVOS, tonsPorCamionDeTipo } from '../utils/programaCalculos';
 
 export default function ProgramaModalesView({
   // AdjustModal (modal único Ajustar día) + impacto post-ajuste
@@ -232,7 +232,7 @@ export default function ProgramaModalesView({
                                   value={t.tipoTransporteId}
                                   onChange={e => {
                                     const tipo = tiposTransporte.find(x => x._id === e.target.value);
-                                    const tonsAuto = tipo?.maxisPorUnidad && tipo?.kgPorMaxiRef ? Math.round((tipo.maxisPorUnidad * tipo.kgPorMaxiRef) / 100) / 10 : null;
+                                    const tonsAuto = tipo ? tonsPorCamionDeTipo(tipo) : null;
                                     const next = [...formData.transportesAvanzados];
                                     
                                     let newTonsPerCamion = tonsAuto ?? t.toneladasPorCamion;
@@ -260,40 +260,24 @@ export default function ProgramaModalesView({
                                   {tiposTransporte.map(x => <option key={x._id} value={x._id}>{x.nombre}</option>)}
                                 </select>
                               </td>
-                              {[['camionesTotales','total'],['cantidadDia','p/día'],['toneladasPorCamion','t/cam']].map(([field, ph]) => {
+                              {[['camionesTotales','total'],['cantidadDia','p/día']].map(([field, ph]) => {
                                 const hasErr = !!transportErrors[idx]?.[field];
                                 return (
                                   <td key={field} style={{ padding: '5px 4px', textAlign: 'center' }}>
-                                    <input type="number" min="0" step={field === 'toneladasPorCamion' ? '0.1' : '1'}
+                                    <input type="number" min="0" step="1"
                                       style={{ width: 58, height: 30, padding: '2px 4px', textAlign: 'center', fontSize: 12, border: `1px solid ${hasErr ? '#EF4444' : '#E2E8F0'}`, borderRadius: 7, background: hasErr ? '#FEF2F2' : '#fff', color: '#0F172A' }}
                                       placeholder={ph} value={t[field]}
                                       onChange={e => {
                                         const next = [...formData.transportesAvanzados];
-                                        let newValue = e.target.value;
-                                        let newCamionesTotales = t.camionesTotales;
-
-                                        if (field === 'toneladasPorCamion') {
-                                          const newTons = Number(newValue);
-                                          if (newTons > 0 && tratoSaldo?.tonsDisponibles != null && (!t.camionesTotales || t.camionesTotales === '')) {
-                                            const otherRowsTotal = formData.transportesAvanzados.reduce((sum, row, i) => {
-                                              if (i === idx) return sum;
-                                              return sum + (Number(row.camionesTotales) || 0) * (Number(row.toneladasPorCamion) || 0);
-                                            }, 0);
-                                            const available = Math.max(0, tratoSaldo.tonsDisponibles - otherRowsTotal);
-                                            newCamionesTotales = Math.floor(available / newTons);
-                                          }
-                                        }
-
-                                        next[idx] = { ...t, [field]: newValue };
-                                        if (field === 'toneladasPorCamion' && newCamionesTotales !== t.camionesTotales) {
-                                          next[idx].camionesTotales = newCamionesTotales;
-                                        }
-
+                                        next[idx] = { ...t, [field]: e.target.value };
                                         setFormData({ ...formData, transportesAvanzados: next });
                                       }} />
                                   </td>
                                 );
                               })}
+                              <td style={{ padding: '5px 4px', textAlign: 'center', fontSize: 12, color: t.toneladasPorCamion ? '#0F172A' : '#94a3b8' }} title="Se toma del maestro Tipo de camión, no se edita aquí">
+                                {t.toneladasPorCamion ? `${t.toneladasPorCamion} t` : '—'}
+                              </td>
                               <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 700, color: tTotales > 0 ? 'var(--color-primary)' : '#94a3b8', fontSize: 12, whiteSpace: 'nowrap' }}>
                                 {tTotales > 0 ? `${fmtNumber(tTotales, 0)} t` : '—'}
                               </td>
