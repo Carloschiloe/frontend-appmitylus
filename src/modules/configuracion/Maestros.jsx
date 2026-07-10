@@ -18,6 +18,7 @@ import {
   Upload,
   AlertTriangle,
   CheckCircle2,
+  Mail,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { maestrosApi } from '../../api/api-maestros';
@@ -44,6 +45,14 @@ const TIPOS = [
   { id: 'responsable',         label: 'Responsables',            short: 'Responsables', icon: Users },
   { id: 'tipo_transporte',     label: 'Tipos de Transporte',     short: 'Transporte',   icon: Truck },
   { id: 'transportista',       label: 'Transportistas',          short: 'Transportistas', icon: Truck },
+  { id: 'lista_distribucion',  label: 'Listas de Distribución',  short: 'Correos',      icon: Mail },
+];
+
+const CATEGORIA_LISTA_OPTIONS = [
+  { value: 'sanitario', label: 'Sanitario' },
+  { value: 'calidad', label: 'Calidad' },
+  { value: 'logistica', label: 'Logística' },
+  { value: 'comercial', label: 'Comercial' },
 ];
 
 const TIPO_CAMION_OPTIONS = [
@@ -269,6 +278,13 @@ export default function Maestros({ noPage = false }) {
       body.opciones = body.opcionesRaw.split('\n').map((s) => s.trim()).filter(Boolean);
       delete body.opcionesRaw;
     }
+    if (tipo === 'lista_distribucion') {
+      body.emails = (body.emailsRaw || '')
+        .split(/[\n,]/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      delete body.emailsRaw;
+    }
     saveMutation.mutate(body);
   };
 
@@ -449,6 +465,8 @@ export default function Maestros({ noPage = false }) {
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Maxis/Un.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Kg/Maxi ref.</th>}
                   {tipo === 'tipo_transporte' && <th style={{ textAlign: 'center' }}>Total ref.</th>}
+                  {tipo === 'lista_distribucion' && <th>Categoría</th>}
+                  {tipo === 'lista_distribucion' && <th>Correos</th>}
                   {tipo === 'transportista' && <th>Comuna Origen</th>}
                   {tipo === 'transportista' && <th>Tipo Camión</th>}
                   {tipo === 'transportista' && <th style={{ textAlign: 'right' }}>Precio</th>}
@@ -550,6 +568,20 @@ export default function Maestros({ noPage = false }) {
                           </td>
                         );
                       })()}
+                      {tipo === 'lista_distribucion' && (
+                        <td data-label="Categoría">
+                          <span className="mx-badge mx-badge-info">
+                            {CATEGORIA_LISTA_OPTIONS.find((o) => o.value === item.categoria)?.label || item.categoria || '—'}
+                          </span>
+                        </td>
+                      )}
+                      {tipo === 'lista_distribucion' && (
+                        <td data-label="Correos">
+                          {item.emails?.length
+                            ? <span title={item.emails.join(', ')}>{item.emails.length} correo{item.emails.length === 1 ? '' : 's'}</span>
+                            : '—'}
+                        </td>
+                      )}
                       {tipo === 'transportista' && <td data-label="Comuna Origen">{item.comunaOrigen || '—'}</td>}
                       {tipo === 'transportista' && (
                         <td data-label="Tipo Camión">
@@ -745,6 +777,31 @@ export default function Maestros({ noPage = false }) {
                     <div className="mx-form-group">
                       <label className="mx-label">Maxis por camión</label>
                       <input name="maxisPorCamion" type="number" min="0" step="1" className="mx-input" defaultValue={editingItem?.maxisPorCamion ?? ''} placeholder="Ej: 20" />
+                    </div>
+                  </>
+                )}
+
+                {tipo === 'lista_distribucion' && (
+                  <>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Categoría / Departamento</label>
+                      <select name="categoria" className="mx-select" defaultValue={editingItem?.categoria || 'sanitario'}>
+                        {CATEGORIA_LISTA_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                      <span className="mx-form-help">Define qué tipo de alerta usa esta lista. Ej: "Sanitario" para las alertas de área/centro con observación.</span>
+                    </div>
+                    <div className="mx-form-group">
+                      <label className="mx-label">Correos (uno por línea)</label>
+                      <textarea
+                        name="emailsRaw"
+                        className="mx-input"
+                        rows={4}
+                        defaultValue={(editingItem?.emails || []).join('\n')}
+                        placeholder={'ejemplo1@empresa.cl\nejemplo2@empresa.cl'}
+                        required
+                      />
                     </div>
                   </>
                 )}
