@@ -26,6 +26,17 @@ export default function MuestreoResultModal({ isOpen, resultData, onClose, onRep
           <div className="kpi"><span>UxKg</span><strong>{resultData.uxkg}</strong></div>
         </div>
 
+        {!resultData.clasificaciones?.[0] && Array.isArray(resultData.evaluacionCriterios) && resultData.evaluacionCriterios.some((c) => !c.cumple) && (
+          <div className="mu-result-reasons">
+            <div className="mu-result-reasons-title">¿Por qué no clasificó?</div>
+            {resultData.evaluacionCriterios.filter((c) => !c.cumple).map((c) => (
+              <div key={c.nombre} className="mu-result-reason-item">
+                <strong>{c.nombre}:</strong> {c.razon}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="mu-result-modal-actions">
           <button className="mx-btn mx-btn-outline mu-flex-action" onClick={onClose}>Cerrar</button>
           <button className="mx-btn mx-btn-primary mu-flex-action" onClick={() => onReport(resultData)}>
