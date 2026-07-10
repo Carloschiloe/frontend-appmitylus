@@ -231,6 +231,41 @@
   min-width: 1280px;
 }
 
+.disponibilidad-fecha-ingreso {
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.disp-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.disp-th-sort svg {
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.disp-th-sort:hover svg,
+.disp-th-sort--active svg {
+  opacity: 0.9;
+}
+
+.disp-th-sort--active {
+  color: var(--color-primary);
+}
+
 .disponibilidad-provider,
 .disponibilidad-tons {
   font-weight: var(--weight-bold);

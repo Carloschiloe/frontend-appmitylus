@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Handshake, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, ChevronsUpDown, Handshake, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
 
 const ORIGEN_ICON = {
   llamada:  Phone,
@@ -41,6 +41,34 @@ import { maestrosApi } from '../../../api/api-maestros';
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+const formatFechaIngreso = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Santiago' });
+};
+
+const sortValueGetters = {
+  fechaIngreso: (item) => new Date(item.createdAt || 0).getTime(),
+  proveedor: (item) => (item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '').toLowerCase(),
+  centro: (item) => (item.centroOrigenCodigo || item.centroCodigo || 'Sin centro').toLowerCase(),
+  mes: (item) => item.mesKey || '',
+  toneladas: (item) => Number(item.tons || item.tonsDisponible || 0),
+  producto: (item) => optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir').toLowerCase(),
+};
+
+const SortableTh = ({ label, sortKey, sortConfig, onSort }) => {
+  const isActive = sortConfig.key === sortKey;
+  const Icon = isActive ? (sortConfig.dir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <th>
+      <button type="button" className={`disp-th-sort${isActive ? ' disp-th-sort--active' : ''}`} onClick={() => onSort(sortKey)}>
+        {label} <Icon size={13} />
+      </button>
+    </th>
+  );
+};
 
 const filterDisponibilidades = (sourceItems, filters) => {
   const providerQuery = filters.proveedor.trim().toLowerCase();
@@ -164,6 +192,24 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   }, [items]);
 
   const filteredItems = useMemo(() => filterDisponibilidades(items, filters), [filters, items]);
+  const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' });
+  const handleSort = (key) => {
+    setSortConfig((current) => current.key === key
+      ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: 'asc' });
+  };
+  const sortedItems = useMemo(() => {
+    if (!sortConfig.key) return filteredItems;
+    const getValue = sortValueGetters[sortConfig.key];
+    const dirFactor = sortConfig.dir === 'asc' ? 1 : -1;
+    return [...filteredItems].sort((a, b) => {
+      const va = getValue(a);
+      const vb = getValue(b);
+      if (va < vb) return -1 * dirFactor;
+      if (va > vb) return 1 * dirFactor;
+      return 0;
+    });
+  }, [filteredItems, sortConfig]);
   // Para el Resumen mensual: solo los del mes seleccionado (sin filtros de año/mes del listado)
   const filteredItemsByMes = useMemo(
     () => items.filter((item) => item.mesKey === mes
@@ -426,16 +472,22 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                 <table className="mx-table disponibilidad-table">
                   <thead>
                     <tr>
-                      <th>Proveedor</th><th>Centro</th><th>Mes</th><th>Toneladas</th><th>Producto</th>
+                      <SortableTh label="Fecha ingreso" sortKey="fechaIngreso" sortConfig={sortConfig} onSort={handleSort} />
+                      <SortableTh label="Proveedor" sortKey="proveedor" sortConfig={sortConfig} onSort={handleSort} />
+                      <SortableTh label="Centro" sortKey="centro" sortConfig={sortConfig} onSort={handleSort} />
+                      <SortableTh label="Mes" sortKey="mes" sortConfig={sortConfig} onSort={handleSort} />
+                      <SortableTh label="Toneladas" sortKey="toneladas" sortConfig={sortConfig} onSort={handleSort} />
+                      <SortableTh label="Producto" sortKey="producto" sortConfig={sortConfig} onSort={handleSort} />
                       <th>Observación</th><th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredItems.map((item) => {
+                    {sortedItems.map((item) => {
                       const meta = stateMeta(item.estado || 'disponible');
                       const isCerrado = item.tratoId || item.estado === 'cerrado';
                       return (
                         <tr key={item._id} className={isCerrado ? 'disp-row--cerrado' : ''}>
+                          <td data-label="Fecha ingreso" className="disponibilidad-fecha-ingreso">{formatFechaIngreso(item.createdAt)}</td>
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
                           <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
@@ -468,8 +520,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                         </tr>
                       );
                     })}
-                    {!loading && filteredItems.length === 0 && (
-                      <tr><td colSpan={7} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
+                    {!loading && sortedItems.length === 0 && (
+                      <tr><td colSpan={8} className="disponibilidad-empty">No hay disponibilidades para los filtros seleccionados.</td></tr>
                     )}
                   </tbody>
                 </table>
