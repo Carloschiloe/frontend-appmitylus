@@ -159,7 +159,7 @@ function buildProviderHistory({ contactos = [], visitas = [], interacciones = []
       type: 'contacto', date: toDate(eventDate),
       title: firstNonEmpty(item.contactoNombre, item.nombre, 'Contacto agregado'),
       summary: firstNonEmpty(item.cargo, 'Contacto registrado en el directorio'),
-      note: firstNonEmpty(item.notas), actor: '',
+      note: firstNonEmpty(item.notas), actor: firstNonEmpty(item.creadoPorNombre),
       extra: [
         provider.contactoTelefono ? `Teléfono: ${provider.contactoTelefono}` : '',
         provider.contactoEmail    ? `Correo: ${provider.contactoEmail}` : '',
