@@ -678,15 +678,20 @@ export default function Calendario() {
     return agendaItems.filter((item) => item.date.getTime() >= start && item.date.getTime() <= end);
   }, [agendaItems, listPeriod, listWeekEnd, listWeekStart, month, year]);
 
+  // Pausados y Vencidos son filtros de estado, no de fecha: deben mostrar todos
+  // los registros sin importar el mes/semana seleccionado en la vista de lista
+  // (listAgendaItems), igual que cuenta el KPI correspondiente (agendaItems).
+  const statusScopedSource = (statusFilter === 'vencido' || statusFilter === 'pausado') ? agendaItems : listAgendaItems;
+
   const tableFilterCandidates = useMemo(() => {
     if (statusFilter === 'realizado') return listRealizadoItems;
-    return listAgendaItems.filter((item) => {
+    return statusScopedSource.filter((item) => {
       if (statusFilter === 'vencido') return item.status === 'overdue';
       if (statusFilter === 'pendiente') return item.status === 'active' && matchesRange(item, range, today);
       if (statusFilter === 'pausado') return item.status === 'paused';
       return matchesRange(item, range, today);
     });
-  }, [listAgendaItems, listRealizadoItems, range, statusFilter, today]);
+  }, [statusScopedSource, listRealizadoItems, range, statusFilter, today]);
 
   const availableTypes = useMemo(() => {
     const map = new Map();
@@ -745,14 +750,14 @@ export default function Calendario() {
       }).sort((a, b) => compareAgendaItems(a, b, today));
     }
 
-    return listAgendaItems.filter((item) => {
+    return statusScopedSource.filter((item) => {
       if (!applyFilters(item)) return false;
       if (statusFilter === 'vencido') return item.status === 'overdue';
       if (statusFilter === 'pendiente') return item.status === 'active' && matchesRange(item, range, today);
       if (statusFilter === 'pausado') return item.status === 'paused';
       return true;
     }).sort((a, b) => compareAgendaItems(a, b, today));
-  }, [listAgendaItems, listRealizadoItems, nextStepFilter, range, search, statusFilter, today, typeFilter]);
+  }, [statusScopedSource, listAgendaItems, listRealizadoItems, nextStepFilter, range, search, statusFilter, today, typeFilter]);
 
   const kpis = useMemo(() => {
     const todayEnd = endOfDay(today).getTime();
