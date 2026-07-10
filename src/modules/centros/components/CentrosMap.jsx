@@ -19,6 +19,7 @@ import { apiClient } from '../../../api/apiClient';
 const CONCESSION_COLOR = '#22c55e';
 const HARVEST_COLOR = '#f59e0b';
 const CLOSED_COLOR = '#ef4444';
+const INACTIVE_COLOR = '#a855f7';
 const SUSPENDED_COLOR = '#f97316';
 
 const SANITARIO_STATUS_CONFIG = {
@@ -32,7 +33,8 @@ const SANITARIO_STATUS_CONFIG = {
 function getPolygonColor(centro, isHarvestActive) {
   if (isHarvestActive) return HARVEST_COLOR;
   const estado = String(centro.estadoAreaSernapesca || '').toLowerCase();
-  if (estado === 'inactiva' || estado === 'eliminada') return CLOSED_COLOR;
+  if (estado === 'eliminada') return CLOSED_COLOR;
+  if (estado === 'inactiva') return INACTIVE_COLOR;
   if (estado === 'suspendida') return SUSPENDED_COLOR;
   return CONCESSION_COLOR;
 }
@@ -580,7 +582,7 @@ export default function CentrosMap() {
           <span className="map-filter-bar-label">Estado área</span>
           {[
             { key: 'abierta',   label: 'Abierta',   color: CONCESSION_COLOR, count: estadoCounts.abierta },
-            { key: 'inactiva',  label: 'Inactiva',  color: CLOSED_COLOR,     count: estadoCounts.inactiva },
+            { key: 'inactiva',  label: 'Inactiva',  color: INACTIVE_COLOR,   count: estadoCounts.inactiva },
             { key: 'eliminada', label: 'Eliminada', color: CLOSED_COLOR,     count: estadoCounts.eliminada },
           ].filter(e => e.count > 0).map(({ key, label, color, count }) => (
             <button
@@ -679,8 +681,12 @@ export default function CentrosMap() {
             En cosecha
           </span>
           <span className="map-legend-item">
+            <span className="map-legend-dot" style={{ background: INACTIVE_COLOR }}></span>
+            Inactiva
+          </span>
+          <span className="map-legend-item">
             <span className="map-legend-dot" style={{ background: CLOSED_COLOR }}></span>
-            Inactiva / Eliminada
+            Eliminada
           </span>
           {focusedCentroCode && (
             <span className="map-legend-item">
