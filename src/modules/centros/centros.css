@@ -846,28 +846,6 @@
   color: #c2410c !important;
 }
 
-.map-count-inline {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  padding: 3px 10px;
-  background: var(--color-surface-muted, #f1f5f9);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-.map-count-num {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.map-count-of {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
 .map-toolbar-sep {
   width: 1px;
   height: 20px;
@@ -884,83 +862,111 @@
   flex-shrink: 0;
 }
 
-/* ── Barra de filtros de estado área ── */
-.map-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 0 6px;
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  flex-wrap: wrap;
+/* ── Selector de estado de concesión (dropdown) ── */
+.map-estado-dropdown {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.map-filter-bar-label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  margin-right: 2px;
-}
-
-.map-estado-chip {
+.map-estado-dropdown-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px 3px 7px;
-  border-radius: 20px;
-  border: 1.5px solid var(--color-border, #e2e8f0);
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
   background: var(--color-surface-2, #f8fafc);
-  font-size: 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.map-estado-dropdown-btn:hover {
+  border-color: var(--color-primary, #0d9488);
+}
+
+.map-estado-dropdown-btn strong {
+  color: var(--color-text-primary);
+}
+
+.map-estado-dropdown-btn svg.rotated {
+  transform: rotate(180deg);
+  transition: transform 0.15s;
+}
+
+.map-estado-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 1000;
+  min-width: 180px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.map-estado-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.map-estado-dropdown-option:hover {
+  background: var(--color-surface-2, #f1f5f9);
+}
+
+.map-estado-dropdown-option.active {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  background: var(--color-surface-2, #f1f5f9);
+}
+
+.map-estado-dropdown-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ── Botón único En cosecha / Todas ── */
+.map-harvest-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface-2, #f8fafc);
+  font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
   white-space: nowrap;
-  line-height: 1;
 }
 
-.map-estado-chip:hover {
-  border-color: var(--color-primary, #0d9488);
-  color: var(--color-text-primary);
+.map-harvest-toggle-btn:hover {
+  border-color: #f59e0b;
 }
 
-.map-estado-chip.active {
-  font-weight: 600;
-}
-
-.map-chip-count {
-  font-size: 10px;
+.map-harvest-toggle-btn.active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
   font-weight: 700;
-  padding: 0 5px;
-  height: 15px;
-  min-width: 18px;
-  border-radius: 8px;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-filter-clear {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border-radius: 20px;
-  border: 1px dashed var(--color-border, #e2e8f0);
-  background: none;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  margin-left: 2px;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.map-filter-clear:hover {
-  color: var(--color-text-primary);
-  border-color: var(--color-text-muted);
 }
 
 .map-harvest-badge {

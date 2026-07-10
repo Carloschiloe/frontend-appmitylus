@@ -1,6 +1,6 @@
-import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
+import { ChevronDown, Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import {
   CircleMarker,
@@ -21,6 +21,13 @@ const HARVEST_COLOR = '#f59e0b';
 const CLOSED_COLOR = '#ef4444';
 const INACTIVE_COLOR = '#a855f7';
 const SUSPENDED_COLOR = '#f97316';
+
+const ESTADO_CONCESION_OPTIONS = [
+  { key: 'all',       label: 'Todas' },
+  { key: 'abierta',   label: 'Abierta',   color: CONCESSION_COLOR },
+  { key: 'inactiva',  label: 'Inactiva',  color: INACTIVE_COLOR },
+  { key: 'eliminada', label: 'Eliminada', color: CLOSED_COLOR },
+];
 
 const SANITARIO_STATUS_CONFIG = {
   rojo:     { label: 'Bloqueada',   badge: 'mx-badge-danger'  },
@@ -270,6 +277,17 @@ export default function CentrosMap() {
   const [searchTerm, setSearchTerm] = useState('');
   const [concessionFilter, setConcessionFilter] = useState('all');
   const [estadoFilter, setEstadoFilter] = useState('all');
+  const [estadoDropdownOpen, setEstadoDropdownOpen] = useState(false);
+  const estadoDropdownRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (estadoDropdownRef.current && !estadoDropdownRef.current.contains(e.target)) {
+        setEstadoDropdownOpen(false);
+      }
+    };
+    if (estadoDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [estadoDropdownOpen]);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [labelLevel, setLabelLevel] = useState('media');
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
@@ -508,31 +526,44 @@ export default function CentrosMap() {
             )}
           </div>
 
-          <div className="mx-toggle-group">
-            <button
-              className={`mx-toggle-btn ${concessionFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setConcessionFilter('all')}
-            >
-              Todas
-            </button>
-            <button
-              className={`mx-toggle-btn ${concessionFilter === 'harvest' ? 'active' : ''}`}
-              onClick={() => setConcessionFilter('harvest')}
-            >
-              En Cosecha
-              {harvestCount > 0 && <span className="map-harvest-badge">{harvestCount}</span>}
-            </button>
-          </div>
-
           {!loading && selectedTenantDb && (
-            <div className="map-count-inline">
-              <span className="map-count-num">{mapCentros.length.toLocaleString('es-CL')}</span>
-              <span className="map-count-of">de {allowedCentros.length.toLocaleString('es-CL')} centros</span>
+            <div className="map-estado-dropdown" ref={estadoDropdownRef}>
+              <button type="button" className="map-estado-dropdown-btn" onClick={() => setEstadoDropdownOpen((o) => !o)}>
+                <span>Estado concesión: <strong>{ESTADO_CONCESION_OPTIONS.find((o) => o.key === estadoFilter)?.label || 'Todas'}</strong></span>
+                <ChevronDown size={13} className={estadoDropdownOpen ? 'rotated' : ''} />
+              </button>
+              {estadoDropdownOpen && (
+                <div className="map-estado-dropdown-menu">
+                  {ESTADO_CONCESION_OPTIONS.filter((o) => o.key === 'all' || estadoCounts[o.key] > 0).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={`map-estado-dropdown-option${estadoFilter === option.key ? ' active' : ''}`}
+                      onClick={() => { setEstadoFilter(option.key); setEstadoDropdownOpen(false); }}
+                    >
+                      {option.color && <span className="map-estado-dot" style={{ background: option.color }} />}
+                      {option.label}
+                      {option.key !== 'all' && (
+                        <span className="map-estado-dropdown-count">{(estadoCounts[option.key] || 0).toLocaleString('es-CL')}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         <div className="map-toolbar-right">
+          <button
+            type="button"
+            className={`map-harvest-toggle-btn${concessionFilter === 'harvest' ? ' active' : ''}`}
+            onClick={() => setConcessionFilter((f) => (f === 'harvest' ? 'all' : 'harvest'))}
+          >
+            {concessionFilter === 'harvest' ? 'Todas' : 'En cosecha'}
+            {concessionFilter === 'all' && harvestCount > 0 && <span className="map-harvest-badge">{harvestCount}</span>}
+          </button>
+
           <div className="map-density-group">
             <span className="map-density-label">Etiquetas</span>
             <div className="mx-toggle-group">
@@ -576,34 +607,6 @@ export default function CentrosMap() {
           </div>
         </div>
       </div>
-
-      {!loading && selectedTenantDb && (
-        <div className="map-filter-bar">
-          <span className="map-filter-bar-label">Estado área</span>
-          {[
-            { key: 'abierta',   label: 'Abierta',   color: CONCESSION_COLOR, count: estadoCounts.abierta },
-            { key: 'inactiva',  label: 'Inactiva',  color: INACTIVE_COLOR,   count: estadoCounts.inactiva },
-            { key: 'eliminada', label: 'Eliminada', color: CLOSED_COLOR,     count: estadoCounts.eliminada },
-          ].filter(e => e.count > 0).map(({ key, label, color, count }) => (
-            <button
-              key={key}
-              className={`map-estado-chip ${estadoFilter === key ? 'active' : ''}`}
-              style={estadoFilter === key ? { borderColor: color, background: `${color}18`, color: 'var(--color-text-primary)' } : {}}
-              onClick={() => setEstadoFilter(estadoFilter === key ? 'all' : key)}
-              title={`Filtrar: solo áreas ${label}s`}
-            >
-              <span className="map-estado-dot" style={{ background: color }} />
-              {label}
-              <span className="map-chip-count" style={{ background: color }}>{count.toLocaleString('es-CL')}</span>
-            </button>
-          ))}
-          {estadoFilter !== 'all' && (
-            <button className="map-filter-clear" onClick={() => setEstadoFilter('all')} title="Quitar filtro de estado">
-              <X size={11} /> Limpiar
-            </button>
-          )}
-        </div>
-      )}
 
       {isMeasuring && (
         <div className="map-measure-banner">
