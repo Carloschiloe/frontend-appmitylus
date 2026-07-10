@@ -103,6 +103,20 @@ const MainLayout = ({ children }) => {
     return <Navigate to="/saas-admin" replace />;
   }
 
+  // Usuario con acceso acotado a módulos específicos (ej. cuenta de un
+  // departamento externo): si navega fuera de su alcance permitido, lo
+  // manda de vuelta a su módulo. "/perfil" siempre queda accesible.
+  if (user && !isPublicRoute && !isSaasAdminRoute) {
+    const modulosPermitidos = user.modulosPermitidos || [];
+    if (modulosPermitidos.length > 0) {
+      const dentroDeAlcance = location.pathname === '/perfil'
+        || modulosPermitidos.some((m) => location.pathname === m || location.pathname.startsWith(`${m}/`));
+      if (!dentroDeAlcance) {
+        return <Navigate to={modulosPermitidos[0]} replace />;
+      }
+    }
+  }
+
   // Rutas SaaS Admin y rutas públicas: sin shell normal
   if (!user || isPublicRoute || isSaasAdminRoute) return children;
 

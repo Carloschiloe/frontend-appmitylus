@@ -5,6 +5,13 @@ import { verify2FALogin } from '../../api/api-2fa';
 import { Mail, Lock, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import './login.css';
 
+// Si la cuenta tiene acceso acotado a módulos específicos, entra directo
+// ahí en vez del Dashboard general (que no podría ver de todas formas).
+function landingPath(usuario) {
+  const modulos = usuario?.modulosPermitidos || [];
+  return modulos.length > 0 ? modulos[0] : '/dashboard';
+}
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,7 +41,7 @@ export default function Login() {
         return;
       }
       if (result.success) {
-        navigate('/dashboard');
+        navigate(landingPath(result.usuario));
       } else {
         setError(result.error || 'Credenciales inválidas');
       }
@@ -52,7 +59,7 @@ export default function Login() {
     try {
       const data = await verify2FALogin(pendingToken, totpCode);
       completeLogin(data.usuario);
-      navigate('/dashboard');
+      navigate(landingPath(data.usuario));
     } catch (err) {
       setError(err.message || 'Código incorrecto o expirado');
       setTotpCode('');

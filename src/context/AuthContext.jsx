@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       clearRuntimeLayoutState();
       persistUserSession(usuario);
       setUser(usuario);
-      return { success: true };
+      return { success: true, usuario };
     } catch (error) {
       return { success: false, error: error.message };
     }

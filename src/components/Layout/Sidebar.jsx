@@ -145,6 +145,9 @@ export default function Sidebar() {
     setOpenGroup((prev) => (prev === id ? null : id));
   }, []);
 
+  const modulosPermitidos = user?.modulosPermitidos || [];
+  const tieneAccesoAcotado = modulosPermitidos.length > 0;
+
   const filteredMenu = useMemo(() => (
     MENU_STRUCTURE
       .filter((group) => {
@@ -163,7 +166,16 @@ export default function Sidebar() {
           ],
         };
       })
-  ), [user?.rol, logout]);
+      // Acceso acotado (ej. cuenta de un departamento externo): solo se ven
+      // los módulos explícitamente permitidos, el resto del menú se oculta.
+      .map((group) => (
+        tieneAccesoAcotado
+          ? { ...group, links: group.links.filter((l) => l.onClick || modulosPermitidos.includes(l.to)) }
+          : group
+      ))
+      .filter((group) => group.links.length > 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [user?.rol, tieneAccesoAcotado, modulosPermitidos.join(','), logout]);
 
   return (
     <aside className="mx-sidebar">

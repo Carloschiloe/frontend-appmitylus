@@ -53,6 +53,22 @@ const EMPTY_CONFIRM = {
 
 const PASSWORD_RULE_MESSAGE = 'La contraseña inicial debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un carácter especial. También puedes dejarla vacía para enviar link de activación.';
 
+// Módulos que se pueden asignar como acceso acotado (ej. cuenta de un
+// departamento externo que solo debe ver una parte puntual del sistema).
+// No incluye Configuración/Administración a propósito.
+const MODULOS_ASIGNABLES = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/gestion/agenda', label: 'Agenda' },
+  { to: '/gestion/proveedores', label: 'Directorio de proveedores' },
+  { to: '/historial', label: 'Historial' },
+  { to: '/centros/directorio', label: 'Centros' },
+  { to: '/biomasa/status', label: 'Disponibilidad' },
+  { to: '/biomasa/tratos', label: 'Tratos' },
+  { to: '/biomasa/programa', label: 'Programa de Cosecha' },
+  { to: '/biomasa/muestreos', label: 'Muestreos' },
+  { to: '/ayuda', label: 'Ayuda' },
+];
+
 function isStrongPassword(password) {
   if (!password) return true;
   return password.length >= 12
@@ -181,6 +197,8 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
     }
 
     if (body.empresaId === '') body.empresaId = null;
+
+    body.modulosPermitidos = formData.getAll('modulosPermitidos');
 
     saveMutation.mutate(body);
   };
@@ -344,6 +362,11 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
                           <span className="mx-badge" style={{ background: rol.bg, color: rol.color }}>
                             <rol.icon size={12} /> {rol.label}
                           </span>
+                          {u.modulosPermitidos?.length > 0 && (
+                            <span className="mx-badge mx-badge-muted" style={{ marginLeft: 6 }} title={u.modulosPermitidos.join(', ')}>
+                              Acotado
+                            </span>
+                          )}
                         </td>
                         <td data-label="Empresa">
                           <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
@@ -467,6 +490,28 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
                     </select>
                   </div>
                 )}
+
+                <div className="mx-form-group">
+                  <label className="mx-label">
+                    Acceso acotado (opcional){' '}
+                    <span style={{ fontWeight: 400, color: 'var(--color-text-subtle)' }}>
+                      — si marcas algo, esta cuenta SOLO verá esos módulos y nada más
+                    </span>
+                  </label>
+                  <div className="usuarios-modulos-grid">
+                    {MODULOS_ASIGNABLES.map((m) => (
+                      <label key={m.to} className="usuarios-modulo-item">
+                        <input
+                          type="checkbox"
+                          name="modulosPermitidos"
+                          value={m.to}
+                          defaultChecked={editingUser?.modulosPermitidos?.includes(m.to)}
+                        />
+                        {m.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
                 {!editingUser && (
                   <div className="mx-form-group">
