@@ -86,6 +86,7 @@
 .mx-badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
 .mx-badge-muted   { background: var(--color-bg); color: var(--color-text-muted); }
 .mx-badge-warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.mx-badge-purple  { background: rgba(168, 85, 247, 0.14); color: #9333ea; }
 
 .mx-badge-sm {
   padding: 2px 8px;

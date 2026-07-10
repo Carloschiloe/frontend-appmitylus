@@ -449,7 +449,8 @@ export default function CentrosTable() {
                     <td data-label="Estado área">
                       <span className={`mx-badge ct-estado-badge mx-badge-${
                         centro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                        (centro.estadoAreaSernapesca === 'Inactiva' || centro.estadoAreaSernapesca === 'Eliminada') ? 'error' :
+                        centro.estadoAreaSernapesca === 'Inactiva' ? 'purple' :
+                        centro.estadoAreaSernapesca === 'Eliminada' ? 'danger' :
                         centro.estadoAreaSernapesca === 'Suspendida' ? 'warning' : 'muted'
                       }`}>
                         {centro.estadoAreaSernapesca || '—'}

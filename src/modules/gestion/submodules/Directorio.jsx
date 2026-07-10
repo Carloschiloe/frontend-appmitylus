@@ -1029,7 +1029,7 @@ export default function Directorio() {
                           )}
                         </div>
                       ) : (
-                        <span className="mx-badge mx-badge-error dir-contact-small-badge">Sin empresa</span>
+                        <span className="mx-badge mx-badge-danger dir-contact-small-badge">Sin empresa</span>
                       )}
                     </td>
                     <td data-label="Correo / telefono">

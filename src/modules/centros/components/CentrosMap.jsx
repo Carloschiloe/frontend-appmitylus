@@ -707,7 +707,8 @@ export default function CentrosMap() {
                 <div className="map-panel-provider">{selectedCentro.proveedor}</div>
                 <span className={`mx-badge mx-badge-${
                   selectedCentro.estadoAreaSernapesca === 'Abierta' ? 'success' :
-                  (selectedCentro.estadoAreaSernapesca === 'Inactiva' || selectedCentro.estadoAreaSernapesca === 'Eliminada') ? 'error' : 'muted'
+                  selectedCentro.estadoAreaSernapesca === 'Inactiva' ? 'purple' :
+                  selectedCentro.estadoAreaSernapesca === 'Eliminada' ? 'danger' : 'muted'
                 }`} style={{ marginTop: '4px', display: 'inline-flex' }}>
                   {selectedCentro.estadoAreaSernapesca || 'Desconocido'}
                 </span>
