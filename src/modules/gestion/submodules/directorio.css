@@ -347,6 +347,35 @@
   width: 26%;
 }
 
+.dir-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dir-th-sort svg {
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.dir-th-sort:hover svg,
+.dir-th-sort--active svg {
+  opacity: 0.9;
+}
+
+.dir-th-sort--active {
+  color: var(--color-primary);
+}
+
 .dir-col-contact,
 .dir-col-company,
 .dir-col-channel {
@@ -808,13 +837,6 @@
   margin-top: 14px;
 }
 
-.dir-sort-label {
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 /* ── Modal de éxito al registrar proveedor ── */
 .dir-success-overlay {
   z-index: 1100;
@@ -957,15 +979,6 @@ button.dir-status-item.is-active .dir-status-label {
 .dir-status-item.is-muted   .dir-status-icon { color: var(--color-text-subtle); }
 .dir-status-item.is-danger  .dir-status-num,
 .dir-status-item.is-danger  .dir-status-icon { color: var(--color-error, #dc2626); }
-
-.dir-strip-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--color-border);
-}
 
 /* ── Provider avatar ── */
 
@@ -1230,9 +1243,5 @@ button.dir-status-item.is-active .dir-status-label {
   .dir-status-item {
     flex: 0 0 auto;
     min-width: 128px;
-  }
-
-  .dir-strip-right {
-    flex: 0 0 auto;
   }
 }

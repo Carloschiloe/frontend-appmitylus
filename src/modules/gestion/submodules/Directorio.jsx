@@ -23,6 +23,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
@@ -57,6 +60,26 @@ const ESTADO_COMERCIAL_LABELS = {
   perdido: 'Perdido',
   descartado: 'Descartado',
   caido: 'Caído',
+};
+
+const PROVIDER_SORT_GETTERS = {
+  nombre: (p) => (p.nombre || '').toLowerCase(),
+  contacto: (p) => (p.contactoPrincipal || '').toLowerCase(),
+  estado: (p) => (STATUS_META[p.seguimientoEstado || 'none']?.label || '').toLowerCase(),
+  ultimaGestion: (p) => (p.ultimaInteraccionFecha ? new Date(p.ultimaInteraccionFecha).getTime() : 0),
+  proximaAccion: (p) => (p.fechaProximaAccion ? new Date(p.fechaProximaAccion).getTime() : 0),
+};
+
+const SortableTh = ({ label, sortKey, sortConfig, onSort, className }) => {
+  const isActive = sortConfig.key === sortKey;
+  const Icon = isActive ? (sortConfig.dir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <th className={className}>
+      <button type="button" className={`dir-th-sort${isActive ? ' dir-th-sort--active' : ''}`} onClick={() => onSort(sortKey)}>
+        {label} <Icon size={13} />
+      </button>
+    </th>
+  );
 };
 
 function normalizeKey(value) {
@@ -271,7 +294,12 @@ export default function Directorio() {
   const [deletedProviders, setDeletedProviders] = useState(new Set());
   const [deletedContacts, setDeletedContacts] = useState(new Set());
   const [contactFilter, setContactFilter] = useState('todos');
-  const [sortBy, setSortBy] = useState('az');
+  const [providerSortConfig, setProviderSortConfig] = useState({ key: null, dir: 'asc' });
+  const handleProviderSort = (key) => {
+    setProviderSortConfig((current) => current.key === key
+      ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+      : { key, dir: 'asc' });
+  };
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterUsuario, setFilterUsuario] = useState('');
   const [providerRegistered, setProviderRegistered] = useState(null);
@@ -391,13 +419,6 @@ export default function Directorio() {
             .some((value) => String(value || '').toLowerCase().includes(q))
         );
       }
-      if (sortBy === 'recientes') {
-        return [...list].sort((a, b) => {
-          const da = a.fechaIngreso ? new Date(a.fechaIngreso) : new Date(0);
-          const db = b.fechaIngreso ? new Date(b.fechaIngreso) : new Date(0);
-          return db - da;
-        });
-      }
       return list;
     }
 
@@ -413,7 +434,21 @@ export default function Directorio() {
       return [item.nombre, item.contactoNombre, item.proveedorNombre, item.email, item.contactoEmail, item.telefono, item.contactoTelefono, item.proveedorKey]
         .some((value) => String(value || '').toLowerCase().includes(q));
     });
-  }, [tab, data, searchTerm, contactFilter, sortBy, filterEstado]);
+  }, [tab, data, searchTerm, contactFilter, filterEstado]);
+
+  const sortedProviders = useMemo(() => {
+    if (tab !== 'proveedores' || !providerSortConfig.key) return filteredItems;
+    const getValue = PROVIDER_SORT_GETTERS[providerSortConfig.key];
+    if (!getValue) return filteredItems;
+    const dirFactor = providerSortConfig.dir === 'asc' ? 1 : -1;
+    return [...filteredItems].sort((a, b) => {
+      const va = getValue(a);
+      const vb = getValue(b);
+      if (va < vb) return -1 * dirFactor;
+      if (va > vb) return 1 * dirFactor;
+      return 0;
+    });
+  }, [tab, filteredItems, providerSortConfig]);
 
   const providerOptions = useMemo(() => {
     const providersMap = new Map();
@@ -855,13 +890,6 @@ export default function Directorio() {
               <span className="dir-status-label">{label}</span>
             </button>
           ))}
-          <div className="dir-strip-right">
-            <span className="dir-sort-label">Ordenar:</span>
-            <div className="mx-toggle-group">
-              <button className={`mx-toggle-btn${sortBy === 'az' ? ' active' : ''}`} onClick={() => setSortBy('az')}>A–Z</button>
-              <button className={`mx-toggle-btn${sortBy === 'recientes' ? ' active' : ''}`} onClick={() => setSortBy('recientes')}>Recientes</button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -888,11 +916,11 @@ export default function Directorio() {
             <thead>
               {tab === 'proveedores' ? (
                 <tr>
-                  <th className="dir-col-provider">Proveedor</th>
-                  <th className="dir-col-main-contact">Contacto principal</th>
-                  <th className="dir-col-followup">Estado comercial</th>
-                  <th className="dir-col-last">Última gestión</th>
-                  <th className="dir-col-next">Próxima acción</th>
+                  <SortableTh label="Proveedor" sortKey="nombre" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-provider" />
+                  <SortableTh label="Contacto principal" sortKey="contacto" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-main-contact" />
+                  <SortableTh label="Estado comercial" sortKey="estado" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-followup" />
+                  <SortableTh label="Última gestión" sortKey="ultimaGestion" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-last" />
+                  <SortableTh label="Próxima acción" sortKey="proximaAccion" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-next" />
                   <th className="dir-col-actions"></th>
                 </tr>
               ) : (
@@ -920,7 +948,7 @@ export default function Directorio() {
                   </td>
                 </tr>
               ) : tab === 'proveedores' ? (
-                filteredItems.map((provider) => {
+                sortedProviders.map((provider) => {
                   const status = STATUS_META[provider.seguimientoEstado || 'none'] || STATUS_META.none;
                   const StatusIcon = status.icon;
 
