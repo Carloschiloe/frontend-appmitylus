@@ -845,7 +845,7 @@ export default function ProgramaCalendarioView({
                         </div>
                         {vol?.estimated > 0 && (
                           <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
-                            {vol.isOver ? '⚠️ ' : ''}programado: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
+                            {vol.isOver ? '⚠️ ' : ''}programado{provider.comuna ? ` (${provider.comuna})` : ''}: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
                           </span>
                         )}
                       </div>

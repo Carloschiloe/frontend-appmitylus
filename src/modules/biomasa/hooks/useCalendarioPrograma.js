@@ -169,10 +169,11 @@ export function useCalendarioPrograma({
         const prog = programasById.get(String(item.programaId));
         const nombre = item.proveedorNombre || prog?.proveedorNombre || 'Sin proveedor';
         const tons = enriched.tonsDia;
-        if (!map.has(nombre)) map.set(nombre, { nombre, camiones: 0, tons: 0 });
+        if (!map.has(nombre)) map.set(nombre, { nombre, camiones: 0, tons: 0, comuna: enriched.comuna || '' });
         const entry = map.get(nombre);
         entry.camiones += camiones;
         entry.tons += tons;
+        if (!entry.comuna && enriched.comuna) entry.comuna = enriched.comuna;
       });
     });
     return [...map.values()].sort((a, b) => b.tons - a.tons);
