@@ -391,15 +391,17 @@ export default function DisponibilidadAnalisisGrafico({
                         )}
                       </div>
                     </div>
-                    <div className="disponibilidad-analysis-detail-tags">
+                    <div className="disponibilidad-analysis-detail-meta-row">
                       <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
-                      <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
                       {(item.calibreMin != null || item.calibreMax != null) && (
                         <span className="disp-analysis-tag-info">{item.calibreMin ?? '?'}–{item.calibreMax ?? '?'} uk</span>
                       )}
                       {(item.centroComuna || item.comuna) && (
                         <span className="disp-analysis-tag-info"><MapPin size={10} /> {item.centroComuna || item.comuna}</span>
                       )}
+                    </div>
+                    <div className="disponibilidad-analysis-detail-footer-row">
+                      <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
                       {item.contactoNombre && (
                         <span
                           className="disp-analysis-contact-pill"

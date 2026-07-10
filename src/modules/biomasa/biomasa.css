@@ -1584,14 +1584,19 @@
 .disponibilidad-analysis-drawer-list {
   min-height: 0;
   overflow-y: auto;
-  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 2px;
 }
 
 .disponibilidad-analysis-detail-record {
   display: grid;
   gap: 8px;
-  padding: 14px 2px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-2, #f8fafc);
 }
 
 .disponibilidad-analysis-detail-title {
@@ -1619,17 +1624,32 @@
   font-size: 14px;
 }
 
-.disponibilidad-analysis-detail-tags,
 .disponibilidad-analysis-detail-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 5px 10px;
 }
 
-.disponibilidad-analysis-detail-tags > span:first-child,
 .disponibilidad-analysis-detail-meta span {
   color: var(--color-text-muted);
   font-size: 11px;
+}
+
+.disponibilidad-analysis-detail-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 10px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.disponibilidad-analysis-detail-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
 }
 
 .disponibilidad-analysis-detail-meta span:last-child {
