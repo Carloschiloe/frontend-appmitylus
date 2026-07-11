@@ -60,6 +60,12 @@ const MainLayout = ({ children }) => {
     return () => window.removeEventListener('mitynex:open-support-report', openSupport);
   }, []);
 
+  // Rol "lectura": oculta vía CSS todo lo marcado como data-nuevo/data-edit/
+  // data-delete/write-only en toda la app (ver body.modo-lectura en base-ui.css).
+  React.useEffect(() => {
+    document.body.classList.toggle('modo-lectura', user?.rol === 'lectura');
+  }, [user?.rol]);
+
   React.useEffect(() => {
     if (!user) return;
     if (sessionStorage.getItem('mitynex_reports_checked')) return;

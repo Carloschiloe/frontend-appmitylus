@@ -194,7 +194,7 @@ export default function ProgramaTablaView({
                   </td>
 
                   <td className="harvest-prog-actions-cell" data-label="Acciones">
-                    <div className="biomasa-action-bar">
+                    <div className="biomasa-action-bar write-only">
                       {p.estado === 'activo' && (
                         <button className="mx-action-btn pause" title="Pausar" onClick={() => { setPauseForm({ pausadoDesde: todayKey(), motivoPausa: '' }); setPauseModal({ id: p._id, proveedorNombre: p.proveedorNombre }); }}><Pause size={14} /></button>
                       )}

@@ -29,7 +29,7 @@ export default function SpeedDialFab() {
   };
 
   return (
-    <div className="speed-dial" onClick={(e) => e.stopPropagation()}>
+    <div className="speed-dial write-only" onClick={(e) => e.stopPropagation()}>
       <div className={`speed-dial-actions${expanded ? ' is-visible' : ''}`}>
         <button
           type="button"

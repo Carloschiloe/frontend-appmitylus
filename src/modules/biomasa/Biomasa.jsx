@@ -328,7 +328,7 @@ export default function Biomasa() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HelpTourButton tourId="biomasa" />
             {progSubTab === 'programa' && (
-              <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()} data-tour="programa-crear">
+              <button className="mx-btn mx-btn-primary" onClick={() => handleOpenModal()} data-tour="programa-crear" data-nuevo>
                 <Plus size={18} /> Crear Programa
               </button>
             )}
