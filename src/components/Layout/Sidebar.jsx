@@ -173,7 +173,10 @@ export default function Sidebar() {
           ? { ...group, links: group.links.filter((l) => l.onClick || modulosPermitidos.includes(l.to)) }
           : group
       ))
-      .filter((group) => group.links.length > 0)
+      // Un grupo solo cuenta como visible si le queda al menos un link real
+      // (navegable); un botón de acción como "Cerrar sesión" (mobileOnly) no
+      // alcanza para mantener el header del grupo (ej. "Ayuda") visible.
+      .filter((group) => group.links.some((l) => !l.onClick))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [user?.rol, tieneAccesoAcotado, modulosPermitidos.join(','), logout]);
 
