@@ -66,7 +66,6 @@ const MODULOS_ASIGNABLES = [
   { to: '/biomasa/tratos', label: 'Tratos' },
   { to: '/biomasa/programa', label: 'Programa de Cosecha' },
   { to: '/biomasa/muestreos', label: 'Muestreos' },
-  { to: '/ayuda', label: 'Ayuda' },
 ];
 
 function isStrongPassword(password) {
