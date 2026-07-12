@@ -83,6 +83,7 @@ function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCond
             <button
               className="tratos-menu-item"
               onClick={() => { onViewCondiciones(item); setOpen(false); }}
+              data-edit
             >
               <ClipboardList size={13} /> Ver condiciones
             </button>
@@ -91,6 +92,7 @@ function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCond
           <button
             className="tratos-menu-item"
             onClick={() => { onEdit(item); setOpen(false); }}
+            data-edit
           >
             <Edit size={13} /> Editar
           </button>
@@ -104,6 +106,7 @@ function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCond
           <button
             className="tratos-menu-item tratos-menu-item-danger"
             onClick={() => { onDelete(item); setOpen(false); }}
+            data-delete
           >
             <Trash2 size={13} /> Eliminar
           </button>
@@ -288,6 +291,7 @@ export default function TratosTable({
                               type="button"
                               className="mx-btn sm tratos-btn-crear-programa"
                               onClick={() => onCrearPrograma(null, item._id)}
+                              data-nuevo
                             >
                               <CalendarPlus size={13} /> Crear programa
                             </button>

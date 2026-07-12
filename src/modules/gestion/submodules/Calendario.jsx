@@ -509,12 +509,12 @@ function AgendaActions({ item, onViewCalendar, onEdit, onReprogram, onDelete, on
           </button>
           {(item.canReprogram || item.canDelete) && <div className="agenda-option-sep" />}
           {item.canReprogram && (
-            <button type="button" className="agenda-option-item" onClick={() => { close(); onReprogram(item); }}>
+            <button type="button" className="agenda-option-item" onClick={() => { close(); onReprogram(item); }} data-edit>
               <RotateCcw size={14} /> Reprogramar
             </button>
           )}
           {item.canDelete && (
-            <button type="button" className="agenda-option-item is-danger" onClick={() => { close(); onDelete(item); }}>
+            <button type="button" className="agenda-option-item is-danger" onClick={() => { close(); onDelete(item); }} data-delete>
               <Trash2 size={14} /> Eliminar
             </button>
           )}
@@ -1213,7 +1213,7 @@ export default function Calendario() {
                             {item.responsible && item.responsible !== '-' && (
                               <div className="cal-week-event-responsible">{item.responsible}</div>
                             )}
-                            <div className="cal-week-event-actions" onClick={(event) => event.stopPropagation()}>
+                            <div className="cal-week-event-actions write-only" onClick={(event) => event.stopPropagation()}>
                               {item.status !== 'realizado' && (
                                 <button type="button" className="cal-icon-action success" onClick={(event) => { event.stopPropagation(); setCompletingItem(item); }} title="Marcar como hecho">
                                   <CheckCircle2 size={13} />
@@ -1289,7 +1289,7 @@ export default function Calendario() {
                           {item.responsible && item.responsible !== '-' && (
                             <span className="agenda-mini-responsible">{item.responsible}</span>
                           )}
-                          <div className="agenda-mini-actions">
+                          <div className="agenda-mini-actions write-only">
                             {item.status !== 'realizado' && (
                               <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
                                 <CheckCircle2 size={14} />
@@ -1516,7 +1516,7 @@ export default function Calendario() {
                         {item.responsible && item.responsible !== '-' && (
                           <span className="agenda-mini-responsible">{item.responsible}</span>
                         )}
-                        <div className="agenda-mini-actions">
+                        <div className="agenda-mini-actions write-only">
                           {item.status !== 'realizado' && (
                             <button type="button" className="cal-icon-action success" onClick={() => setCompletingItem(item)} title="Marcar como hecho">
                               <CheckCircle2 size={14} />

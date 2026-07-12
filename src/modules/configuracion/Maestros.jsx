@@ -431,12 +431,12 @@ export default function Maestros({ noPage = false }) {
                     <button className="mx-btn mx-btn-outline" onClick={handleDownloadTransportistas}>
                       <Download size={16} /> Descargar Excel
                     </button>
-                    <button className="mx-btn mx-btn-outline" onClick={() => setTransportistasImport({ open: true, preview: null, loadingPreview: false, loadingConfirm: false })}>
+                    <button className="mx-btn mx-btn-outline" onClick={() => setTransportistasImport({ open: true, preview: null, loadingPreview: false, loadingConfirm: false })} data-nuevo>
                       <Upload size={16} /> Subir Excel
                     </button>
                   </>
                 )}
-                <button className="mx-btn mx-btn-primary" onClick={handleNuevo}>
+                <button className="mx-btn mx-btn-primary" onClick={handleNuevo} data-nuevo>
                   <Plus size={16} /> Nuevo
                 </button>
               </div>
@@ -603,6 +603,7 @@ export default function Maestros({ noPage = false }) {
                           onClick={() => toggleMutation.mutate({ id: item._id, activo: !item.activo })}
                           disabled={toggleMutation.isPending}
                           title={item.activo ? 'Desactivar' : 'Activar'}
+                          data-toggle
                         >
                           <span className={`maestros-toggle-pill ${item.activo ? 'on' : ''}`} />
                           <span className={`maestros-toggle-label ${item.activo ? 'on' : ''}`}>
@@ -611,7 +612,7 @@ export default function Maestros({ noPage = false }) {
                         </button>
                       </td>
                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }} className="write-only">
                           <button className="mx-action-btn edit" onClick={() => handleEdit(item)}><Edit size={14} /></button>
                           <button className="mx-action-btn delete" onClick={() => askDelete(item)}><Trash2 size={14} /></button>
                         </div>
@@ -844,7 +845,7 @@ export default function Maestros({ noPage = false }) {
               </div>
               <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="mx-btn mx-btn-primary">Guardar Registro</button>
+                <button type="submit" className="mx-btn mx-btn-primary" data-edit>Guardar Registro</button>
               </div>
             </form>
           </div>

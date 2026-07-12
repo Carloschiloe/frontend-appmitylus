@@ -47,6 +47,7 @@ function MuestreoActions({ item, size = 14, disabled = false, onShare, onReport,
           if (disabled) return;
           handle(event, onEdit);
         }}
+        data-edit
       >
         <Edit size={size} />
       </button>
@@ -54,6 +55,7 @@ function MuestreoActions({ item, size = 14, disabled = false, onShare, onReport,
         className={`mx-action-btn delete ${isCompact ? 'compact' : ''}`}
         title="Eliminar"
         onClick={(event) => handle(event, onDelete)}
+        data-delete
       >
         <Trash2 size={size} />
       </button>

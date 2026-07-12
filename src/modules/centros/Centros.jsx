@@ -143,10 +143,11 @@ export default function Centros() {
                 className="mx-btn mx-btn-outline centros-import-btn"
                 onClick={notifyImportCentros}
                 title="Sincronizar centros desde SUBPESCA"
+                data-nuevo
               >
                 <RefreshCw size={16} /> Actualizar Centros
               </button>
-              <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro}>
+              <button className="mx-btn mx-btn-primary" onClick={notifyCreateCentro} data-nuevo>
                 <Plus size={20} /> Nuevo Centro
               </button>
             </div>

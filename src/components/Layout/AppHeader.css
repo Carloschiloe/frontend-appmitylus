@@ -167,6 +167,34 @@
   margin-top: 2px;
 }
 
+.mx-aha-item-silenciada {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.mx-aha-reactivar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mx-aha-reactivar-btn:hover {
+  background: #dbeafe;
+}
+
 /* Search */
 .mx-app-header-search {
   width: 300px;

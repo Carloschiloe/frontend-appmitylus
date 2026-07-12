@@ -871,7 +871,7 @@ export default function Directorio() {
           </button>
         </div>
 
-        <button className="mx-btn mx-btn-primary" onClick={openCreateModal}>
+        <button className="mx-btn mx-btn-primary" onClick={openCreateModal} data-nuevo>
           <Plus size={18} /> {tab === 'proveedores' ? 'Registrar proveedor' : 'Contacto'}
         </button>
       </div>
@@ -1068,7 +1068,7 @@ export default function Directorio() {
                     </td>
                     <td data-label="Cargo / rol"><span className="mx-badge mx-badge-muted">{contact.cargo || 'Contacto'}</span></td>
                     <td className="dir-actions-cell" data-label="Acciones">
-                      <div className="mx-table-actions-cell dir-actions">
+                      <div className="mx-table-actions-cell dir-actions write-only">
                         <button className="mx-action-btn edit" title="Editar" onClick={() => openEditModal(contact)}>
                           <Edit size={14} />
                         </button>
@@ -1103,7 +1103,7 @@ export default function Directorio() {
                 <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); setDetailModal({ open: true, provider }); }}>
                   <ExternalLink size={14} /> Ver resumen
                 </button>
-                <button className="dir-dropdown-item" onClick={() => {
+                <button className="dir-dropdown-item" data-nuevo onClick={() => {
                   setOpenMenuKey(null);
                   const key = provider.key || provider.providerKey;
                   window.dispatchEvent(new CustomEvent('mitynex:quick-capture-open', {
@@ -1121,10 +1121,10 @@ export default function Directorio() {
                 }}>
                   <MessageSquare size={14} /> Registrar gestión
                 </button>
-                <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); openEditModal(provider); }}>
+                <button className="dir-dropdown-item" onClick={() => { setOpenMenuKey(null); openEditModal(provider); }} data-edit>
                   <Edit size={14} /> Editar
                 </button>
-                <button className="dir-dropdown-item dir-dropdown-item-danger" onClick={() => { setOpenMenuKey(null); setConfirmDeleteProvider(provider); }}>
+                <button className="dir-dropdown-item dir-dropdown-item-danger" onClick={() => { setOpenMenuKey(null); setConfirmDeleteProvider(provider); }} data-delete>
                   <Trash2 size={14} /> Eliminar
                 </button>
               </>
@@ -1334,7 +1334,7 @@ export default function Directorio() {
 
               <div className="mx-modal-footer">
                 <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
-                <button type="submit" className="mx-btn mx-btn-primary">
+                <button type="submit" className="mx-btn mx-btn-primary" data-edit>
                   {modalState.mode === 'edit'
                     ? 'Guardar cambios'
                     : `Guardar ${tab === 'proveedores' ? 'Empresa' : 'Contacto'}`}
@@ -1417,6 +1417,7 @@ export default function Directorio() {
               <button
                 type="button"
                 className="mx-btn mx-btn-primary"
+                data-nuevo
                 onClick={() => {
                   const p = detailModal.provider;
                   setDetailModal({ open: false, provider: null });
@@ -1628,7 +1629,7 @@ export default function Directorio() {
                   <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowAddProviderModal(false)}>
                     Cancelar
                   </button>
-                  <button type="submit" className="mx-btn mx-btn-primary">
+                  <button type="submit" className="mx-btn mx-btn-primary" data-edit>
                     Agregar al directorio
                   </button>
                 </div>

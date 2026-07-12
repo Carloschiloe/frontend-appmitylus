@@ -503,8 +503,8 @@ export default function CentrosTable() {
               <>
                 <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); handleOpenMap(centro); }}><MapPin size={14} /> Ver en mapa</button>
                 <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); openViewModal(centro); }}><Eye size={14} /> Ver detalles</button>
-                <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); openEditModal(centro); }}><Edit size={14} /> Editar</button>
-                <button className="ct-dropdown-item ct-dropdown-danger" onClick={() => { setOpenMenuId(null); setConfirmDelete(centro); }}><Trash2 size={14} /> Eliminar</button>
+                <button className="ct-dropdown-item" onClick={() => { setOpenMenuId(null); openEditModal(centro); }} data-edit><Edit size={14} /> Editar</button>
+                <button className="ct-dropdown-item ct-dropdown-danger" onClick={() => { setOpenMenuId(null); setConfirmDelete(centro); }} data-delete><Trash2 size={14} /> Eliminar</button>
               </>
             );
           })()}
@@ -552,7 +552,7 @@ export default function CentrosTable() {
                 <div className="mx-modal-footer">
                   <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cerrar</button>
                   <button type="button" className="mx-btn mx-btn-outline" onClick={() => handleOpenMap(modalState.item)}><MapPin size={18} /> Ver en mapa</button>
-                  <button type="button" className="mx-btn mx-btn-primary" onClick={() => openEditModal(modalState.item)}><Edit size={18} /> Editar</button>
+                  <button type="button" className="mx-btn mx-btn-primary" onClick={() => openEditModal(modalState.item)} data-edit><Edit size={18} /> Editar</button>
                 </div>
               </>
             ) : (
@@ -585,7 +585,7 @@ export default function CentrosTable() {
                 </div>
                 <div className="mx-modal-footer">
                   <button type="button" className="mx-btn mx-btn-outline" onClick={closeModal}>Cancelar</button>
-                  <button type="submit" className="mx-btn mx-btn-primary">{modalState.item?._id ? 'Guardar cambios' : 'Crear centro'}</button>
+                  <button type="submit" className="mx-btn mx-btn-primary" data-edit>{modalState.item?._id ? 'Guardar cambios' : 'Crear centro'}</button>
                 </div>
               </form>
             )}

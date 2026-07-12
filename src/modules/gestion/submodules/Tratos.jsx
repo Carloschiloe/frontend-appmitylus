@@ -601,7 +601,7 @@ export default function Tratos({ onCrearPrograma }) {
         <button className="mx-btn-icon sm" onClick={handleRefresh} title="Actualizar"><RotateCcw size={18} /></button>
         <button className="mx-btn-icon sm" onClick={handleExportarExcel} disabled={exportando} title="Exportar a Excel"><FileDown size={16} /></button>
         <HelpTourButton tourId="tratos" />
-        <button className="mx-btn mx-btn-primary" onClick={openNew} data-tour="tratos-registrar">
+        <button className="mx-btn mx-btn-primary" onClick={openNew} data-tour="tratos-registrar" data-nuevo>
           <Plus size={18} /> Nuevo Trato
         </button>
       </div>

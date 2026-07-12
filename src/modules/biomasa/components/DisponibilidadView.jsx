@@ -392,7 +392,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             <button type="button" className={`mx-btn mx-btn-outline disp-filter-bar__toggle${showFilters ? ' is-open' : ''}`} onClick={() => setShowFilters((v) => !v)}>
               Filtros {showFilters ? '▲' : '▼'}
             </button>
-            <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate}>
+            <button type="button" className="mx-btn mx-btn-primary disp-filter-bar__cta" onClick={openCreate} data-nuevo>
               <Plus size={17} /> Registrar disponibilidad
             </button>
           </>
@@ -443,7 +443,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                   <strong className="disp-totales-toggle__value">{fmtTons(listedTotals.total)}</strong>
                   <span className="disp-totales-toggle__arrow">{showTotales ? '▲' : '▼'}</span>
                 </button>
-                <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate}>
+                <button type="button" className="mx-btn mx-btn-primary" onClick={openCreate} data-nuevo>
                   <Plus size={17} /> Registrar disponibilidad
                 </button>
               </div>
@@ -499,8 +499,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                           <td data-label="Acciones">
                             <div className="disponibilidad-row-actions">
-                              <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                              <button type="button" className="mx-btn-icon sm" onClick={() => setDeleteItem(item)} aria-label="Eliminar disponibilidad"><Trash2 size={15} /></button>
+                              <button type="button" className="mx-btn-icon sm" onClick={() => openEdit(item)} aria-label="Editar disponibilidad" data-edit><Pencil size={15} /></button>
+                              <button type="button" className="mx-btn-icon sm" onClick={() => setDeleteItem(item)} aria-label="Eliminar disponibilidad" data-delete><Trash2 size={15} /></button>
                               {item.tratoId ? (
                                 <button
                                   type="button"
@@ -511,7 +511,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                                   <Handshake size={14} /> Ver trato
                                 </button>
                               ) : (item.estado || 'disponible') === 'disponible' && (
-                                <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado">
+                                <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado" data-nuevo>
                                   <ArrowRight size={15} /> Crear trato
                                 </button>
                               )}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, User, LogOut, ChevronDown, Settings, Bell } from 'lucide-react';
+import { Search, User, LogOut, ChevronDown, Settings, Bell, BellOff, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
@@ -23,6 +23,8 @@ export default function AppHeader() {
   const alertasRef = useRef(null);
   const searchRef = useRef(null);
 
+  const fetchAlertasRef = useRef(() => {});
+
   useEffect(() => {
     const activeTenant = localStorage.getItem('selected_tenant_db');
     if (!activeTenant) return;
@@ -33,10 +35,19 @@ export default function AppHeader() {
         .then((data) => setAlertas(Array.isArray(data?.items) ? data.items : []))
         .catch(() => {});
     };
+    fetchAlertasRef.current = fetchAlertas;
     fetchAlertas();
     const interval = setInterval(fetchAlertas, ALERTAS_POLL_MS);
     return () => { controller.abort(); clearInterval(interval); };
   }, []);
+
+  const reactivarAlerta = (e, alerta) => {
+    e.stopPropagation();
+    if (!alerta.envioId) return;
+    apiClient.post(`/alertas-sanitarias/${alerta.envioId}/reactivar`)
+      .then(() => fetchAlertasRef.current())
+      .catch(() => {});
+  };
 
   useEffect(() => {
     if (!alertasOpen) return;
@@ -116,11 +127,13 @@ export default function AppHeader() {
             ) : (
               <div className="mx-aha-list">
                 {alertas.map((a) => (
-                  <button
+                  <div
                     key={`${a.centroCodigo}-${a.areaPSMB}`}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     className="mx-aha-item"
                     onClick={() => irACentro(a)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') irACentro(a); }}
                   >
                     <span className={`mx-aha-dot mx-aha-dot-${a.estado}`} />
                     <div className="mx-aha-item-body">
@@ -132,8 +145,16 @@ export default function AppHeader() {
                       <div className="mx-aha-item-actividades">
                         {(a.actividades || []).map((t) => ACTIVIDAD_LABEL[t] || t).join(' · ')}
                       </div>
+                      {a.silenciada && (
+                        <div className="mx-aha-item-silenciada">
+                          <BellOff size={11} /> Avisos por correo silenciados
+                          <button type="button" className="mx-aha-reactivar-btn" data-edit onClick={(e) => reactivarAlerta(e, a)}>
+                            <RotateCcw size={11} /> Reactivar
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}

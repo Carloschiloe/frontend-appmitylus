@@ -142,7 +142,7 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                         )}
                         <span title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</span>
                       </div>
-                      <div className="disponibilidad-row-actions">
+                      <div className="disponibilidad-row-actions write-only">
                         <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
                         {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
                           <button type="button" className="mx-btn-icon sm" onClick={() => onCreateTrato(item)} title="Crear trato asociado" aria-label="Crear trato asociado"><ArrowRight size={15} /></button>
