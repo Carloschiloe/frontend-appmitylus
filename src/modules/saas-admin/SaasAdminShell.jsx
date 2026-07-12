@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Building2, Bug, LogOut, ShieldCheck, LayoutDashboard, Users } from 'lucide-react';
+import { Building2, Bug, LogOut, ShieldCheck, LayoutDashboard, Users, Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { apiClient } from '../../api/apiClient.js';
 import './SaasAdminShell.css';
@@ -14,6 +14,7 @@ export default function SaasAdminShell() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [soporteBadge, setSoporteBadge] = useState(0);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -26,8 +27,31 @@ export default function SaasAdminShell() {
     if (location.pathname === '/saas-admin/soporte') setSoporteBadge(0);
   }, [location.pathname]);
 
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
   return (
-    <div className="saas-shell">
+    <div className={`saas-shell${isMobileOpen ? ' saas-shell--mobile-open' : ''}`}>
+      <header className="saas-mobile-header">
+        <button
+          type="button"
+          className="saas-mobile-menu-btn"
+          onClick={() => setIsMobileOpen((v) => !v)}
+          aria-label="Abrir menú"
+        >
+          <Menu size={20} />
+        </button>
+        <div className="saas-mobile-brand">
+          <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
+        </div>
+        <div className="saas-mobile-header-spacer" aria-hidden="true" />
+      </header>
+
+      {isMobileOpen && (
+        <div className="saas-sidebar-backdrop" onClick={() => setIsMobileOpen(false)} />
+      )}
+
       <aside className="saas-sidebar">
         <div className="saas-sidebar-top">
           <div className="saas-brand">

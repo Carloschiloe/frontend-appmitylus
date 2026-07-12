@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
 import AppHeader from './components/Layout/AppHeader.jsx';
+import AlertasCampana from './components/Layout/AlertasCampana.jsx';
 import QuickCaptureModal from './modules/gestion/components/QuickCaptureModal.jsx';
 import CopilotPanel from './components/CopilotPanel.jsx';
 import SpeedDialFab from './components/SpeedDialFab.jsx';
@@ -141,7 +142,7 @@ const MainLayout = ({ children }) => {
         <div className="mx-mobile-brand">
           <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
         </div>
-        <div className="mx-mobile-header-spacer" aria-hidden="true" />
+        <AlertasCampana />
       </header>
 
       {/* Fondo oscuro traslúcido para cerrar el menú al hacer click fuera */}
