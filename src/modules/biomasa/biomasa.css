@@ -329,6 +329,14 @@
 .disponibilidad-state--danger { background: #fee2e2; color: #b91c1c; }
 .disponibilidad-state--muted { background: #e2e8f0; color: #475569; }
 
+.disponibilidad-calibre {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+}
+
 .disponibilidad-row-actions {
   display: flex;
   gap: 5px;

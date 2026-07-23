@@ -495,7 +495,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                             <div>{fmtTons(item.tons || item.tonsDisponible || 0)}</div>
                             <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>
                           </td>
-                          <td data-label="Producto">{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</td>
+                          <td data-label="Producto">
+                            <div>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</div>
+                            {(item.calibreMin || item.calibreMax) && (
+                              <span className="disponibilidad-calibre">
+                                {item.calibreMin && item.calibreMax
+                                  ? `${item.calibreMin}-${item.calibreMax}mm`
+                                  : `${item.calibreMin || item.calibreMax}mm`}
+                              </span>
+                            )}
+                          </td>
                           <td className="disponibilidad-observation" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                           <td data-label="Acciones">
                             <div className="disponibilidad-row-actions">
