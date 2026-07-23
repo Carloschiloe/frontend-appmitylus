@@ -39,9 +39,9 @@ const MENU_STRUCTURE = [
     label: 'Proveedores',
     icon: Building2,
     links: [
+      { label: 'Centros',    to: '/centros/directorio',  icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa', '/centros/sanitario'], alertId: 'sanitario' },
       { label: 'Directorio', to: '/gestion/proveedores', icon: Building2 },
       { label: 'Historial',  to: '/historial',           icon: History },
-      { label: 'Centros',    to: '/centros/directorio',  icon: TableProperties, activeFor: ['/centros/directorio', '/centros/mapa', '/centros/sanitario'], alertId: 'sanitario' },
     ],
   },
   {
