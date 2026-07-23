@@ -111,6 +111,7 @@ export default function SanitarioDashboard() {
   const [sernapescaFilter,setSernapescaFilter] = useState('');
   const [tipoFilter,      setTipoFilter]      = useState('');
   const [sortConfig,      setSortConfig]      = useState({ key: null, dir: 'asc' });
+  const [historicoSortConfig, setHistoricoSortConfig] = useState({ key: null, dir: 'asc' });
 
   // Modales
   const [historyModal,  setHistoryModal]  = useState({ open: false, area: null, loading: false, items: [] });
@@ -249,6 +250,14 @@ export default function SanitarioDashboard() {
     );
   }, []);
 
+  const handleHistoricoSort = useCallback((key) => {
+    setHistoricoSortConfig(prev =>
+      prev.key === key
+        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { key, dir: 'asc' }
+    );
+  }, []);
+
   // ── Handlers ──────────────────────────────────────────────────
   const handleKpiClick = useCallback((estado) => {
     setEstadoFilter((prev) => (prev === estado ? '' : estado));
@@ -358,11 +367,40 @@ export default function SanitarioDashboard() {
 
   const displayedHistoricoItems = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return historicoItems;
-    return historicoItems.filter((item) =>
-      (item.areaPSMB || '').toLowerCase().includes(q) || areasPorProveedor?.has(item.areaPSMB)
-    );
-  }, [historicoItems, searchTerm, areasPorProveedor]);
+    const filtered = q
+      ? historicoItems.filter((item) =>
+          (item.areaPSMB || '').toLowerCase().includes(q) || areasPorProveedor?.has(item.areaPSMB)
+        )
+      : historicoItems.slice();
+
+    if (historicoSortConfig.key) {
+      const { key, dir } = historicoSortConfig;
+      filtered.sort((a, b) => {
+        let av, bv;
+        if (key === 'fecha') {
+          av = new Date(a.fechaExtraccion || a.createdAt || 0).getTime();
+          bv = new Date(b.fechaExtraccion || b.createdAt || 0).getTime();
+        } else if (key === 'fuente') {
+          av = a.fuente === 'mrsat' ? 'mrSAT' : 'SERNAPESCA';
+          bv = b.fuente === 'mrsat' ? 'mrSAT' : 'SERNAPESCA';
+        } else if (key === 'categoria') {
+          av = String(a.categoriaTipo || a.tipoAnalisis || '').toLowerCase();
+          bv = String(b.categoriaTipo || b.tipoAnalisis || '').toLowerCase();
+        } else if (key === 'detalle') {
+          av = String(a.glosaResultado || '').toLowerCase();
+          bv = String(b.glosaResultado || '').toLowerCase();
+        } else {
+          av = String(a[key] || '').toLowerCase();
+          bv = String(b[key] || '').toLowerCase();
+        }
+        if (av < bv) return dir === 'asc' ? -1 : 1;
+        if (av > bv) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [historicoItems, searchTerm, areasPorProveedor, historicoSortConfig]);
 
   // ── Render ────────────────────────────────────────────────────
   return (
@@ -683,11 +721,22 @@ export default function SanitarioDashboard() {
               <table className="centros-tbl sanitario-historico-table">
                 <thead>
                   <tr>
-                    <th>Fecha</th>
-                    <th>Área PSMB</th>
-                    <th>Fuente</th>
-                    <th>Categoría</th>
-                    <th>Detalle</th>
+                    {[
+                      { label: 'Fecha',      key: 'fecha' },
+                      { label: 'Área PSMB',  key: 'areaPSMB' },
+                      { label: 'Fuente',     key: 'fuente' },
+                      { label: 'Categoría',  key: 'categoria' },
+                      { label: 'Detalle',    key: 'detalle' },
+                    ].map(({ label, key }) => (
+                      <th key={key}>
+                        <button className="sanitario-th-sort" onClick={() => handleHistoricoSort(key)}>
+                          {label}
+                          {historicoSortConfig.key === key
+                            ? historicoSortConfig.dir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+                            : <ChevronsUpDown size={12} className="sanitario-th-sort-idle" />}
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
