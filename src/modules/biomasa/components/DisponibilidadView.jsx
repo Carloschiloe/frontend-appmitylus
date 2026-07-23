@@ -500,8 +500,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                             {(item.calibreMin || item.calibreMax) && (
                               <span className="disponibilidad-calibre">
                                 {item.calibreMin && item.calibreMax
-                                  ? `${item.calibreMin}-${item.calibreMax}mm`
-                                  : `${item.calibreMin || item.calibreMax}mm`}
+                                  ? `${item.calibreMin}-${item.calibreMax}`
+                                  : `${item.calibreMin || item.calibreMax}`}
                               </span>
                             )}
                           </td>
