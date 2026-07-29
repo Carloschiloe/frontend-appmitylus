@@ -362,14 +362,42 @@ export default function Directorio() {
     setSearchParams(nextParams, { replace: true });
   }, [queryFromUrl, searchParams, setSearchParams]);
 
-  // Deep-link desde "Acción rápida": abre directo el modal de Nuevo Contacto.
+  const [pendingCenterAutoSelect, setPendingCenterAutoSelect] = useState(false);
+  const nuevoContactoProcessedRef = useRef(false);
+
+  // Deep-link desde "Acción rápida": abre directo el modal de Nuevo Contacto,
+  // prellenado con la empresa (y su centro, si es uno solo) del proveedor
+  // sobre el que se registró la gestión.
   useEffect(() => {
     if (searchParams.get('nuevoContacto') !== '1') return;
+    // React.StrictMode ejecuta los efectos dos veces en desarrollo; sin este
+    // guard, la segunda pasada encuentra el sessionStorage ya vacio (borrado
+    // por la primera) y sobreescribe el prellenado con campos en blanco.
+    if (nuevoContactoProcessedRef.current) return;
+    nuevoContactoProcessedRef.current = true;
+
     setTab('contactos');
     setModalState({ open: true, mode: 'create', item: null });
-    setContactCompanyQuery('');
+
+    let prefillNombre = '';
+    let prefillProviderKey = '';
+    try {
+      const raw = sessionStorage.getItem('mitynex:nuevo-contacto-context');
+      if (raw) {
+        const ctx = JSON.parse(raw);
+        prefillNombre = ctx.proveedorNombre || '';
+        prefillProviderKey = ctx.proveedorKey || '';
+        sessionStorage.removeItem('mitynex:nuevo-contacto-context');
+      }
+    } catch {
+      // contexto invalido: se ignora y el modal queda igual que antes (en blanco)
+    }
+
+    setContactCompanyQuery(prefillNombre);
     setContactCenterValue('');
-    setContactSelectedProviderKey('');
+    setContactSelectedProviderKey(prefillProviderKey);
+    setPendingCenterAutoSelect(!!prefillProviderKey);
+
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('nuevoContacto');
     setSearchParams(nextParams, { replace: true });
@@ -582,6 +610,16 @@ export default function Directorio() {
         label: [centro.code, centro.comuna].filter(Boolean).join(' - ') || centro.code || centro.comuna || 'Centro sin referencia',
       }));
   }, [data.centros, selectedProvider]);
+
+  // Si la empresa prellenada (via deep-link de Accion rapida) tiene un unico
+  // centro asociado, lo selecciona automaticamente para no obligar a elegirlo a mano.
+  useEffect(() => {
+    if (!pendingCenterAutoSelect || !selectedProvider) return;
+    if (associatedCenters.length === 1) {
+      setContactCenterValue(associatedCenters[0].id || associatedCenters[0].code || '');
+    }
+    setPendingCenterAutoSelect(false);
+  }, [pendingCenterAutoSelect, selectedProvider, associatedCenters]);
 
   const addProviderResults = useMemo(() => {
     if (!addProviderQuery.trim()) return [];

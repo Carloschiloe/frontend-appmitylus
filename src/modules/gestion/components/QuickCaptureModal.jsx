@@ -493,8 +493,11 @@ export default function QuickCaptureModal() {
                     type="button"
                     className="qc-module-option"
                     onClick={() => {
-                      if (path.includes('nuevaDisponibilidad') && selected) {
-                        sessionStorage.setItem('mitynex:nueva-disponibilidad-context', JSON.stringify({
+                      if (selected && (path.includes('nuevaDisponibilidad') || path.includes('nuevoContacto'))) {
+                        const storageKey = path.includes('nuevaDisponibilidad')
+                          ? 'mitynex:nueva-disponibilidad-context'
+                          : 'mitynex:nuevo-contacto-context';
+                        sessionStorage.setItem(storageKey, JSON.stringify({
                           proveedorKey: selected.proveedorKey || '',
                           proveedorNombre: selected.proveedorNombre || '',
                           contactoId: selected.contactoId || '',
