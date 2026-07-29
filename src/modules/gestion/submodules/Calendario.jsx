@@ -246,12 +246,19 @@ function buildCalendarEvent(item) {
 
 // Si la gestion no tiene contacto propio (se registro antes de crear el
 // contacto de esa empresa), usa el contacto vigente del proveedor para que
-// se vea de inmediato en la Agenda sin esperar a re-registrar la gestion.
+// se vea de inmediato en la Agenda -y en el popover de info (nombre,
+// telefono, email, centro)- sin esperar a re-registrar la gestion.
 function withContactFallback(item, contactByProvider) {
-  if (item.contactoNombre) return item;
   const key = String(item.proveedorKey || '').trim().toLowerCase();
-  const fallback = key ? contactByProvider.get(key) : '';
-  return fallback ? { ...item, contactoNombre: fallback } : item;
+  const fallback = key ? contactByProvider.get(key) : null;
+  if (!fallback) return item;
+  return {
+    ...item,
+    contactoNombre: item.contactoNombre || fallback.nombre || '',
+    telefono: item.telefono || fallback.telefono || '',
+    email: item.email || fallback.email || '',
+    centroCodigo: item.centroCodigo || fallback.centroCodigo || '',
+  };
 }
 
 function buildRealizadoItems(payload) {
@@ -683,7 +690,13 @@ export default function Calendario() {
       const key = String(c.proveedorKey || c.proveedorNombre || '').trim().toLowerCase();
       if (!key || map.has(key)) return; // /api/contactos viene ordenado por creacion desc: el primero es el mas reciente
       const nombre = c.contactoNombre || c.nombre || '';
-      if (nombre) map.set(key, nombre);
+      if (!nombre) return;
+      map.set(key, {
+        nombre,
+        telefono: c.contactoTelefono || '',
+        email: c.contactoEmail || '',
+        centroCodigo: c.centroCodigo || '',
+      });
     });
     return map;
   }, [contactosRes]);
