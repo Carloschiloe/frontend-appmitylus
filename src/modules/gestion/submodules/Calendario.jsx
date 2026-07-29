@@ -39,7 +39,7 @@ import ReprogramModal from './ReprogramModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
-import { useCalendarioAgenda, useInteracciones } from '../hooks/useGestionQueries';
+import { useCalendarioAgenda, useInteracciones, useContactos } from '../hooks/useGestionQueries';
 import './calendario.css';
 
 const DOW = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
@@ -242,6 +242,16 @@ function buildCalendarEvent(item) {
     responsible: item.responsablePG || item.responsableNombre || item.responsable || item.usuarioNombre || item.createdByName || '-',
     status: rawStatus === 'pausado' ? 'paused' : 'active',
   };
+}
+
+// Si la gestion no tiene contacto propio (se registro antes de crear el
+// contacto de esa empresa), usa el contacto vigente del proveedor para que
+// se vea de inmediato en la Agenda sin esperar a re-registrar la gestion.
+function withContactFallback(item, contactByProvider) {
+  if (item.contactoNombre) return item;
+  const key = String(item.proveedorKey || '').trim().toLowerCase();
+  const fallback = key ? contactByProvider.get(key) : '';
+  return fallback ? { ...item, contactoNombre: fallback } : item;
 }
 
 function buildRealizadoItems(payload) {
@@ -665,8 +675,27 @@ export default function Calendario() {
     { from: listWeekStart.toISOString(), to: listWeekEnd.toISOString(), limit: 200 },
   );
 
-  const realizadoItems = useMemo(() => buildRealizadoItems(realizadosRes), [realizadosRes]);
-  const weeklyRealizadoItems = useMemo(() => buildRealizadoItems(weeklyRealizadosRes), [weeklyRealizadosRes]);
+  const { data: contactosRes } = useContactos();
+  const primaryContactByProvider = useMemo(() => {
+    const contactos = Array.isArray(contactosRes) ? contactosRes : (contactosRes?.items || []);
+    const map = new Map();
+    contactos.forEach((c) => {
+      const key = String(c.proveedorKey || c.proveedorNombre || '').trim().toLowerCase();
+      if (!key || map.has(key)) return; // /api/contactos viene ordenado por creacion desc: el primero es el mas reciente
+      const nombre = c.contactoNombre || c.nombre || '';
+      if (nombre) map.set(key, nombre);
+    });
+    return map;
+  }, [contactosRes]);
+
+  const realizadoItems = useMemo(
+    () => buildRealizadoItems(realizadosRes).map((item) => withContactFallback(item, primaryContactByProvider)),
+    [realizadosRes, primaryContactByProvider],
+  );
+  const weeklyRealizadoItems = useMemo(
+    () => buildRealizadoItems(weeklyRealizadosRes).map((item) => withContactFallback(item, primaryContactByProvider)),
+    [weeklyRealizadosRes, primaryContactByProvider],
+  );
   const listRealizadoItems = listPeriod === 'week' ? weeklyRealizadoItems : realizadoItems;
 
   const loading = loadingAgenda || (
@@ -682,6 +711,7 @@ export default function Calendario() {
       .map(buildCalendarEvent)
       .filter(Boolean)
       .map((item) => withDerivedStatus(item, today))
+      .map((item) => withContactFallback(item, primaryContactByProvider))
       .map((item) => ({
         ...item,
         canReprogram: ['interaccion', 'visita'].includes(item.source),
@@ -689,7 +719,7 @@ export default function Calendario() {
       }))
       .filter((item) => ['active', 'overdue', 'paused'].includes(item.status))
       .sort((a, b) => compareAgendaItems(a, b, today));
-  }, [agendaRes, loadingAgenda, today]);
+  }, [agendaRes, loadingAgenda, today, primaryContactByProvider]);
 
   const listAgendaItems = useMemo(() => {
     const start = listPeriod === 'week' ? listWeekStart.getTime() : new Date(year, month, 1).getTime();
