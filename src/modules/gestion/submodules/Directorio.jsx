@@ -363,18 +363,12 @@ export default function Directorio() {
   }, [queryFromUrl, searchParams, setSearchParams]);
 
   const [pendingCenterAutoSelect, setPendingCenterAutoSelect] = useState(false);
-  const nuevoContactoProcessedRef = useRef(false);
 
   // Deep-link desde "Acción rápida": abre directo el modal de Nuevo Contacto,
   // prellenado con la empresa (y su centro, si es uno solo) del proveedor
   // sobre el que se registró la gestión.
   useEffect(() => {
     if (searchParams.get('nuevoContacto') !== '1') return;
-    // React.StrictMode ejecuta los efectos dos veces en desarrollo; sin este
-    // guard, la segunda pasada encuentra el sessionStorage ya vacio (borrado
-    // por la primera) y sobreescribe el prellenado con campos en blanco.
-    if (nuevoContactoProcessedRef.current) return;
-    nuevoContactoProcessedRef.current = true;
 
     setTab('contactos');
     setModalState({ open: true, mode: 'create', item: null });
@@ -387,7 +381,10 @@ export default function Directorio() {
         const ctx = JSON.parse(raw);
         prefillNombre = ctx.proveedorNombre || '';
         prefillProviderKey = ctx.proveedorKey || '';
-        sessionStorage.removeItem('mitynex:nuevo-contacto-context');
+        // El borrado se difiere a un macrotask para sobrevivir el doble efecto
+        // de React.StrictMode en desarrollo (ambas pasadas deben leer el mismo
+        // valor); en produccion esto no aplica pero no tiene costo real.
+        setTimeout(() => sessionStorage.removeItem('mitynex:nuevo-contacto-context'), 0);
       }
     } catch {
       // contexto invalido: se ignora y el modal queda igual que antes (en blanco)
