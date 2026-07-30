@@ -480,9 +480,11 @@ export default function Landing() {
       </Reveal>
 
       <footer className="landing-footer">
+        <div className="landing-footer-photo" aria-hidden="true" />
+        <div className="landing-footer-overlay" aria-hidden="true" />
         <div className="landing-footer-top">
           <div className="landing-footer-brand">
-            <MitynexMark tone="dark" compact />
+            <MitynexMark tone="light" compact />
             <p>La plataforma integral para la gestión del abastecimiento en mitilicultura.</p>
           </div>
           <div className="landing-footer-col">
