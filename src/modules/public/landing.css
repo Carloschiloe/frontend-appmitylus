@@ -12,6 +12,13 @@
   width: auto;
 }
 
+/* Deja aire bajo el nav fijo al saltar a un ancla (#beneficios, #modulos, #contacto) */
+#beneficios,
+#modulos,
+#contacto {
+  scroll-margin-top: 100px;
+}
+
 /* ---------- Scroll reveal ---------- */
 .landing-reveal {
   opacity: 0;
@@ -869,7 +876,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(0, 18, 51, 0.92) 0%, rgba(0, 18, 51, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(0, 18, 51, 0.55) 0%, rgba(0, 18, 51, 0.8) 100%);
 }
 
 .landing-footer-top {
