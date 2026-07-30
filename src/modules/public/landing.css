@@ -527,6 +527,132 @@
   margin: 0 auto;
 }
 
+/* ---------- Contacto ---------- */
+.landing-contact {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px clamp(64px, 9vh, 100px);
+}
+
+.landing-contact-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 5vw, 64px);
+  align-items: start;
+}
+
+.landing-contact-info h2 {
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  font-weight: 800;
+  color: var(--color-slate-text);
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+}
+
+.landing-contact-copy {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+.landing-contact-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: 14px;
+  transition: var(--transition-fast);
+}
+
+.landing-contact-link:hover {
+  color: var(--color-primary-dark);
+}
+
+.landing-contact-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.landing-contact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.landing-contact-submit {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.landing-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  left: -9999px;
+}
+
+.landing-spin {
+  animation: landingSpin 0.8s linear infinite;
+}
+
+@keyframes landingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .landing-contact-inner {
+    grid-template-columns: 1fr;
+  }
+  .landing-contact-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- WhatsApp flotante ---------- */
+.landing-whatsapp-float {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  transition: var(--transition-fast);
+}
+
+.landing-whatsapp-float:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 640px) {
+  .landing-whatsapp-float {
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+  }
+}
+
 /* ---------- Footer ---------- */
 .landing-footer {
   display: flex;

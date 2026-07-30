@@ -12,8 +12,20 @@ import {
   Layers,
   BellRing,
   Building,
+  Mail,
+  MessageCircle,
+  Loader2,
 } from 'lucide-react';
+import { apiClient } from '../../api/apiClient';
+import { useToast } from '../../context/ToastContext';
 import './landing.css';
+
+const CONTACT_EMAIL = 'contacto@marvex.cl';
+const WHATSAPP_NUMBER = '56954391455';
+const WHATSAPP_MESSAGE = 'Hola, quiero más información sobre Mitynex.';
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+
+const CONTACT_FORM_INITIAL = { nombre: '', empresa: '', email: '', telefono: '', mensaje: '', website: '' };
 
 const MODULES = [
   {
@@ -137,8 +149,40 @@ function useScrolled(threshold = 12) {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const goToLogin = () => navigate('/login');
   const scrolled = useScrolled();
+
+  const [contactForm, setContactForm] = useState(CONTACT_FORM_INITIAL);
+  const [sendingContact, setSendingContact] = useState(false);
+
+  const updateContactField = (field) => (e) => {
+    setContactForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    if (sendingContact) return;
+
+    setSendingContact(true);
+    try {
+      await apiClient.post('/public/contacto', contactForm);
+      addToast({
+        title: 'Mensaje enviado',
+        message: 'Gracias por escribir. Te contactaremos a la brevedad.',
+        type: 'success',
+      });
+      setContactForm(CONTACT_FORM_INITIAL);
+    } catch (error) {
+      addToast({
+        title: 'No se pudo enviar',
+        message: error?.data?.error || error?.message || 'Intenta nuevamente en unos minutos.',
+        type: 'error',
+      });
+    } finally {
+      setSendingContact(false);
+    }
+  };
 
   return (
     <div className="landing-page">
@@ -258,10 +302,118 @@ export default function Landing() {
         </button>
       </Reveal>
 
+      <Reveal as="section" className="landing-contact" id="contacto">
+        <div className="landing-contact-inner">
+          <div className="landing-contact-info">
+            <p className="landing-section-eyebrow">Contacto</p>
+            <h2>¿Tienes dudas o quieres una demo?</h2>
+            <p className="landing-contact-copy">
+              Escríbenos y te contactamos a la brevedad para mostrarte Mitynex en funcionamiento.
+            </p>
+            <a className="landing-contact-link" href={`mailto:${CONTACT_EMAIL}`}>
+              <Mail size={18} /> {CONTACT_EMAIL}
+            </a>
+            <a className="landing-contact-link" href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
+              <MessageCircle size={18} /> Escríbenos por WhatsApp
+            </a>
+          </div>
+
+          <form className="landing-contact-form" onSubmit={handleContactSubmit}>
+            {/* Honeypot anti-spam: invisible para personas, los bots suelen rellenarlo */}
+            <input
+              type="text"
+              name="website"
+              value={contactForm.website}
+              onChange={updateContactField('website')}
+              className="landing-honeypot"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+
+            <div className="landing-contact-row">
+              <div className="mx-form-group">
+                <label className="mx-label">Nombre</label>
+                <input
+                  className="mx-input"
+                  value={contactForm.nombre}
+                  onChange={updateContactField('nombre')}
+                  required
+                  placeholder="Tu nombre"
+                />
+              </div>
+              <div className="mx-form-group">
+                <label className="mx-label">Empresa</label>
+                <input
+                  className="mx-input"
+                  value={contactForm.empresa}
+                  onChange={updateContactField('empresa')}
+                  placeholder="Nombre de tu empresa (opcional)"
+                />
+              </div>
+            </div>
+
+            <div className="landing-contact-row">
+              <div className="mx-form-group">
+                <label className="mx-label">Correo</label>
+                <input
+                  type="email"
+                  className="mx-input"
+                  value={contactForm.email}
+                  onChange={updateContactField('email')}
+                  required
+                  placeholder="tucorreo@empresa.cl"
+                />
+              </div>
+              <div className="mx-form-group">
+                <label className="mx-label">Teléfono</label>
+                <input
+                  className="mx-input"
+                  value={contactForm.telefono}
+                  onChange={updateContactField('telefono')}
+                  placeholder="+56 9... (opcional)"
+                />
+              </div>
+            </div>
+
+            <div className="mx-form-group">
+              <label className="mx-label">Mensaje</label>
+              <textarea
+                className="mx-textarea"
+                rows={4}
+                value={contactForm.mensaje}
+                onChange={updateContactField('mensaje')}
+                required
+                placeholder="Cuéntanos qué necesitas"
+              />
+            </div>
+
+            <button type="submit" className="landing-cta-primary landing-contact-submit" disabled={sendingContact}>
+              {sendingContact ? (
+                <><Loader2 size={18} className="landing-spin" /> Enviando...</>
+              ) : (
+                <>Enviar mensaje <ArrowRight size={18} /></>
+              )}
+            </button>
+          </form>
+        </div>
+      </Reveal>
+
       <footer className="landing-footer">
         <MitynexMark tone="dark" compact />
         <p>&copy; 2026 Mitynex Prime. Todos los derechos reservados.</p>
       </footer>
+
+      <a
+        className="landing-whatsapp-float"
+        href={WHATSAPP_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chatear por WhatsApp"
+        title="Chatear por WhatsApp"
+      >
+        <MessageCircle size={26} />
+      </a>
     </div>
   );
 }
