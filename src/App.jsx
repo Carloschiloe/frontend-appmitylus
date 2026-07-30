@@ -39,6 +39,7 @@ const ActivarCuenta  = lazy(() => import('./modules/auth/ActivarCuenta.jsx'));
 const Empresas       = lazy(() => import('./modules/configuracion/Empresas.jsx'));
 const MiPerfil       = lazy(() => import('./modules/perfil/MiPerfil.jsx'));
 const SharedMuestreo    = lazy(() => import('./modules/public/SharedMuestreo.jsx'));
+const Landing           = lazy(() => import('./modules/public/Landing.jsx'));
 const SaasAdminShell   = lazy(() => import('./modules/saas-admin/SaasAdminShell.jsx'));
 
 const MainLayout = ({ children }) => {
@@ -102,7 +103,7 @@ const MainLayout = ({ children }) => {
       .catch(() => {});
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isPublicRoute = ['/login', '/activar-cuenta'].includes(location.pathname);
+  const isPublicRoute = ['/login', '/activar-cuenta', '/'].includes(location.pathname);
   const isSaasAdminRoute = location.pathname.startsWith('/saas-admin');
 
   // Superadmin sin empresa seleccionada → forzar Panel SaaS (bloquea /dashboard y todo lo demás)
@@ -213,6 +214,22 @@ const PrivateRoute = ({ children }) => {
   if (!user && !isPublicReport) return <Navigate to="/login" replace />;
 
   return children;
+};
+
+// Ruta raiz publica: visitantes sin sesion ven la landing de Mitynex;
+// con sesion activa, sigue directo al dashboard como antes.
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="mx-loading-screen">
+        <div className="mx-spinner"></div>
+      </div>
+    );
+  }
+
+  return user ? <Navigate to="/dashboard" replace /> : <Landing />;
 };
 
 const TenantScopedRoute = ({ children, title, description }) => {
@@ -335,7 +352,7 @@ export default function App() {
                   <Route path="/activar-cuenta" element={<ActivarCuenta />} />
 
                   {/* Rutas Privadas Protegidas */}
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/" element={<RootRoute />} />
                   
                   <Route path="/dashboard" element={
                     <PrivateRoute>
