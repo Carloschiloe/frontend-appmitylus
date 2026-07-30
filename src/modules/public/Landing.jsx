@@ -224,12 +224,11 @@ export default function Landing() {
       </header>
 
       <section className="landing-hero">
+        <div className="landing-hero-photo" aria-hidden="true" />
+        <div className="landing-hero-overlay" aria-hidden="true" />
         <div className="landing-ocean" aria-hidden="true">
           <span className="landing-ocean-glow landing-ocean-glow-a" />
           <span className="landing-ocean-glow landing-ocean-glow-b" />
-          <span className="landing-ocean-grid" />
-          <span className="landing-ocean-wave landing-ocean-wave-a" />
-          <span className="landing-ocean-wave landing-ocean-wave-b" />
         </div>
 
         <div className="landing-hero-inner">
@@ -315,13 +314,20 @@ export default function Landing() {
       </div>
 
       <Reveal as="section" className="landing-what">
-        <p className="landing-section-eyebrow">Qué es Mitynex</p>
-        <h2>El sistema operativo de tu empresa mitilicultora</h2>
-        <p className="landing-what-copy">
-          Mitynex reemplaza las planillas sueltas y los seguimientos manuales por una plataforma
-          única, pensada para empresas que gestionan abastecimiento de choritos. Cada empresa
-          trabaja con su propia información, de forma independiente, dentro de la misma plataforma.
-        </p>
+        <div className="landing-what-inner">
+          <div className="landing-what-photo">
+            <img src="/img/landing/choritos-cosecha.jpeg" alt="Cosecha de choritos en cultivo de mitilicultura" loading="lazy" />
+          </div>
+          <div className="landing-what-text">
+            <p className="landing-section-eyebrow">Qué es Mitynex</p>
+            <h2>El sistema operativo de tu empresa mitilicultora</h2>
+            <p className="landing-what-copy">
+              Mitynex reemplaza las planillas sueltas y los seguimientos manuales por una plataforma
+              única, pensada para empresas que gestionan abastecimiento de choritos. Cada empresa
+              trabaja con su propia información, de forma independiente, dentro de la misma plataforma.
+            </p>
+          </div>
+        </div>
       </Reveal>
 
       <section className="landing-modules" id="modulos">
