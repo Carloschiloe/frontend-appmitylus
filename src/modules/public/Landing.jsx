@@ -15,6 +15,10 @@ import {
   Mail,
   MessageCircle,
   Loader2,
+  Rocket,
+  Headphones,
+  Lock,
+  TrendingUp,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
 import { useToast } from '../../context/ToastContext';
@@ -76,6 +80,18 @@ const BENEFITS = [
   { icon: Building, text: 'Multiempresa: cada empresa con su propia información' },
   { icon: Layers, text: 'Todo el ciclo conectado, sin planillas sueltas' },
   { icon: BellRing, text: 'Alertas sanitarias automáticas desde SERNAPESCA' },
+];
+
+const VALUE_PROPS = [
+  { icon: Rocket, title: 'Implementación guiada', text: 'Te acompañamos para cargar tus datos y dejar todo listo para operar.' },
+  { icon: Headphones, title: 'Soporte especializado', text: 'Un equipo que conoce la mitilicultura, no solo el software.' },
+  { icon: Lock, title: 'Seguridad y respaldo', text: 'Sesión con cookies HTTP-only y datos separados por empresa.' },
+];
+
+const NAV_LINKS = [
+  { href: '#beneficios', label: 'Beneficios' },
+  { href: '#modulos', label: 'Módulos' },
+  { href: '#contacto', label: 'Contacto' },
 ];
 
 function MitynexMark({ tone = 'light', compact = false }) {
@@ -153,6 +169,12 @@ export default function Landing() {
   const goToLogin = () => navigate('/login');
   const scrolled = useScrolled();
 
+  useEffect(() => {
+    const prev = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => { document.documentElement.style.scrollBehavior = prev; };
+  }, []);
+
   const [contactForm, setContactForm] = useState(CONTACT_FORM_INITIAL);
   const [sendingContact, setSendingContact] = useState(false);
 
@@ -187,10 +209,18 @@ export default function Landing() {
   return (
     <div className="landing-page">
       <header className={`landing-nav${scrolled ? ' is-scrolled' : ''}`}>
-        <MitynexMark tone="light" />
-        <button type="button" className="landing-nav-cta" onClick={goToLogin}>
-          Iniciar sesión
-        </button>
+        <MitynexMark tone="dark" />
+        <nav className="landing-nav-links">
+          {NAV_LINKS.map(({ href, label }) => (
+            <a key={href} href={href}>{label}</a>
+          ))}
+        </nav>
+        <div className="landing-nav-actions">
+          <button type="button" className="landing-nav-login" onClick={goToLogin}>
+            Iniciar sesión
+          </button>
+          <a href="#contacto" className="landing-nav-cta">Solicitar demo</a>
+        </div>
       </header>
 
       <section className="landing-hero">
@@ -212,9 +242,9 @@ export default function Landing() {
               deje de perseguir información en planillas sueltas.
             </p>
             <div className="landing-hero-actions">
-              <button type="button" className="landing-cta-primary" onClick={goToLogin}>
-                Iniciar sesión <ArrowRight size={18} />
-              </button>
+              <a href="#contacto" className="landing-cta-primary">
+                Solicitar demo <ArrowRight size={18} />
+              </a>
               <a href="#modulos" className="landing-cta-ghost">Ver módulos</a>
             </div>
           </div>
@@ -225,34 +255,57 @@ export default function Landing() {
                 <span className="landing-visual-dot" />
                 <span className="landing-visual-dot" />
                 <span className="landing-visual-dot" />
+                <span className="landing-visual-card-title">Resumen general</span>
               </div>
-              <div className="landing-visual-row">
-                <Building2 size={16} />
-                <div className="landing-visual-bar landing-visual-bar--lg" />
+
+              <div className="landing-visual-kpis">
+                <div className="landing-visual-kpi">
+                  <Building2 size={14} />
+                  <span className="landing-visual-kpi-label">Proveedores</span>
+                </div>
+                <div className="landing-visual-kpi">
+                  <Inbox size={14} />
+                  <span className="landing-visual-kpi-label">Biomasa</span>
+                </div>
+                <div className="landing-visual-kpi">
+                  <Handshake size={14} />
+                  <span className="landing-visual-kpi-label">Tratos</span>
+                </div>
+                <div className="landing-visual-kpi">
+                  <ShoppingCart size={14} />
+                  <span className="landing-visual-kpi-label">Cosechas</span>
+                </div>
               </div>
-              <div className="landing-visual-row">
-                <Handshake size={16} />
-                <div className="landing-visual-bar landing-visual-bar--md" />
+
+              <div className="landing-visual-chart" aria-hidden="true">
+                <TrendingUp size={16} />
+                <div className="landing-visual-chart-bars">
+                  <span style={{ height: '40%' }} />
+                  <span style={{ height: '62%' }} />
+                  <span style={{ height: '48%' }} />
+                  <span style={{ height: '74%' }} />
+                  <span style={{ height: '58%' }} />
+                  <span style={{ height: '84%' }} />
+                </div>
               </div>
-              <div className="landing-visual-row">
-                <ShieldCheck size={16} />
-                <div className="landing-visual-bar landing-visual-bar--sm" />
+
+              <div className="landing-visual-chip">
+                <ShieldCheck size={13} /> Estado sanitario · al día
               </div>
-              <div className="landing-visual-chip">Estado sanitario · al día</div>
             </div>
             <div className="landing-visual-card landing-visual-card--float">
               <TestTube2 size={18} />
               <span>Muestreo registrado</span>
             </div>
             <div className="landing-visual-card landing-visual-card--float-2">
-              <ShoppingCart size={18} />
-              <span>Cosecha programada</span>
+              <Calendar size={18} />
+              <span>Gestión agendada</span>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="landing-benefits">
+      <div className="landing-benefits" id="beneficios">
         {BENEFITS.map(({ icon: Icon, text }) => (
           <div className="landing-benefit" key={text}>
             <Icon size={18} />
@@ -289,17 +342,38 @@ export default function Landing() {
               </div>
               <h3>{title}</h3>
               <p>{description}</p>
+              <ArrowRight size={16} className="landing-module-arrow" />
             </Reveal>
           ))}
         </div>
       </section>
 
       <Reveal as="section" className="landing-cta-band">
-        <h2>¿Tu empresa ya trabaja con Mitynex?</h2>
-        <p>Ingresa con tu cuenta para continuar donde lo dejaste.</p>
-        <button type="button" className="landing-cta-primary" onClick={goToLogin}>
-          Iniciar sesión <ArrowRight size={18} />
-        </button>
+        <div className="landing-cta-band-main">
+          <div>
+            <h2>¿Listo para transformar tu operación?</h2>
+            <p>Únete a las empresas que ya están ordenando su abastecimiento con Mitynex.</p>
+          </div>
+          <div className="landing-cta-band-actions">
+            <a href="#contacto" className="landing-cta-primary">
+              Solicitar demo <ArrowRight size={18} />
+            </a>
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="landing-cta-outline">
+              Hablar con un asesor
+            </a>
+          </div>
+        </div>
+        <div className="landing-value-props">
+          {VALUE_PROPS.map(({ icon: Icon, title, text }) => (
+            <div className="landing-value-prop" key={title}>
+              <div className="landing-value-prop-icon"><Icon size={18} /></div>
+              <div>
+                <strong>{title}</strong>
+                <p>{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </Reveal>
 
       <Reveal as="section" className="landing-contact" id="contacto">
@@ -400,8 +474,29 @@ export default function Landing() {
       </Reveal>
 
       <footer className="landing-footer">
-        <MitynexMark tone="dark" compact />
-        <p>&copy; 2026 Mitynex Prime. Todos los derechos reservados.</p>
+        <div className="landing-footer-top">
+          <div className="landing-footer-brand">
+            <MitynexMark tone="dark" compact />
+            <p>La plataforma integral para la gestión del abastecimiento en mitilicultura.</p>
+          </div>
+          <div className="landing-footer-col">
+            <strong>Producto</strong>
+            <a href="#modulos">Módulos</a>
+            <a href="#beneficios">Beneficios</a>
+          </div>
+          <div className="landing-footer-col">
+            <strong>Empresa</strong>
+            <a href="#contacto">Contacto</a>
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </div>
+          <div className="landing-footer-col">
+            <strong>Cuenta</strong>
+            <button type="button" onClick={goToLogin}>Iniciar sesión</button>
+          </div>
+        </div>
+        <div className="landing-footer-bottom">
+          <p>&copy; 2026 Mitynex Prime. Todos los derechos reservados.</p>
+        </div>
       </footer>
 
       <a
