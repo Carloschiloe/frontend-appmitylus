@@ -82,12 +82,12 @@ export default function Login() {
           <span className="ocean-wave ocean-wave-b"></span>
         </div>
         <div className="login-brand-mark" aria-hidden="true">
-          <img src="/img/brand/mitynex-logo-new.svg" alt="" />
+          <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="" />
         </div>
         <div className="login-visual-content">
           <div className="login-logo-big">
             <span className="logo-icon">
-              <img src="/img/brand/mitynex-icon-new.svg" alt="" />
+              <img src="/img/brand/mitynex-icon.png" alt="" />
             </span>
             <h1>Mitynex Prime</h1>
           </div>

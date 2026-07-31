@@ -183,7 +183,7 @@ export default function Sidebar() {
   return (
     <aside className="mx-sidebar">
       <div className="mx-sidebar-brand">
-        <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
+        <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="Mitynex" />
       </div>
 
       <TenantSelector />

@@ -94,42 +94,6 @@ const NAV_LINKS = [
   { href: '#contacto', label: 'Contacto' },
 ];
 
-function MitynexMark({ tone = 'light', compact = false }) {
-  const wordColor = tone === 'light' ? '#F5FAFF' : '#031B4E';
-  const subColor = tone === 'light' ? '#A9B8CF' : '#6B7A90';
-  const shellFill = tone === 'light' ? '#F5FAFF' : 'url(#landingShellGradL)';
-  const waveFill = tone === 'light' ? '#12D6FF' : '#0A5CFF';
-  return (
-    <svg className="landing-mark" viewBox={compact ? '0 0 210 220' : '0 0 380 100'} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mitynex">
-      <defs>
-        <linearGradient id="landingShellGradL" x1="10" y1="10" x2="150" y2="150" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#12D6FF" />
-          <stop offset="0.55" stopColor="#0A5CFF" />
-          <stop offset="1" stopColor="#001233" />
-        </linearGradient>
-      </defs>
-      <g transform={compact ? undefined : 'translate(-10,-6) scale(0.62)'}>
-        <path
-          d="M 10 140 C 15 90 55 40 110 20 C 165 0 205 25 205 65 C 205 100 175 120 140 115
-             C 155 100 155 80 135 65 C 105 45 70 55 45 85 C 25 105 15 122 10 140 Z"
-          fill={shellFill}
-        />
-        <path
-          d="M 2 168 C 40 142, 95 140, 138 160 C 162 172, 180 170, 198 150
-             C 190 192, 148 212, 100 202 C 58 194, 18 182, 2 168 Z"
-          fill={waveFill}
-        />
-      </g>
-      {!compact && (
-        <>
-          <text x="118" y="58" fill={wordColor} fontFamily="Inter, Manrope, Segoe UI, sans-serif" fontSize="42" fontWeight="800" letterSpacing="-1.6">Mity<tspan fill="#0A5CFF">nex</tspan></text>
-          <text x="120" y="76" fill={subColor} fontFamily="Inter, Manrope, Segoe UI, sans-serif" fontSize="10.5" fontWeight="600" letterSpacing=".02em">Construimos el futuro. Optimizamos tu presente.</text>
-        </>
-      )}
-    </svg>
-  );
-}
-
 function Reveal({ as: Tag = 'div', className = '', children, ...rest }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -214,7 +178,7 @@ export default function Landing() {
   return (
     <div className="landing-page">
       <header className={`landing-nav${scrolled ? ' is-scrolled' : ''}`}>
-        <MitynexMark tone="dark" />
+        <img src="/img/brand/mitynex-logo-light.png" alt="Mitynex" className="landing-mark" />
         <nav className="landing-nav-links">
           {NAV_LINKS.map(({ href, label }) => (
             <a key={href} href={href}>{label}</a>
@@ -489,7 +453,7 @@ export default function Landing() {
         <div className="landing-footer-overlay" aria-hidden="true" />
         <div className="landing-footer-top">
           <div className="landing-footer-brand">
-            <MitynexMark tone="light" compact />
+            <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="Mitynex" className="landing-mark" />
             <p>La plataforma integral para la gestión del abastecimiento en mitilicultura.</p>
           </div>
           <div className="landing-footer-col">

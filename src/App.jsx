@@ -141,7 +141,7 @@ const MainLayout = ({ children }) => {
           <Menu size={20} />
         </button>
         <div className="mx-mobile-brand">
-          <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
+          <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="Mitynex" />
         </div>
         <AlertasCampana />
       </header>

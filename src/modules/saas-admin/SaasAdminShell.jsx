@@ -43,7 +43,7 @@ export default function SaasAdminShell() {
           <Menu size={20} />
         </button>
         <div className="saas-mobile-brand">
-          <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
+          <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="Mitynex" />
         </div>
         <div className="saas-mobile-header-spacer" aria-hidden="true" />
       </header>
@@ -55,7 +55,7 @@ export default function SaasAdminShell() {
       <aside className="saas-sidebar">
         <div className="saas-sidebar-top">
           <div className="saas-brand">
-            <img src="/img/brand/mitynex-logo-new.svg" alt="Mitynex" />
+            <img src="/img/brand/mitynex-logo-dark-transparent.png" alt="Mitynex" />
           </div>
           <div className="saas-badge">
             <ShieldCheck size={12} />
