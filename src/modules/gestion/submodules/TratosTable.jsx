@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarCheck, CalendarPlus, ClipboardList, Edit, Handshake, Send, Trash2, X, FileText, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { upsertCondicion } from '../../../api/api-oportunidades';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import {
   ESTADOS_TRATO,
   calcularFechaTerminoEstimadaTrato,
@@ -231,22 +232,7 @@ export default function TratosTable({
                         )}
                       </td>
                       <td className="tratos-col-centro" data-label="Centro">
-                        {(() => {
-                          const code = item.centroCodigo;
-                          if (!code) return <span className="tratos-centro-empty">—</span>;
-                          const c = centros.find(c => String(c.code) === String(code));
-                          const hasCert = c && typeof c.certificacion === 'string' && c.certificacion.trim() !== '';
-                          return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <code className="tratos-centro-code">{code}</code>
-                              {hasCert && (
-                                <span className="ct-cert-badge" title={`Certificación: ${c.certificacion}`}>
-                                  {c.certificacion.toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        <CentroCodeBadge code={item.centroCodigo} asCode />
                       </td>
                       <td className="tratos-metric-cell" data-label="Tons">
                         <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>

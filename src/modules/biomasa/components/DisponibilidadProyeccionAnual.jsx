@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import { ArrowRight, ChevronDown, ChevronUp, Eye, Pencil, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
@@ -218,7 +219,7 @@ export default function DisponibilidadProyeccionAnual({
                           return (
                             <tr key={item._id}>
                               <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
-                              <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
+                              <td data-label="Centro"><CentroCodeBadge code={item.centroOrigenCodigo || item.centroCodigo} /></td>
                               <td className="disponibilidad-tons" data-label="Toneladas">
                                 <div>{fmtTons(itemTons(item))}</div>
                                 <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>{meta.label}</span>

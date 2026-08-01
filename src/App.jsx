@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastProvider, useToast } from './context/ToastContext.jsx';
+import { CentrosProvider } from './context/CentrosContext.jsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Menu } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar.jsx';
@@ -329,6 +330,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <CentrosProvider>
         <ToastProvider>
           <Router>
             <ErrorInstrumentation />
@@ -427,6 +429,7 @@ export default function App() {
             </MainLayout>
           </Router>
         </ToastProvider>
+        </CentrosProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

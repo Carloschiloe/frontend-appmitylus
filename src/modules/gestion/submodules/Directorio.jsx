@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import {
   Activity,
   Building2,
@@ -1086,7 +1087,7 @@ export default function Directorio() {
                           <div>{contact.proveedorNombre}</div>
                           {contact.centroCodigo ? (
                             <div className="dir-contact-centro-meta">
-                              <MapPin size={10} /> {contact.centroCodigo}
+                              <MapPin size={10} /> <CentroCodeBadge code={contact.centroCodigo} />
                             </div>
                           ) : (
                             <span className="mx-badge mx-badge-warning dir-contact-small-badge">Sin centro</span>

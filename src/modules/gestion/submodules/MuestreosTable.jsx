@@ -1,4 +1,5 @@
 import React from 'react';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import {
   ArrowLeft,
   ArrowRight,
@@ -128,7 +129,7 @@ export default function MuestreosTable({
                   <td data-label="Proveedor / Centro">
                     <div className="mu-provider-name">{item.proveedorNombre || item.proveedor}</div>
                     <div className="mu-center-line">
-                      <MapPin size={10} /> {item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}
+                      <MapPin size={10} /> <CentroCodeBadge code={item.centroCodigo} /> {item.linea && `- L: ${item.linea}`}
                     </div>
                   </td>
                   <td className="mu-text-center" data-label="% Rdto."><span className="mx-badge mx-badge-info mu-strong-badge">{Number(item.rendimiento || 0).toFixed(1)}%</span></td>
@@ -181,7 +182,7 @@ export default function MuestreosTable({
                       <td className="mu-group-child-detail">
                         <div className="mu-group-child-meta">
                           <span className="mu-group-child-date">{formatDate(item.fecha)}</span>
-                          <span className="mu-group-child-center">{item.centroCodigo || 'Sin Centro'} {item.linea && `- L: ${item.linea}`}</span>
+                          <span className="mu-group-child-center"><CentroCodeBadge code={item.centroCodigo} /> {item.linea && `- L: ${item.linea}`}</span>
                         </div>
                       </td>
                       <td className="mu-text-center">1</td>

@@ -37,6 +37,7 @@ import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
 import DisponibilidadSimulador from './DisponibilidadSimulador';
 import { maestrosApi } from '../../../api/api-maestros';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 
 const normalizeItems = (response) => Array.isArray(response) ? response : (response?.items || []);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((option) => option.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -490,22 +491,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                           <td data-label="Fecha ingreso" className="disponibilidad-fecha-ingreso">{formatFechaIngreso(item.createdAt)}</td>
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
                           <td data-label="Centro">
-                            {(() => {
-                              const code = item.centroOrigenCodigo || item.centroCodigo;
-                              if (!code) return 'Sin centro';
-                              const c = centros.find(c => c.code === code);
-                              const hasCert = c && typeof c.certificacion === 'string' && c.certificacion.trim() !== '';
-                              return (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>{code}</span>
-                                  {hasCert && (
-                                    <span className="ct-cert-badge" title={`Certificación: ${c.certificacion}`}>
-                                      {c.certificacion.toUpperCase()}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })()}
+                            <CentroCodeBadge code={item.centroOrigenCodigo || item.centroCodigo} />
                           </td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
                           <td className="disponibilidad-tons" data-label="Toneladas">
