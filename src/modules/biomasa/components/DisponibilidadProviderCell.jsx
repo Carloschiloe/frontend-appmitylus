@@ -12,7 +12,7 @@ export default function DisponibilidadProviderCell({ item, hideContact = false, 
   const providerName = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
   const contactName = item.contactoNombre || '';
   const detail = contactDetail(item);
-  const esComercializadora = item.tipo === 'comercializadora' || String(providerName).toLowerCase().includes('comercial');
+  const esComercializadora = item.tipo === 'comercializadora';
 
   return (
     <div className={`disponibilidad-provider-cell ${providerName ? '' : 'disponibilidad-provider-cell--contact-only'}`}>
