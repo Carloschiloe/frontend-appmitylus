@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Activity,
   Building2,
@@ -41,6 +41,7 @@ import {
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import ProviderMapModal from './ProviderMapModal';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
+import { centroLabel, hasCertificacion } from '../../../utils/centroHelpers';
 import './directorio.css';
 
 const STATUS_META = {
@@ -604,7 +605,7 @@ export default function Directorio() {
         code: centro.code || '',
         comuna: centro.comuna || '',
         hectareas: centro.hectareas ?? null,
-        label: [centro.code, centro.comuna].filter(Boolean).join(' - ') || centro.code || centro.comuna || 'Centro sin referencia',
+        label: centroLabel(centro, { withComuna: true }),
       }));
   }, [data.centros, selectedProvider]);
 

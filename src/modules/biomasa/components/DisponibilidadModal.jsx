@@ -11,6 +11,7 @@ import {
 } from '../disponibilidad.constants';
 import { mesLabel } from '../utils/fechasChile';
 import { maestrosApi } from '../../../api/api-maestros';
+import { centroLabel } from '../../../utils/centroHelpers';
 
 const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
 const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
@@ -400,7 +401,7 @@ export default function DisponibilidadModal({
                   <span className="mx-form-label">Centro opcional</span>
                   <select className="mx-select" value={form.centroId} onChange={(e) => update('centroId', e.target.value)} disabled={!selectedProvider}>
                     <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
-                    {centerOptions.map((c) => <option key={c._id} value={c._id}>{getCenterCode(c)}</option>)}
+                    {centerOptions.map((c) => <option key={c._id} value={c._id}>{centroLabel(c)}</option>)}
                   </select>
                 </label>
 

@@ -15,6 +15,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { deleteCentro, getCentros, syncSubpesca, upsertCentro } from '../../../api/api-centros';
+import { centroLabel, hasCertificacion } from '../../../utils/centroHelpers';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
 import { useToast } from '../../../context/ToastContext';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
@@ -212,6 +213,7 @@ export default function CentrosTable() {
       estadoAreaSernapesca: String(formData.get('estadoAreaSernapesca') || '').trim(),
       hectareas: String(formData.get('hectareas') || '').trim(),
       tonsMax: String(formData.get('tonsMax') || '').trim(),
+      certificacion: String(formData.get('certificacion') || '').trim().toUpperCase(),
     };
     try {
       await upsertCentro(payload);
@@ -435,7 +437,14 @@ export default function CentrosTable() {
                         <span className="centros-cell-sub">{centro.comuna}</span>
                       </div>
                     </td>
-                    <td data-label="Código"><code className="ct-code">{centro.code}</code></td>
+                    <td data-label="Código">
+                      <code className="ct-code">{centro.code}</code>
+                      {hasCertificacion(centro) && (
+                        <span className="ct-cert-badge" title={`Certificación: ${centro.certificacion}`}>
+                          {centro.certificacion.toUpperCase()}
+                        </span>
+                      )}
+                    </td>
                     <td data-label="Área PSMB">
                       {centro.areaPSMB ? (
                         <div className="centros-area-cell">
@@ -540,13 +549,24 @@ export default function CentrosTable() {
                 <div className="mx-modal-body">
                   <div className="centros-detail-grid">
                     <div className="detail-item"><label>Proveedor</label><span>{modalState.item?.proveedor || '-'}</span></div>
-                    <div className="detail-item"><label>Codigo centro</label><span>{modalState.item?.code || '-'}</span></div>
+                    <div className="detail-item">
+                      <label>Codigo centro</label>
+                      <span>
+                        {centroLabel(modalState.item)}
+                        {hasCertificacion(modalState.item) && (
+                          <span className="ct-cert-badge ct-cert-badge--detail" style={{ marginLeft: 8 }}>
+                            {(modalState.item.certificacion || '').toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                    </div>
                     <div className="detail-item"><label>Comuna</label><span>{modalState.item?.comuna || '-'}</span></div>
                     <div className="detail-item"><label>Region</label><span>{modalState.item?.region || '-'}</span></div>
                     <div className="detail-item"><label>Area PSMB</label><span>{modalState.item?.areaPSMB || '-'}</span></div>
                     <div className="detail-item"><label>Estado Area</label><span>{modalState.item?.estadoAreaSernapesca || 'Desconocido'}</span></div>
                     <div className="detail-item"><label>Hectareas</label><span>{Number(modalState.item?.hectareas || 0).toLocaleString('es-CL')} ha</span></div>
                     <div className="detail-item"><label>Tons max</label><span>{Number(modalState.item?.tonsMax || 0).toLocaleString('es-CL')}</span></div>
+                    <div className="detail-item"><label>Certificación</label><span>{modalState.item?.certificacion ? <strong className="ct-cert-badge ct-cert-badge--detail">{modalState.item.certificacion.toUpperCase()}</strong> : <em style={{ color: 'var(--color-text-muted)' }}>Sin certificación</em>}</span></div>
                   </div>
                 </div>
                 <div className="mx-modal-footer">
@@ -581,6 +601,16 @@ export default function CentrosTable() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="mx-form-group"><label className="mx-label">Hectareas</label><input className="mx-input" name="hectareas" type="number" step="0.01" defaultValue={modalState.item?.hectareas ?? ''} /></div>
                     <div className="mx-form-group"><label className="mx-label">Tons Máx</label><input className="mx-input" name="tonsMax" type="number" step="0.01" defaultValue={modalState.item?.tonsMax ?? ''} /></div>
+                  </div>
+                  <div className="mx-form-group">
+                    <label className="mx-label">Certificación <span style={{ fontWeight: 400, color: 'var(--color-text-muted)' }}>(ej: ASC, GlobalG.A.P. — dejar vacío si no aplica)</span></label>
+                    <input
+                      className="mx-input"
+                      name="certificacion"
+                      placeholder="ASC"
+                      defaultValue={modalState.item?.certificacion ?? ''}
+                      style={{ textTransform: 'uppercase' }}
+                    />
                   </div>
                 </div>
                 <div className="mx-modal-footer">
