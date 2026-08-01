@@ -28,17 +28,22 @@ export const CentrosProvider = ({ children }) => {
   );
 };
 
-/** Hook para acceder al listado completo de centros */
 export const useCentrosContext = () => useContext(CentrosContext);
 
-/**
- * Devuelve la certificación de un centro dado su código.
- * @param {string} code
- * @returns {string|null}  e.g. "ASC" | null
- */
 export const useCentroCertificacion = (code) => {
   const centros = useContext(CentrosContext);
   if (!code || !centros.length) return null;
   const c = centros.find(c => String(c.code) === String(code));
   return (c?.certificacion && c.certificacion.trim()) ? c.certificacion.trim().toUpperCase() : null;
+};
+
+export const useProviderCertificacion = (proveedorNombre) => {
+  const centros = useContext(CentrosContext);
+  if (!proveedorNombre || !centros.length) return null;
+  const provNameNorm = String(proveedorNombre).toLowerCase().trim();
+  const certs = centros
+    .filter(c => String(c.proveedorNombre || '').toLowerCase().trim() === provNameNorm && c.certificacion && c.certificacion.trim() !== '')
+    .map(c => c.certificacion.trim().toUpperCase());
+  if (certs.length === 0) return null;
+  return [...new Set(certs)].join(' / ');
 };

@@ -139,7 +139,7 @@ export default function ProgramaTablaView({
                   <td data-label="Proveedor / Centro">
                     <div className="harvest-prog-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
                     {(p.centroNombre || p.centroCodigo) && (
-                      <div className="harvest-prog-centro">{p.centroNombre || p.centroCodigo}</div>
+                      <div className="harvest-prog-centro"><CentroCodeBadge code={p.centroCodigo} fallback={p.centroNombre} /></div>
                     )}
                     {(() => {
                       const trato = tratosAcordados.find(t => String(t._id) === String(p.tratoId));
