@@ -44,6 +44,7 @@ const EMPTY_FORM = {
   centroOrigenCodigo: '',
   centroOrigenComuna: '',
   centroOrigenProveedor: '',
+  tipo: '',
 };
 
 const EMPTY_ADD_ROW = { mesKey: '', tonsDisponible: '', calibreMin: '', calibreMax: '' };
@@ -103,6 +104,7 @@ export default function DisponibilidadModal({
       centroOrigenCodigo: item.centroOrigenCodigo || '',
       centroOrigenComuna: item.centroOrigenComuna || '',
       centroOrigenProveedor: item.centroOrigenProveedor || '',
+      tipo: item.tipo || '',
     } : { ...EMPTY_FORM, responsable: responsableNombre });
     setProviderSearch(item?.proveedorNombreNorm || item?.proveedorNombre || item?.empresaNombre || '');
     setContactSearch(item?.contactoNombre || '');
@@ -262,7 +264,9 @@ export default function DisponibilidadModal({
       centroOrigenCodigo: form.centroOrigenCodigo || '',
       centroOrigenComuna: form.centroOrigenComuna || '',
       centroOrigenProveedor: form.centroOrigenProveedor || '',
-      tipo: showCentroOrigen ? 'comercializadora' : '',
+      // Si el proveedor seleccionado tiene un tipo definido (ej: comercializadora, titular), usarlo.
+      // Si no, recurrir a la lógica legacy (sin centros propios => comercializadora) a menos que ya estemos editando
+      tipo: form.tipo || selectedProvider?.tipo || (showCentroOrigen ? 'comercializadora' : ''),
     };
   };
 

@@ -102,6 +102,7 @@ export function buildDisponibilidadProviders(contactos = [], centros = []) {
       proveedorNombre: contacto.proveedorNombre || contacto.empresaNombre || contacto.contactoNombre || 'Proveedor sin nombre',
       contactoNombre: contacto.contactoNombre || '',
       comuna: contacto.centroComuna || contacto.comuna || '',
+      tipo: contacto.tipo || '',
       centros: [],
     });
   });
