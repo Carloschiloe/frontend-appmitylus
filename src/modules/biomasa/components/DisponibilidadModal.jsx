@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, History, Minus, Plus, Search, UserRound, X } from 'lucide-react';
+import { CheckCircle2, History, Minus, Plus, Search, UserRound, X, Edit, Trash2 } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
@@ -61,6 +61,8 @@ export default function DisponibilidadModal({
   saving,
   onClose,
   onSave,
+  onEdit,
+  onDelete,
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [addRow, setAddRow] = useState(EMPTY_ADD_ROW);
@@ -524,6 +526,7 @@ export default function DisponibilidadModal({
                           <th>Calibre</th>
                           <th>Producto</th>
                           <th>Estado</th>
+                          <th style={{ width: 60 }}></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -532,14 +535,13 @@ export default function DisponibilidadModal({
                           const centroTexto = dispItem.centroOrigenCodigo || dispItem.centroCodigo || 'Sin centro';
                           const calibreTexto = (dispItem.calibreMin || dispItem.calibreMax)
                             ? (dispItem.calibreMin && dispItem.calibreMax
-                                ? `${dispItem.calibreMin}-${dispItem.calibreMax} mm`
-                                : `${dispItem.calibreMin || dispItem.calibreMax} mm`)
+                                ? `${dispItem.calibreMin}-${dispItem.calibreMax} uk`
+                                : `${dispItem.calibreMin || dispItem.calibreMax} uk`)
                             : '—';
                           return (
                             <tr key={dispItem._id || `${dispItem.mesKey}-${dispItem.tons}`}>
                               <td>
-                                <strong>{mesLabel(dispItem.mesKey)}</strong>{' '}
-                                <span className="disp-provider-history__subtext">({dispItem.mesKey})</span>
+                                <strong>{mesLabel(dispItem.mesKey)}</strong>
                               </td>
                               <td>{centroTexto}</td>
                               <td><strong>{Number(dispItem.tons || dispItem.tonsDisponible || 0).toLocaleString('es-CL')} t</strong></td>
@@ -549,6 +551,16 @@ export default function DisponibilidadModal({
                                 <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>
                                   {meta.label}
                                 </span>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                  <button type="button" className="mx-action-btn" title="Editar registro" onClick={() => onEdit?.(dispItem)}>
+                                    <Edit size={14} />
+                                  </button>
+                                  <button type="button" className="mx-action-btn" title="Eliminar registro" onClick={() => onDelete?.(dispItem)} style={{ color: 'var(--color-danger)' }}>
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

@@ -592,6 +592,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         saving={saving}
         onClose={closeModal}
         onSave={handleSave}
+        onEdit={openEdit}
+        onDelete={(item) => setDeleteItem(item)}
       />
       <DisponibilidadTratoModal
         open={Boolean(tratoItem)}
