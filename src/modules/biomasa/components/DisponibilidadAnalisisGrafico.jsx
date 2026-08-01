@@ -376,7 +376,7 @@ export default function DisponibilidadAnalisisGrafico({
                 return (
                   <article key={item._id} className="disponibilidad-analysis-detail-record">
                     <div className="disponibilidad-analysis-detail-title">
-                      <DisponibilidadProviderCell item={item} hideContact />
+                      <DisponibilidadProviderCell item={item} hideContact showCentroCode={true} />
                       <div className="disponibilidad-analysis-detail-actions">
                         <strong>{fmtTons(itemTons(item))}</strong>
                         {onEdit && (
