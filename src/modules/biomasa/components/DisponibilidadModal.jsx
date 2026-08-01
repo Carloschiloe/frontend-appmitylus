@@ -583,55 +583,57 @@ export default function DisponibilidadModal({
               return (
               <div className="mx-form-group disponibilidad-field-wide disp-add-section">
                 <div className="disp-add-section__header">
-                  <span className="mx-form-label">{isEdit ? 'Meses / disponibilidades' : 'Disponibilidades a registrar'}</span>
+                  <span className="mx-form-label">{isEdit ? 'Datos del registro' : 'Disponibilidades a registrar'}</span>
                   {!isEdit && <span className="disp-add-section__estado-info"><CheckCircle2 size={13} /> Estado inicial: Disponible</span>}
                 </div>
 
-                {/* Fila de entrada */}
-                <div className="disp-add-section__input-row">
-                  <div>
-                    <span className="disp-add-section__sublabel">Mes / Año</span>
-                    <input
-                      className="mx-input"
-                      type="month"
-                      value={addRow.mesKey}
-                      onChange={(e) => setAddRow((r) => ({ ...r, mesKey: e.target.value }))}
-                    />
+                {/* Fila de entrada (Solo en modo creación) */}
+                {!isEdit && (
+                  <div className="disp-add-section__input-row">
+                    <div>
+                      <span className="disp-add-section__sublabel">Mes / Año</span>
+                      <input
+                        className="mx-input"
+                        type="month"
+                        value={addRow.mesKey}
+                        onChange={(e) => setAddRow((r) => ({ ...r, mesKey: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <span className="disp-add-section__sublabel">Toneladas</span>
+                      <input
+                        className="mx-input"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="ej. 200"
+                        value={addRow.tonsDisponible}
+                        onChange={(e) => setAddRow((r) => ({ ...r, tonsDisponible: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAgregar(); } }}
+                      />
+                    </div>
+                    <div>
+                      <span className="disp-add-section__sublabel">Cal. mín (uk)</span>
+                      <select className="mx-select" value={addRow.calibreMin} onChange={(e) => setAddRow((r) => ({ ...r, calibreMin: e.target.value }))}>
+                        <option value="">—</option>
+                        {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="disp-add-section__sublabel">Cal. máx (uk)</span>
+                      <select className="mx-select" value={addRow.calibreMax} onChange={(e) => setAddRow((r) => ({ ...r, calibreMax: e.target.value }))}>
+                        <option value="">—</option>
+                        {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="disp-add-section__btn-wrap">
+                      <span className="disp-add-section__sublabel">&nbsp;</span>
+                      <button type="button" className="mx-btn mx-btn-primary disp-add-section__agregar" onClick={handleAgregar}>
+                        <Plus size={16} /> Agregar
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <span className="disp-add-section__sublabel">Toneladas</span>
-                    <input
-                      className="mx-input"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      placeholder="ej. 200"
-                      value={addRow.tonsDisponible}
-                      onChange={(e) => setAddRow((r) => ({ ...r, tonsDisponible: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAgregar(); } }}
-                    />
-                  </div>
-                  <div>
-                    <span className="disp-add-section__sublabel">Cal. mín (mm)</span>
-                    <select className="mx-select" value={addRow.calibreMin} onChange={(e) => setAddRow((r) => ({ ...r, calibreMin: e.target.value }))}>
-                      <option value="">—</option>
-                      {CALIBRE_MIN_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <span className="disp-add-section__sublabel">Cal. máx (mm)</span>
-                    <select className="mx-select" value={addRow.calibreMax} onChange={(e) => setAddRow((r) => ({ ...r, calibreMax: e.target.value }))}>
-                      <option value="">—</option>
-                      {CALIBRE_MAX_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
-                  <div className="disp-add-section__btn-wrap">
-                    <span className="disp-add-section__sublabel">&nbsp;</span>
-                    <button type="button" className="mx-btn mx-btn-primary disp-add-section__agregar" onClick={handleAgregar}>
-                      <Plus size={16} /> Agregar
-                    </button>
-                  </div>
-                </div>
+                )}
 
                 {/* Lista de disponibilidades agregadas */}
                 {form.mesesRows.length > 0 && (
