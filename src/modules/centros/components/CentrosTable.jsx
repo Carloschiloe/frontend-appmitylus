@@ -477,7 +477,14 @@ export default function CentrosTable() {
                               setOpenMenuId(null);
                             } else {
                               const rect = e.currentTarget.getBoundingClientRect();
-                              setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                              const spaceBelow = window.innerHeight - rect.bottom;
+                              const spaceNeeded = 160; // Approx height for 4 items
+
+                              if (spaceBelow < spaceNeeded) {
+                                setMenuPos({ bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
+                              } else {
+                                setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                              }
                               setOpenMenuId(centro._id);
                             }
                           }}
@@ -504,7 +511,7 @@ export default function CentrosTable() {
       )}
 
       {openMenuId && (
-        <div ref={menuRef} className="ct-dropdown" style={{ top: menuPos.top, right: menuPos.right }}>
+        <div ref={menuRef} className="ct-dropdown" style={{ top: menuPos.top, bottom: menuPos.bottom, right: menuPos.right }}>
           {(() => {
             const centro = visibleRows.find((c) => c._id === openMenuId);
             if (!centro) return null;

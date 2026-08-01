@@ -520,8 +520,8 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                                   <Handshake size={14} /> Ver trato
                                 </button>
                               ) : (item.estado || 'disponible') === 'disponible' && (
-                                <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" onClick={() => openCreateTrato(item)} title="Crear trato asociado" data-nuevo>
-                                  <ArrowRight size={15} /> Crear trato
+                                <button type="button" className="mx-btn mx-btn-outline sm disponibilidad-create-trato-button" style={{ cursor: 'pointer' }} onClick={() => openCreateTrato(item)} title="Crear trato asociado" data-nuevo>
+                                  <span style={{ pointerEvents: 'none' }}><ArrowRight size={15} /> Crear trato</span>
                                 </button>
                               )}
                             </div>
