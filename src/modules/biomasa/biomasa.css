@@ -7232,10 +7232,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
   .harvest-week-v2-head,
   .harvest-week-v2-row {
-    grid-template-columns: 150px repeat(7, 78px) 70px !important;
-    min-width: 766px !important;
-  }
-
   .harvest-week-v2-label,
   .harvest-week-v2-prov {
     position: sticky !important;
@@ -7243,11 +7239,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     z-index: 4 !important;
     background: #fff !important;
     box-shadow: 8px 0 14px rgba(15, 23, 42, 0.05);
-  }
-
-  .harvest-week-v2-label {
-    background: #f8fafc !important;
-    padding: 10px !important;
   }
 
   .harvest-week-v2-prov {

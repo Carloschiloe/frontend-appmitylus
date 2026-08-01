@@ -1,3 +1,5 @@
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
+
 const contactDetail = (item) => (
   item.contactoTelefono
   || item.contactoSnapshot?.telefono
@@ -6,11 +8,11 @@ const contactDetail = (item) => (
   || ''
 );
 
-export default function DisponibilidadProviderCell({ item, hideContact = false }) {
+export default function DisponibilidadProviderCell({ item, hideContact = false, showCentroCode = false }) {
   const providerName = item.proveedorNombreNorm || item.proveedorNombre || item.empresaNombre || '';
   const contactName = item.contactoNombre || '';
   const detail = contactDetail(item);
-  const esComercializadora = item.tipo === 'comercializadora';
+  const esComercializadora = item.tipo === 'comercializadora' || String(providerName).toLowerCase().includes('comercial');
 
   return (
     <div className={`disponibilidad-provider-cell ${providerName ? '' : 'disponibilidad-provider-cell--contact-only'}`}>
@@ -20,6 +22,11 @@ export default function DisponibilidadProviderCell({ item, hideContact = false }
           <span className="dir-badge-comercializadora" style={{ marginLeft: 6 }}>Comercializadora</span>
         )}
       </span>
+      {showCentroCode && (
+        <div style={{ marginTop: 2, marginBottom: 2 }}>
+          <CentroCodeBadge code={item.centroOrigenCodigo || item.centroCodigo} />
+        </div>
+      )}
       {!hideContact && contactName && (
         <span>Contacto: {contactName}{detail ? ` · ${detail}` : ''}</span>
       )}

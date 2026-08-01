@@ -131,7 +131,7 @@ export default function DisponibilidadResumen({ items, mes, setMes, estadoFiltro
                 <div id={contentId} className="disponibilidad-state-records">
                   {group.items.length > 0 ? group.items.map((item) => (
                     <div key={item._id} className="disponibilidad-state-record">
-                      <DisponibilidadProviderCell item={item} />
+                      <DisponibilidadProviderCell item={item} showCentroCode={true} />
                       <div className="disponibilidad-state-record-volume">
                         <strong>{fmtTons(itemTons(item))}</strong>
                         <span>{optionLabel(DISPONIBILIDAD_PRODUCTOS, item.producto || 'sin_definir')}</span>
