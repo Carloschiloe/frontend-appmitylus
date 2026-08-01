@@ -102,6 +102,28 @@
   background: currentColor;
 }
 
+/* ── Certificación badge (ej. ASC, GlobalG.A.P.) — global ── */
+.ct-cert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #6ee7b7;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.ct-cert-badge--detail {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
 /* ── Toggle Groups (Tabs Modern) ── */
 .mx-toggle-group {
   display: inline-flex;

@@ -489,7 +489,24 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
                         <tr key={item._id} className={isCerrado ? 'disp-row--cerrado' : ''}>
                           <td data-label="Fecha ingreso" className="disponibilidad-fecha-ingreso">{formatFechaIngreso(item.createdAt)}</td>
                           <td className="disponibilidad-provider" data-label="Proveedor"><DisponibilidadProviderCell item={item} /></td>
-                          <td data-label="Centro">{item.centroOrigenCodigo || item.centroCodigo || 'Sin centro'}</td>
+                          <td data-label="Centro">
+                            {(() => {
+                              const code = item.centroOrigenCodigo || item.centroCodigo;
+                              if (!code) return 'Sin centro';
+                              const c = centros.find(c => c.code === code);
+                              const hasCert = c && typeof c.certificacion === 'string' && c.certificacion.trim() !== '';
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>{code}</span>
+                                  {hasCert && (
+                                    <span className="ct-cert-badge" title={`Certificación: ${c.certificacion}`}>
+                                      {c.certificacion.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td data-label="Mes">{mesLabel(item.mesKey)}</td>
                           <td className="disponibilidad-tons" data-label="Toneladas">
                             <div>{fmtTons(item.tons || item.tonsDisponible || 0)}</div>

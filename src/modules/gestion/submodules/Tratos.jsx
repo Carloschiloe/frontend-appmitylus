@@ -172,7 +172,8 @@ export default function Tratos({ onCrearPrograma }) {
   });
 
   const isCreatingTrato = isModalOpen && !editingId;
-  const { data: centrosRaw, isLoading: loadingCentros } = useCentros({ enabled: isModalOpen });
+  const { data: centrosRaw, isLoading: loadingCentros } = useCentros();
+  const allCentros = useMemo(() => Array.isArray(centrosRaw) ? centrosRaw : (centrosRaw?.items || []), [centrosRaw]);
   const { data: contactosRaw, isLoading: loadingContactos } = useContactos({ conEmpresa: 1 }, { enabled: isCreatingTrato });
 
   const providers = useMemo(() => {
@@ -624,6 +625,7 @@ export default function Tratos({ onCrearPrograma }) {
       <TratosTable
         items={filteredItems}
         loading={loading}
+        centros={allCentros}
         onShare={compartirTrato}
         onEdit={openEdit}
         onDelete={setConfirmDeleteTrato}

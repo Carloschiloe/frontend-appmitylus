@@ -119,6 +119,7 @@ function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCond
 export default function TratosTable({
   items,
   loading,
+  centros = [],
   onShare,
   onEdit,
   onDelete,
@@ -230,9 +231,22 @@ export default function TratosTable({
                         )}
                       </td>
                       <td className="tratos-col-centro" data-label="Centro">
-                        {item.centroCodigo
-                          ? <code className="tratos-centro-code">{item.centroCodigo}</code>
-                          : <span className="tratos-centro-empty">—</span>}
+                        {(() => {
+                          const code = item.centroCodigo;
+                          if (!code) return <span className="tratos-centro-empty">—</span>;
+                          const c = centros.find(c => String(c.code) === String(code));
+                          const hasCert = c && typeof c.certificacion === 'string' && c.certificacion.trim() !== '';
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <code className="tratos-centro-code">{code}</code>
+                              {hasCert && (
+                                <span className="ct-cert-badge" title={`Certificación: ${c.certificacion}`}>
+                                  {c.certificacion.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="tratos-metric-cell" data-label="Tons">
                         <div className="tratos-metric-primary">{formatInteger(displayTons)} t</div>
