@@ -6132,6 +6132,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   color: #0A5CFF !important;
   font-weight: 700;
   transition: background 150ms ease, color 150ms ease;
+  cursor: pointer !important;
 }
 .disponibilidad-create-trato-button:hover {
   background: #0A5CFF !important;
