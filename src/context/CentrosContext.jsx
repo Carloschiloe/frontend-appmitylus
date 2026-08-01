@@ -42,7 +42,16 @@ export const useProviderCertificacion = (proveedorNombre) => {
   if (!proveedorNombre || !centros.length) return null;
   const provNameNorm = String(proveedorNombre).toLowerCase().trim();
   const certs = centros
-    .filter(c => String(c.proveedorNombre || '').toLowerCase().trim() === provNameNorm && c.certificacion && c.certificacion.trim() !== '')
+    .filter(c => {
+      if (!c.certificacion || !c.certificacion.trim()) return false;
+      // El modelo Centro guarda el nombre del dueño en c.proveedor
+      const cNorm = String(c.proveedor || '').toLowerCase().trim();
+      if (!cNorm) return false;
+      // Coincidencia exacta, o substring en cualquier dirección
+      return cNorm === provNameNorm
+        || cNorm.includes(provNameNorm)
+        || provNameNorm.includes(cNorm);
+    })
     .map(c => c.certificacion.trim().toUpperCase());
   if (certs.length === 0) return null;
   return [...new Set(certs)].join(' / ');
