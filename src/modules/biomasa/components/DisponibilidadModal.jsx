@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Minus, Plus, Search, UserRound, X } from 'lucide-react';
+import { CheckCircle2, History, Minus, Plus, Search, UserRound, X } from 'lucide-react';
 import {
   DISPONIBILIDAD_ESTADOS,
   DISPONIBILIDAD_ORIGENES,
@@ -7,12 +7,15 @@ import {
   filterDisponibilidadContacts,
   filterDisponibilidadProviders,
   hasDisponibilidadIdentity,
+  optionLabel,
 } from '../disponibilidad.constants';
 import { mesLabel } from '../utils/fechasChile';
 import { maestrosApi } from '../../../api/api-maestros';
 
 const CALIBRE_MIN_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80];
 const CALIBRE_MAX_OPTIONS = [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
+
+const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((o) => o.value === value) || DISPONIBILIDAD_ESTADOS[0];
 
 const EMPTY_FORM = {
   contactoId: '',
@@ -49,6 +52,7 @@ const getCenterCode = (item) => item.codigo || item.centroCodigo || item.code ||
 export default function DisponibilidadModal({
   open,
   item,
+  existingItems = [],
   proveedores,
   contactos,
   defaultMes,
@@ -112,6 +116,23 @@ export default function DisponibilidadModal({
   );
   const filteredProviders = useMemo(() => filterDisponibilidadProviders(proveedores, providerSearch), [providerSearch, proveedores]);
   const filteredContacts = useMemo(() => filterDisponibilidadContacts(contactos, contactSearch), [contactSearch, contactos]);
+
+  const providerExistingDisponibilidades = useMemo(() => {
+    if (!form.proveedorKey && !form.proveedorNombre) return [];
+    const provKey = String(form.proveedorKey || '').trim().toLowerCase();
+    const provNorm = String(form.proveedorNombre || '').trim().toLowerCase();
+
+    return (existingItems || [])
+      .filter((dispItem) => {
+        const itemKey = String(dispItem.proveedorKey || dispItem.empresaKey || '').trim().toLowerCase();
+        const itemNorm = String(dispItem.proveedorNombreNorm || dispItem.proveedorNombre || dispItem.empresaNombre || '').trim().toLowerCase();
+
+        if (provKey && itemKey) return itemKey === provKey;
+        if (provNorm && itemNorm) return itemNorm === provNorm;
+        return false;
+      })
+      .sort((a, b) => (a.mesKey || '').localeCompare(b.mesKey || ''));
+  }, [existingItems, form.proveedorKey, form.proveedorNombre]);
 
   const centerOptions = selectedProvider?.centros || [];
   const selectedCenter = centerOptions.find((c) => String(c._id) === form.centroId);
@@ -476,6 +497,70 @@ export default function DisponibilidadModal({
                 <span className="mx-form-label">Motivo</span>
                 <textarea className="mx-input" rows={2} value={form.motivo} onChange={(e) => update('motivo', e.target.value)} required placeholder="Indica por qué se perdió o descartó" />
               </label>
+            )}
+
+            {/* ── Disponibilidades previamente registradas del proveedor ───── */}
+            {form.proveedorNombre && (
+              <div className="mx-form-group disponibilidad-field-wide disp-provider-history">
+                <div className="disp-provider-history__header">
+                  <div className="disp-provider-history__title">
+                    <History size={15} />
+                    <span>Disponibilidades registradas para <strong>{form.proveedorNombre}</strong></span>
+                  </div>
+                  <span className="disp-provider-history__badge">
+                    {providerExistingDisponibilidades.length} registro{providerExistingDisponibilidades.length !== 1 ? 's' : ''} (todos los centros)
+                  </span>
+                </div>
+
+                {providerExistingDisponibilidades.length > 0 ? (
+                  <div className="disp-provider-history__table-wrap">
+                    <table className="disp-provider-history__table">
+                      <thead>
+                        <tr>
+                          <th>Mes / Año</th>
+                          <th>Centro</th>
+                          <th>Toneladas</th>
+                          <th>Calibre</th>
+                          <th>Producto</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {providerExistingDisponibilidades.map((dispItem) => {
+                          const meta = stateMeta(dispItem.estado);
+                          const centroTexto = dispItem.centroOrigenCodigo || dispItem.centroCodigo || 'Sin centro';
+                          const calibreTexto = (dispItem.calibreMin || dispItem.calibreMax)
+                            ? (dispItem.calibreMin && dispItem.calibreMax
+                                ? `${dispItem.calibreMin}-${dispItem.calibreMax} mm`
+                                : `${dispItem.calibreMin || dispItem.calibreMax} mm`)
+                            : '—';
+                          return (
+                            <tr key={dispItem._id || `${dispItem.mesKey}-${dispItem.tons}`}>
+                              <td>
+                                <strong>{mesLabel(dispItem.mesKey)}</strong>{' '}
+                                <span className="disp-provider-history__subtext">({dispItem.mesKey})</span>
+                              </td>
+                              <td>{centroTexto}</td>
+                              <td><strong>{Number(dispItem.tons || dispItem.tonsDisponible || 0).toLocaleString('es-CL')} t</strong></td>
+                              <td>{calibreTexto}</td>
+                              <td>{optionLabel(DISPONIBILIDAD_PRODUCTOS, dispItem.producto || 'sin_definir')}</td>
+                              <td>
+                                <span className={`disponibilidad-state disponibilidad-state--${meta.tone}`}>
+                                  {meta.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="disp-provider-history__empty">
+                    Este proveedor no tiene disponibilidades registradas previamente.
+                  </div>
+                )}
+              </div>
             )}
 
             {/* ── Sección de mes + toneladas ─────────────────────────────────── */}

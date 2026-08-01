@@ -542,6 +542,104 @@
   text-align: center;
 }
 
+/* Disponibilidades previamente registradas del proveedor */
+.disp-provider-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  margin-top: 4px;
+}
+
+.disp-provider-history__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.disp-provider-history__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.disp-provider-history__title svg {
+  color: #0284c7;
+  flex-shrink: 0;
+}
+
+.disp-provider-history__badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.disp-provider-history__table-wrap {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.disp-provider-history__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.disp-provider-history__table th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid #cbd5e1;
+  z-index: 1;
+}
+
+.disp-provider-history__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+}
+
+.disp-provider-history__table tr:last-child td {
+  border-bottom: none;
+}
+
+.disp-provider-history__table tr:hover td {
+  background: #f8fafc;
+}
+
+.disp-provider-history__subtext {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.disp-provider-history__empty {
+  padding: 12px;
+  font-size: 12px;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+}
+
 .disponibilidad-summary-card {
   padding: 22px;
   border: 1px solid var(--color-border);

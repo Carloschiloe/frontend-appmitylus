@@ -584,6 +584,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       <DisponibilidadModal
         open={modalOpen}
         item={modalItem}
+        existingItems={items}
         proveedores={providerDirectory}
         contactos={contactDirectory}
         defaultMes={mes}
