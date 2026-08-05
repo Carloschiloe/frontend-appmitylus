@@ -2,13 +2,19 @@
 // Contexto global para acceder a los centros (y su certificación) desde cualquier parte de la app.
 import { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from '../api/apiClient';
+import { useAuth } from './AuthContext';
 
 const CentrosContext = createContext([]);
 
 export const CentrosProvider = ({ children }) => {
   const [centros, setCentros] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) {
+      setCentros([]);
+      return;
+    }
     const controller = new AbortController();
     apiClient.get('/centros', { signal: controller.signal })
       .then((res) => {
@@ -19,7 +25,7 @@ export const CentrosProvider = ({ children }) => {
         if (err?.name !== 'AbortError') console.warn('[CentrosContext] No se pudieron cargar los centros:', err?.message);
       });
     return () => controller.abort();
-  }, []);
+  }, [user]);
 
   return (
     <CentrosContext.Provider value={centros}>
