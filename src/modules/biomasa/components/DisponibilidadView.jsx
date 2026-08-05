@@ -35,6 +35,7 @@ import DisponibilidadProyeccionAnual from './DisponibilidadProyeccionAnual';
 import DisponibilidadTratoModal from './DisponibilidadTratoModal';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
+import DisponibilidadEditTratoModal from './DisponibilidadEditTratoModal';
 import DisponibilidadSimulador from './DisponibilidadSimulador';
 import { maestrosApi } from '../../../api/api-maestros';
 import CentroCodeBadge from '../../../components/CentroCodeBadge';
@@ -97,6 +98,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tratoItem, setTratoItem] = useState(null);
+  const [editTratoId, setEditTratoId] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [activeTab, setActiveTab] = useState('listado');
   const [annualItems, setAnnualItems] = useState([]);
@@ -285,6 +287,11 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const openCreateTrato = (item) => {
     if ((item.estado || 'disponible') !== 'disponible' || item.tratoId) return;
     setTratoItem(item);
+  };
+
+  const openEditTrato = (item) => {
+    if (!item.tratoId) return;
+    setEditTratoId(item.tratoId);
   };
 
   const closeModal = () => {
@@ -541,7 +548,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             </div>
           </>
         )}
-        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItemsByMes} mes={mes} setMes={setMes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} />}
+        {activeTab === 'resumen' && <DisponibilidadResumen items={filteredItemsByMes} mes={mes} setMes={setMes} estadoFiltro={filters.estado} onEdit={openEdit} onCreateTrato={openCreateTrato} onEditTrato={openEditTrato} />}
         {activeTab === 'anual' && (
           <DisponibilidadProyeccionAnual
             items={filteredAnnualItems}
@@ -552,6 +559,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             onEstadoFiltroChange={(estado) => setFilters((current) => ({ ...current, estado }))}
             onEdit={openEdit}
             onCreateTrato={openCreateTrato}
+            onEditTrato={openEditTrato}
           />
         )}
         {activeTab === 'simulador' && (
@@ -580,6 +588,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
             loading={annualLoading}
             comparisonLoading={comparisonLoading}
             onEdit={openEdit}
+            onEditTrato={openEditTrato}
           />
         )}
       </div>
@@ -602,6 +611,12 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         open={Boolean(tratoItem)}
         item={tratoItem}
         onClose={() => setTratoItem(null)}
+        onSuccess={reload}
+      />
+      <DisponibilidadEditTratoModal
+        open={Boolean(editTratoId)}
+        tratoId={editTratoId}
+        onClose={() => setEditTratoId(null)}
         onSuccess={reload}
       />
       <ConfirmDeleteModal

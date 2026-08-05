@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import CentroCodeBadge from '../../../components/CentroCodeBadge';
-import { ArrowRight, ChevronDown, ChevronUp, Eye, Pencil, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Eye, Pencil, X, Handshake } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -11,6 +11,7 @@ import {
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
+import DisponibilidadRowActions from './DisponibilidadRowActions';
 
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
@@ -22,8 +23,8 @@ export default function DisponibilidadProyeccionAnual({
   loading,
   estadoFiltro,
   onEstadoFiltroChange,
-  onEdit,
   onCreateTrato,
+  onEditTrato,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [productFilter, setProductFilter] = useState('');
@@ -233,10 +234,12 @@ export default function DisponibilidadProyeccionAnual({
                               <td className="disponibilidad-observation" data-label="Observación" title={item.observacion || item.motivo || ''}>{item.observacion || item.motivo || 'Sin observación'}</td>
                               <td data-label="Acciones">
                                 <div className="disponibilidad-row-actions">
-                                  <button type="button" className="mx-btn-icon sm" onClick={() => onEdit(item)} aria-label="Editar disponibilidad"><Pencil size={15} /></button>
-                                  {(item.estado || 'disponible') === 'disponible' && !item.tratoId && (
-                                    <button type="button" className="mx-btn-icon sm" onClick={() => onCreateTrato(item)} title="Crear trato asociado" aria-label="Crear trato asociado"><ArrowRight size={15} /></button>
-                                  )}
+                                  <DisponibilidadRowActions 
+                                    item={item} 
+                                    onEdit={onEdit} 
+                                    onCreateTrato={onCreateTrato} 
+                                    onEditTrato={onEditTrato} 
+                                  />
                                 </div>
                               </td>
                             </tr>

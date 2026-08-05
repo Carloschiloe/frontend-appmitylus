@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, MapPin, Pencil, UserRound, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, MapPin, Pencil, UserRound, X, Handshake } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -10,6 +10,7 @@ import {
 import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
+import DisponibilidadRowActions from './DisponibilidadRowActions';
 
 const itemTons = (item) => Number(item.tons || item.tonsDisponible || 0);
 const stateMeta = (value) => DISPONIBILIDAD_ESTADOS.find((state) => state.value === value) || DISPONIBILIDAD_ESTADOS[0];
@@ -34,6 +35,7 @@ export default function DisponibilidadAnalisisGrafico({
   loading,
   comparisonLoading,
   onEdit,
+  onEditTrato,
 }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
@@ -379,16 +381,11 @@ export default function DisponibilidadAnalisisGrafico({
                       <DisponibilidadProviderCell item={item} hideContact showCentroCode={true} />
                       <div className="disponibilidad-analysis-detail-actions">
                         <strong>{fmtTons(itemTons(item))}</strong>
-                        {onEdit && (
-                          <button
-                            type="button"
-                            className="mx-btn-icon sm"
-                            onClick={() => onEdit(item)}
-                            aria-label="Editar disponibilidad"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                        )}
+                        <DisponibilidadRowActions 
+                          item={item} 
+                          onEdit={onEdit} 
+                          onEditTrato={onEditTrato} 
+                        />
                       </div>
                     </div>
                     <div className="disponibilidad-analysis-detail-meta-row">
