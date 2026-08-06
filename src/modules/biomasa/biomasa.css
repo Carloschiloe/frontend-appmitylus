@@ -7642,42 +7642,56 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
 }
-.disp-sim-exp-providers-total {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
-  margin-bottom: 2px;
-}
-/* Stats block: consumido / saldo / días / calibre */
-.disp-sim-exp-stats {
+/* Fila horizontal: Disponible · A procesar · Saldo */
+.disp-sim-exp-totals-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 0;
+  align-items: center;
+  gap: 0;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 4px;
 }
-.disp-sim-exp-stat {
+.disp-sim-exp-total-item {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
-.disp-sim-exp-stat-label {
-  font-size: 0.72rem;
+.disp-sim-exp-total-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  font-weight: 500;
 }
-.disp-sim-exp-stat-value {
-  font-size: 0.82rem;
+.disp-sim-exp-total-value {
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-text);
   white-space: nowrap;
 }
-.disp-sim-exp-stat--pos .disp-sim-exp-stat-value { color: #16a34a; }
-.disp-sim-exp-stat--neg .disp-sim-exp-stat-value { color: #dc2626; }
+.disp-sim-exp-total-value--pos { color: #16a34a; }
+.disp-sim-exp-total-value--neg { color: #dc2626; }
+.disp-sim-exp-total-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--color-border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+/* Línea secundaria: días hábiles · calibre */
+.disp-sim-exp-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+}
 .disp-sim-exp-providers-list {
   display: flex;
   flex-direction: column;

@@ -347,29 +347,34 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               <Fish size={14} />
               {MONTHS_ES[m - 1]} {y}
             </div>
-            <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)}</div>
-
-            {/* Stats: consumido, saldo, promedio UK */}
-            {tonsPorDia > 0 && (
-              <div className="disp-sim-exp-stats">
-                <div className="disp-sim-exp-stat">
-                  <span className="disp-sim-exp-stat-label">A procesar</span>
-                  <span className="disp-sim-exp-stat-value">{fmtTons(tonsConsumed)}</span>
-                </div>
-                <div className={`disp-sim-exp-stat${saldo >= 0 ? ' disp-sim-exp-stat--pos' : ' disp-sim-exp-stat--neg'}`}>
-                  <span className="disp-sim-exp-stat-label">Saldo</span>
-                  <span className="disp-sim-exp-stat-value">{saldo >= 0 ? '+' : ''}{fmtTons(saldo)}</span>
-                </div>
-                <div className="disp-sim-exp-stat">
-                  <span className="disp-sim-exp-stat-label">Días hábiles</span>
-                  <span className="disp-sim-exp-stat-value">{opDays}</span>
-                </div>
-                {avgCalMin != null && (
-                  <div className="disp-sim-exp-stat">
-                    <span className="disp-sim-exp-stat-label">Prom. calibre</span>
-                    <span className="disp-sim-exp-stat-value">{avgCalMin}–{avgCalMax} uk</span>
+            <div className="disp-sim-exp-totals-row">
+              <div className="disp-sim-exp-total-item">
+                <span className="disp-sim-exp-total-label">Disponible</span>
+                <span className="disp-sim-exp-total-value">{fmtTons(tonsAvail)}</span>
+              </div>
+              {tonsPorDia > 0 && (
+                <>
+                  <div className="disp-sim-exp-total-sep" />
+                  <div className="disp-sim-exp-total-item">
+                    <span className="disp-sim-exp-total-label">A procesar</span>
+                    <span className="disp-sim-exp-total-value">{fmtTons(tonsConsumed)}</span>
                   </div>
-                )}
+                  <div className="disp-sim-exp-total-sep" />
+                  <div className="disp-sim-exp-total-item">
+                    <span className="disp-sim-exp-total-label">Saldo</span>
+                    <span className={`disp-sim-exp-total-value${saldo >= 0 ? ' disp-sim-exp-total-value--pos' : ' disp-sim-exp-total-value--neg'}`}>
+                      {saldo >= 0 ? '+' : ''}{fmtTons(saldo)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Info secundaria: días hábiles + calibre */}
+            {tonsPorDia > 0 && (
+              <div className="disp-sim-exp-meta">
+                <span>{opDays} días hábiles</span>
+                {avgCalMin != null && <span>Prom. calibre: {avgCalMin}–{avgCalMax} uk</span>}
               </div>
             )}
 
