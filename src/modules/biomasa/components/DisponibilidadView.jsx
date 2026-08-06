@@ -108,10 +108,25 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [comparisonItems, setComparisonItems] = useState([]);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [annualReloadKey, setAnnualReloadKey] = useState(0);
-  const [filters, setFilters] = useState(() => {
+  const [tabFilters, setTabFilters] = useState(() => {
     const now = new Date();
-    return { proveedor: '', producto: '', estado: '', anio: String(now.getFullYear()), mesNum: String(now.getMonth() + 1), responsable: '' };
+    const base = { proveedor: '', producto: '', estado: '', anio: String(now.getFullYear()), mesNum: String(now.getMonth() + 1), responsable: '' };
+    return {
+      listado: base,
+      resumen: { ...base, anio: '', mesNum: '' },
+      anual: { ...base, anio: '', mesNum: '' },
+      analisis: { ...base, anio: '', mesNum: '' },
+      simulador: { ...base, anio: '', mesNum: '' }
+    };
   });
+  const filters = tabFilters[activeTab] || tabFilters.listado;
+  const setFilters = (updater) => {
+    setTabFilters((prev) => {
+      const current = prev[activeTab] || prev.listado;
+      const next = typeof updater === 'function' ? updater(current) : { ...current, ...updater };
+      return { ...prev, [activeTab]: next };
+    });
+  };
   const [showFilters, setShowFilters] = useState(false);
   const [showTotales, setShowTotales] = useState(false);
   const [tiposTransporte, setTiposTransporte] = useState([]);
@@ -141,7 +156,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
     if (!['anual', 'analisis', 'simulador'].includes(activeTab) || !/^\d{4}$/.test(annualYear)) return undefined;
     let active = true;
     setAnnualLoading(true);
-    getDisponibilidades({ from: `${annualYear}-01`, to: `${annualYear}-12` })
+    getDisponibilidades({ from: `${annualYear}-01`, to: `${Number(annualYear) + 1}-12` })
       .then((response) => {
         if (active) setAnnualItems(response);
       })
