@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, Fish } from 'lucide-react';
+import { CalendarDays, ChevronLeft } from 'lucide-react';
 import { fmtTons, fmtNumber, tonsPorCamionDeTipo } from '../utils/programaCalculos';
 import { optionLabel, DISPONIBILIDAD_PRODUCTOS } from '../disponibilidad.constants';
 import { dayOfWeekFromKey, todayKey, isChileHolidayKey, addDaysToKey } from '../utils/fechasChile';
@@ -344,7 +344,7 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
           <MonthGrid year={y} month={m} firstDow={firstDow} days={days} expanded />
           <aside className="disp-sim-exp-providers">
             <div className="disp-sim-exp-providers-title">
-              <Fish size={14} />
+              <span role="img" aria-label="mejillón" style={{ fontSize: '1rem', lineHeight: 1 }}>🦪</span>
               {MONTHS_ES[m - 1]} {y}
             </div>
             <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)}</div>
