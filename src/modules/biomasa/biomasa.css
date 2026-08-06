@@ -7650,6 +7650,34 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 2px;
 }
+/* Stats block: consumido / saldo / días / calibre */
+.disp-sim-exp-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+}
+.disp-sim-exp-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.disp-sim-exp-stat-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+.disp-sim-exp-stat-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.disp-sim-exp-stat--pos .disp-sim-exp-stat-value { color: #16a34a; }
+.disp-sim-exp-stat--neg .disp-sim-exp-stat-value { color: #dc2626; }
 .disp-sim-exp-providers-list {
   display: flex;
   flex-direction: column;

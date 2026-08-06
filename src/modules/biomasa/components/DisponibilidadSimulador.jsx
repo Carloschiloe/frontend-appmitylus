@@ -318,10 +318,27 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
       const m = parseInt(expandedMonth.slice(5, 7), 10);
       const ms = monthStats.find((s) => s.mk === expandedMonth);
       const tonsAvail = ms?.tonsAvail || 0;
+      const tonsConsumed = ms?.tonsNeeded || 0;
+      const saldo = tonsAvail - tonsConsumed;
+      const opDays = ms?.opDays || 0;
       const effectiveStart = expandedMonth >= fechaInicio.slice(0, 7) ? fechaInicio : null;
       const { firstDow, days } = tonsPorDia > 0
         ? buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, effectiveStart)
         : buildMonthlySimulation(y, m, 0, 0, diasOp, effectiveStart);
+
+      // Calcular promedio de calibre uk ponderado por tons
+      const calibreItems = monthProviders.filter(
+        (item) => item.calibreMin != null || item.calibreMax != null
+      );
+      let avgCalMin = null; let avgCalMax = null;
+      if (calibreItems.length > 0) {
+        const totalT = calibreItems.reduce((s, i) => s + Number(i.tons || i.tonsDisponible || 0), 0);
+        if (totalT > 0) {
+          avgCalMin = Math.round(calibreItems.reduce((s, i) => s + (Number(i.calibreMin || 0) * Number(i.tons || i.tonsDisponible || 0)), 0) / totalT);
+          avgCalMax = Math.round(calibreItems.reduce((s, i) => s + (Number(i.calibreMax || 0) * Number(i.tons || i.tonsDisponible || 0)), 0) / totalT);
+        }
+      }
+
       return (
         <div className="disp-sim-expanded-layout">
           <MonthGrid year={y} month={m} firstDow={firstDow} days={days} expanded />
@@ -331,6 +348,31 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               {MONTHS_ES[m - 1]} {y}
             </div>
             <div className="disp-sim-exp-providers-total">{fmtTons(tonsAvail)}</div>
+
+            {/* Stats: consumido, saldo, promedio UK */}
+            {tonsPorDia > 0 && (
+              <div className="disp-sim-exp-stats">
+                <div className="disp-sim-exp-stat">
+                  <span className="disp-sim-exp-stat-label">A procesar</span>
+                  <span className="disp-sim-exp-stat-value">{fmtTons(tonsConsumed)}</span>
+                </div>
+                <div className={`disp-sim-exp-stat${saldo >= 0 ? ' disp-sim-exp-stat--pos' : ' disp-sim-exp-stat--neg'}`}>
+                  <span className="disp-sim-exp-stat-label">Saldo</span>
+                  <span className="disp-sim-exp-stat-value">{saldo >= 0 ? '+' : ''}{fmtTons(saldo)}</span>
+                </div>
+                <div className="disp-sim-exp-stat">
+                  <span className="disp-sim-exp-stat-label">Días hábiles</span>
+                  <span className="disp-sim-exp-stat-value">{opDays}</span>
+                </div>
+                {avgCalMin != null && (
+                  <div className="disp-sim-exp-stat">
+                    <span className="disp-sim-exp-stat-label">Prom. calibre</span>
+                    <span className="disp-sim-exp-stat-value">{avgCalMin}–{avgCalMax} uk</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="disp-sim-exp-providers-list">
               {monthProviders.length === 0 ? (
                 <div className="disp-sim-exp-providers-empty">Sin biomasa registrada</div>
