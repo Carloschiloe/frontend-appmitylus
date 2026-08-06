@@ -3338,6 +3338,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   display: flex;
   gap: 3px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
   position: absolute;
   bottom: 6px;
@@ -3351,7 +3352,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   z-index: 10;
   white-space: nowrap;
 }
-.harvest-week-v2-cell:hover .harvest-week-v2-actions { opacity: 1; }
+.harvest-week-v2-cell:hover .harvest-week-v2-actions,
+.harvest-week-v2-cell:focus-within .harvest-week-v2-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 /* Botón único "Ajustar" (reemplaza los 3 botones flotantes en vista semana).
    Se ancla ARRIBA-DERECHA de la celda (zona libre) para no tapar nunca el dato
@@ -3577,9 +3582,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   padding: 1px 2px;
   border-radius: 3px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
-.wk-nota-cell:hover .wk-nota-btn { opacity: 1; }
+.wk-nota-cell:hover .wk-nota-btn,
+.wk-nota-cell:focus-within .wk-nota-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
 .wk-nota-btn:hover { background: #f1f5f9; color: var(--color-text); }
 .wk-nota-add {
   background: none;
@@ -3592,10 +3602,26 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-align: center;
   line-height: 1;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
-.wk-nota-cell:hover .wk-nota-add { opacity: 1; }
+.wk-nota-cell:hover .wk-nota-add,
+.wk-nota-cell:focus-within .wk-nota-add {
+  opacity: 1;
+  pointer-events: auto;
+}
 .wk-nota-add:hover { color: var(--color-text-subtle); }
+
+/* En pantallas tactiles no existe un hover persistente fiable: si una accion
+   nace oculta, el primer toque solo la revela y el segundo ejecuta el click. */
+@media (hover: none), (pointer: coarse) {
+  .harvest-week-v2-actions,
+  .wk-nota-btn,
+  .wk-nota-add {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
 
 /* ── Nota popover (amplía el suspend-popover) ────────────────────── */
 .nota-popover {

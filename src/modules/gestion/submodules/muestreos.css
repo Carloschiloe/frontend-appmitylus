@@ -972,6 +972,7 @@
 
 .mu-hide-btn {
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
   color: #cbd5e1;
   width: 22px;
@@ -988,8 +989,17 @@
   border-color: rgba(10, 92, 255, 0.2);
 }
 
-.mu-analysis-item:hover .mu-hide-btn {
+.mu-analysis-item:hover .mu-hide-btn,
+.mu-analysis-item:focus-within .mu-hide-btn {
   opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .mu-hide-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .mu-hidden-items-list {

@@ -36,6 +36,7 @@ import CompletarTareaModal from './CompletarTareaModal';
 import ConfirmModal from './ConfirmModal';
 import EditarRealizadoModal from './EditarRealizadoModal';
 import ReprogramModal from './ReprogramModal';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';

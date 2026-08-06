@@ -25,6 +25,7 @@ import {
   fmtTonsInt, fmtNumber, calcTotalToneladasDia,
   getProgramVolumeProgress, getEffectiveTonsPerTruck,
 } from '../utils/programaCalculos';
+import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import ProgramaEstadoBadge from '../components/ProgramaEstadoBadge';
 
 const PERIOD_LABELS = { month: 'Mes', week: 'Semana', all: 'Ver Todos' };

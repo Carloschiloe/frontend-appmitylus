@@ -17,6 +17,14 @@
   box-sizing: border-box;
 }
 
+/* Ejecuta controles con un solo toque y evita que dos toques rapidos sean
+   interpretados como un gesto de zoom por el navegador. */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
 /* ── Global Layout Utilities ── */
 ul, ol {
   list-style: none;
