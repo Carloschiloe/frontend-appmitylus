@@ -7942,8 +7942,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .disp-sim-day--rest {
-  background: var(--color-bg);
+  background: var(--color-bg-element);
   color: var(--color-text-muted);
+}
+
+.disp-sim-day--holiday {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px dashed #fca5a5;
 }
 
 .disp-sim-day--green {

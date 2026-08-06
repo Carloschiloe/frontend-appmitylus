@@ -2,16 +2,16 @@ import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, Fish } from 'lucide-react';
 import { fmtTons, fmtNumber, tonsPorCamionDeTipo } from '../utils/programaCalculos';
 import { optionLabel, DISPONIBILIDAD_PRODUCTOS } from '../disponibilidad.constants';
-import { dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
+import { dayOfWeekFromKey, todayKey, isChileHolidayKey } from '../utils/fechasChile';
 
 const DIAS_SEMANA = [
-  { value: 0, label: 'Dom' },
   { value: 1, label: 'Lun' },
   { value: 2, label: 'Mar' },
   { value: 3, label: 'Mié' },
   { value: 4, label: 'Jue' },
   { value: 5, label: 'Vie' },
   { value: 6, label: 'Sáb' },
+  { value: 0, label: 'Dom' },
 ];
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -24,7 +24,7 @@ function operatingDaysInMonth(y, m, diasOp, startKey) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dk = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     if (startKey && dk < startKey) continue;
-    if (diasSet.has(dayOfWeekFromKey(dk))) count++;
+    if (diasSet.has(dayOfWeekFromKey(dk)) && !isChileHolidayKey(dk)) count++;
   }
   return count;
 }
@@ -39,13 +39,16 @@ function buildMonthlySimulation(y, m, tonsAvail, tonsPorDia, diasOp, startKey) {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow = dayOfWeekFromKey(dateKey);
+    const isHoliday = isChileHolidayKey(dateKey);
     const isBeforeStart = startKey && dateKey < startKey;
-    const isOperating = !isBeforeStart && diasSet.has(dow);
+    const isOperating = !isBeforeStart && diasSet.has(dow) && !isHoliday;
     const balanceBefore = tonsAvail - consumed;
     let tonsDia = 0;
     let tone = 'before';
     if (!isBeforeStart) {
-      if (!isOperating) {
+      if (isHoliday) {
+        tone = 'holiday';
+      } else if (!isOperating) {
         tone = 'rest';
       } else if (balanceBefore <= 0) {
         tone = 'exhausted';
@@ -83,13 +86,16 @@ function buildSimulation(totalTons, tonsPorDia, startKey, diasOp) {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dow = dayOfWeekFromKey(dateKey);
+      const isHoliday = isChileHolidayKey(dateKey);
       const isBeforeStart = dateKey < startKey;
-      const isOperating = !isBeforeStart && diasSet.has(dow);
+      const isOperating = !isBeforeStart && diasSet.has(dow) && !isHoliday;
       const balanceBefore = totalTons - consumed;
       let tonsDia = 0;
       let tone = 'before';
       if (!isBeforeStart) {
-        if (!isOperating) {
+        if (isHoliday) {
+          tone = 'holiday';
+        } else if (!isOperating) {
           tone = 'rest';
         } else if (balanceBefore <= 0) {
           tone = 'exhausted';
@@ -121,6 +127,7 @@ function fmtDateKey(key) {
 }
 
 function MonthGrid({ year, month, firstDow, days, expanded = false, onClick }) {
+  const padCount = firstDow === 0 ? 6 : firstDow - 1;
   return (
     <div
       className={`disp-sim-month${expanded ? ' disp-sim-month--expanded' : ''}${onClick ? ' disp-sim-month--clickable' : ''}`}
@@ -132,7 +139,7 @@ function MonthGrid({ year, month, firstDow, days, expanded = false, onClick }) {
         {DIAS_SEMANA.map(({ label }) => (
           <div key={label} className="disp-sim-dow-header">{label}</div>
         ))}
-        {Array.from({ length: firstDow }).map((_, i) => (
+        {Array.from({ length: padCount }).map((_, i) => (
           <div key={`pad-${i}`} className="disp-sim-day disp-sim-day--pad" />
         ))}
         {days.map(({ dateKey, day, tone, tonsDia, balanceAfter, isStockout }) => (
@@ -362,8 +369,9 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               const dateKey = `${ms.mk}-${pad(d + 1)}`;
               const isBeforeStart = dateKey < fechaInicio;
               const dow = dayOfWeekFromKey(dateKey);
-              const isOp = !isBeforeStart && diasOp.includes(dow);
-              return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'exhausted' : 'rest' };
+              const isHoliday = isChileHolidayKey(dateKey);
+              const isOp = !isBeforeStart && diasOp.includes(dow) && !isHoliday;
+              return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isHoliday ? 'holiday' : isOp ? 'exhausted' : 'rest' };
             }) };
         return <MonthGrid key={ms.mk} year={ms.y} month={ms.m} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(ms.mk)} />;
       });
@@ -378,8 +386,9 @@ export default function DisponibilidadSimulador({ items, tiposTransporte }) {
               const dateKey = `${ms.mk}-${pad(d + 1)}`;
               const isBeforeStart = dateKey < fechaInicio;
               const dow = dayOfWeekFromKey(dateKey);
-              const isOp = !isBeforeStart && diasOp.map(Number).includes(dow);
-              return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isOp ? 'exhausted' : 'rest', isStockout: false };
+              const isHoliday = isChileHolidayKey(dateKey);
+              const isOp = !isBeforeStart && diasOp.map(Number).includes(dow) && !isHoliday;
+              return { dateKey, day: d + 1, dow, isBeforeStart, isOperating: isOp, tonsDia: 0, balanceAfter: 0, tone: isBeforeStart ? 'before' : isHoliday ? 'holiday' : isOp ? 'exhausted' : 'rest', isStockout: false };
             }) };
         return <MonthGrid key={ms.mk} year={ms.y} month={ms.m} firstDow={firstDow} days={days} onClick={() => handleExpandMonth(ms.mk)} />;
       });
