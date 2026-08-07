@@ -19,10 +19,17 @@ import {
 import {
   createCopilotSpeech,
   getCopilotVoiceStatus,
+  resetCopilotConversation,
   streamCopilotCommand,
   transcribeCopilotAudio,
 } from '../api/api-copilot';
 import { useToast } from '../context/ToastContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import {
+  clearCopilotConversation,
+  persistCopilotConversation,
+  readCopilotConversation,
+} from '../utils/copilotConversationStorage';
 import './CopilotPanel.css';
 
 const EXAMPLES = [
@@ -32,7 +39,6 @@ const EXAMPLES = [
   'Consulta últimos muestreos de Los Palqui',
 ];
 
-const MAX_CONVERSATION_MESSAGES = 16;
 const MAX_RECORDING_MS = 15000;
 
 function statusLabel(status) {
@@ -480,6 +486,7 @@ function CopilotTurn({
 
 export default function CopilotPanel({ queryClient }) {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -492,13 +499,15 @@ export default function CopilotPanel({ queryClient }) {
   const [speakingId, setSpeakingId] = React.useState(null);
   const [speechLoadingId, setSpeechLoadingId] = React.useState(null);
   const [history, setHistory] = React.useState([]);
+  const [hasConversation, setHasConversation] = React.useState(false);
   const recognitionRef = React.useRef(null);
   const dictationBaseRef = React.useRef('');
   const mediaRecorderRef = React.useRef(null);
   const mediaStreamRef = React.useRef(null);
   const audioChunksRef = React.useRef([]);
   const audioPlayerRef = React.useRef(null);
-  const conversationRef = React.useRef([]);
+  const conversationIdRef = React.useRef(null);
+  const conversationScopeRef = React.useRef(null);
   const streamControllerRef = React.useRef(null);
   const recordingTimeoutRef = React.useRef(null);
 
@@ -522,6 +531,21 @@ export default function CopilotPanel({ queryClient }) {
     };
   }, []);
 
+  const currentConversationScope = React.useCallback(() => {
+    return {
+      userId: user?._id || user?.id || '',
+      tenantDbName: typeof window === 'undefined' ? '' : localStorage.getItem('selected_tenant_db') || user?.dbName || user?.empresaId?.dbName || '',
+    };
+  }, [user]);
+
+  React.useEffect(() => {
+    const scope = currentConversationScope();
+    const stored = readCopilotConversation(scope);
+    conversationScopeRef.current = scope;
+    conversationIdRef.current = stored;
+    setHasConversation(Boolean(stored));
+  }, [currentConversationScope, open]);
+
   React.useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener('mitynex:copilot-open', handler);
@@ -543,10 +567,11 @@ export default function CopilotPanel({ queryClient }) {
     queryClient?.invalidateQueries?.();
   }
 
-  function pushConversationMessage(role, content) {
-    const clean = String(content || '').trim();
-    if (!clean) return;
-    conversationRef.current = [...conversationRef.current, { role, content: clean }].slice(-MAX_CONVERSATION_MESSAGES);
+  function rememberConversation(id) {
+    if (!id) return;
+    conversationIdRef.current = id;
+    setHasConversation(true);
+    persistCopilotConversation(conversationScopeRef.current || currentConversationScope(), id);
   }
 
   function patchTurn(turnId, patchFn) {
@@ -768,6 +793,10 @@ export default function CopilotPanel({ queryClient }) {
   async function runCommand(clean) {
     if (!clean || loading) return;
 
+    const scope = currentConversationScope();
+    conversationScopeRef.current = scope;
+    conversationIdRef.current = readCopilotConversation(scope);
+
     const userId = crypto.randomUUID?.() || Date.now();
     const assistantId = crypto.randomUUID?.() || `${Date.now()}-a`;
 
@@ -785,7 +814,6 @@ export default function CopilotPanel({ queryClient }) {
         error: null,
       },
     ]);
-    pushConversationMessage('user', clean);
     setText('');
     setLoading(true);
 
@@ -795,15 +823,17 @@ export default function CopilotPanel({ queryClient }) {
     try {
       await streamCopilotCommand({
         text: clean,
-        history: conversationRef.current,
         mode: 'draft',
+        conversationId: conversationIdRef.current,
+        turnId: String(userId),
         signal: controller.signal,
         onEvent: (event) => {
-          if (event.type === 'status') {
+          if (event.type === 'conversation') {
+            rememberConversation(event.data?.conversationId);
+          } else if (event.type === 'status') {
             patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
           } else if (event.type === 'narrative') {
             patchTurn(assistantId, (item) => ({ ...item, narrative: event.data }));
-            pushConversationMessage('assistant', event.data);
           } else if (event.type === 'result') {
             const response = event.data;
             patchTurn(assistantId, (item) => ({ ...item, results: [...item.results, response] }));
@@ -849,6 +879,7 @@ export default function CopilotPanel({ queryClient }) {
     setConfirmingId(commandId);
 
     const assistantId = crypto.randomUUID?.() || `${Date.now()}-c`;
+    const turnId = crypto.randomUUID?.() || `${Date.now()}-confirm`;
     setHistory((prev) => [
       ...prev,
       {
@@ -867,9 +898,12 @@ export default function CopilotPanel({ queryClient }) {
       await streamCopilotCommand({
         mode: 'confirm',
         commandId,
-        history: conversationRef.current,
+        conversationId: conversationIdRef.current,
+        turnId: String(turnId),
         onEvent: (event) => {
-          if (event.type === 'status') {
+          if (event.type === 'conversation') {
+            rememberConversation(event.data?.conversationId);
+          } else if (event.type === 'status') {
             patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
           } else if (event.type === 'result') {
             const response = event.data;
@@ -896,7 +930,7 @@ export default function CopilotPanel({ queryClient }) {
     }
   }
 
-  function reset() {
+  async function reset() {
     streamControllerRef.current?.abort?.();
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
@@ -905,9 +939,28 @@ export default function CopilotPanel({ queryClient }) {
     window.speechSynthesis?.cancel?.();
     setSpeakingId(null);
     setSpeechLoadingId(null);
-    setHistory([]);
-    setText('');
-    conversationRef.current = [];
+    try {
+      const scope = currentConversationScope();
+      conversationScopeRef.current = scope;
+      conversationIdRef.current = readCopilotConversation(scope);
+      let nextConversationId = null;
+      if (conversationIdRef.current) {
+        const result = await resetCopilotConversation(conversationIdRef.current);
+        nextConversationId = result?.conversationId || null;
+      }
+      clearCopilotConversation(scope);
+      conversationIdRef.current = nextConversationId;
+      setHasConversation(Boolean(nextConversationId));
+      if (nextConversationId) persistCopilotConversation(scope, nextConversationId);
+      setHistory([]);
+      setText('');
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'No se pudo iniciar una conversación nueva',
+        message: error?.data?.message || error?.message || 'Intenta nuevamente.',
+      });
+    }
   }
 
   return (
@@ -989,7 +1042,7 @@ export default function CopilotPanel({ queryClient }) {
                   {listening || recordingProfessional ? <MicOff size={16} /> : <Mic size={16} />}
                   {recordingProfessional ? 'Grabando...' : listening ? 'Escuchando...' : 'Dictar'}
                 </button>
-                <button type="button" className="mx-btn mx-btn-outline" onClick={reset} disabled={!history.length && !text}>
+                <button type="button" className="mx-btn mx-btn-outline" onClick={reset} disabled={!history.length && !text && !hasConversation}>
                   Limpiar
                 </button>
                 <button type="submit" className="mx-btn mx-btn-primary" disabled={loading || !text.trim()}>

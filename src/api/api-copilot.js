@@ -36,6 +36,8 @@ export async function streamCopilotCommand({
   history = [],
   mode = 'draft',
   commandId,
+  conversationId,
+  turnId,
   signal,
   onEvent,
 } = {}) {
@@ -50,7 +52,14 @@ export async function streamCopilotCommand({
     headers,
     credentials: 'include',
     signal,
-    body: JSON.stringify({ text, history, mode, ...(commandId ? { commandId } : {}) }),
+    body: JSON.stringify({
+      text,
+      history,
+      mode,
+      ...(commandId ? { commandId } : {}),
+      ...(conversationId ? { conversationId } : {}),
+      ...(turnId ? { turnId } : {}),
+    }),
   });
 
   const contentType = response.headers.get('content-type') || '';
@@ -82,6 +91,10 @@ export async function streamCopilotCommand({
       onEvent?.(event);
     }
   }
+}
+
+export function resetCopilotConversation(conversationId) {
+  return apiClient.post(`/copilot/conversations/${encodeURIComponent(conversationId)}/reset`, {});
 }
 
 export function getCopilotVoiceStatus() {
