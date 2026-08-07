@@ -443,9 +443,22 @@
   border-top: 0;
 }
 
-.copilot-result-entry--executed .copilot-response__badge {
+.copilot-result-entry--executed .copilot-response__badge,
+.copilot-result-entry--completed .copilot-response__badge {
   background: rgba(16, 185, 129, 0.12);
   color: #07804f;
+}
+
+.copilot-result-entry--replaced,
+.copilot-result-entry--cancelled {
+  opacity: 0.68;
+}
+
+.copilot-result-entry--replaced .copilot-response__badge,
+.copilot-result-entry--cancelled .copilot-response__badge,
+.copilot-result-entry--already_processing .copilot-response__badge {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
 }
 
 .copilot-result-entry--rejected .copilot-response__badge,

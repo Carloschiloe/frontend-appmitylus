@@ -97,6 +97,10 @@ export function resetCopilotConversation(conversationId) {
   return apiClient.post(`/copilot/conversations/${encodeURIComponent(conversationId)}/reset`, {});
 }
 
+export function getCopilotConversation(conversationId) {
+  return apiClient.get(`/copilot/conversations/${encodeURIComponent(conversationId)}`);
+}
+
 export function getCopilotVoiceStatus() {
   return apiClient.get('/copilot/voice/status');
 }

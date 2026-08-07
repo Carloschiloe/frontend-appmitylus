@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
   createCopilotSpeech,
+  getCopilotConversation,
   getCopilotVoiceStatus,
   resetCopilotConversation,
   streamCopilotCommand,
@@ -30,6 +31,11 @@ import {
   persistCopilotConversation,
   readCopilotConversation,
 } from '../utils/copilotConversationStorage';
+import {
+  applyCommandTransition,
+  isCommandConfirmable,
+  snapshotToHistory,
+} from '../utils/copilotActionState';
 import './CopilotPanel.css';
 
 const EXAMPLES = [
@@ -44,6 +50,10 @@ const MAX_RECORDING_MS = 15000;
 function statusLabel(status) {
   switch (status) {
     case 'executed': return 'Ejecutado';
+    case 'completed': return 'Completado';
+    case 'replaced': return 'Reemplazado';
+    case 'cancelled': return 'Cancelado';
+    case 'already_processing': return 'Ya en proceso';
     case 'needs_confirmation': return 'Requiere confirmación';
     case 'needs_clarification': return 'Falta información';
     case 'rejected': return 'Rechazado';
@@ -349,6 +359,9 @@ function buildClarifiedText(response, option, sourceText = '') {
   if (intent === 'query_history') return `Muéstrame el historial de ${target}`;
   if (intent === 'query_muestreos') return `Consulta últimos muestreos de ${target}`;
   if (intent === 'query_programa_cosecha') return `Consulta programa de cosecha de ${target}`;
+  if (intent === 'register_interaction' && /\bno\s+era\b/i.test(sourceText)) {
+    return `No era la entidad anterior, era ${target}`;
+  }
   if (intent === 'register_interaction') return `${sourceText}. El proveedor/contacto correcto es ${target}`;
   return `${sourceText || response?.message || 'Consulta'} ${target}`.trim();
 }
@@ -384,7 +397,7 @@ function CopilotResultEntry({
 }) {
   if (!response) return null;
   const intent = response.command?.intent || '';
-  const requiresConfirmation = response.status === 'needs_confirmation' && response.commandId;
+  const requiresConfirmation = isCommandConfirmable(response);
   const isConfirmingThis = confirmingId === response.commandId;
 
   return (
@@ -510,6 +523,7 @@ export default function CopilotPanel({ queryClient }) {
   const conversationScopeRef = React.useRef(null);
   const streamControllerRef = React.useRef(null);
   const recordingTimeoutRef = React.useRef(null);
+  const hydratedConversationRef = React.useRef(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -544,6 +558,16 @@ export default function CopilotPanel({ queryClient }) {
     conversationScopeRef.current = scope;
     conversationIdRef.current = stored;
     setHasConversation(Boolean(stored));
+    if (open && stored && hydratedConversationRef.current !== stored) {
+      getCopilotConversation(stored)
+        .then((snapshot) => {
+          hydratedConversationRef.current = stored;
+          setHistory((current) => current.length ? current : snapshotToHistory(snapshot));
+        })
+        .catch(() => {
+          // La sesión puede haber expirado; el próximo envío aplicará el manejo existente.
+        });
+    }
   }, [currentConversationScope, open]);
 
   React.useEffect(() => {
@@ -576,6 +600,11 @@ export default function CopilotPanel({ queryClient }) {
 
   function patchTurn(turnId, patchFn) {
     setHistory((prev) => prev.map((item) => (item.id === turnId ? patchFn(item) : item)));
+  }
+
+  function appendResultWithTransition(turnId, response, transitionResponse = response) {
+    setHistory((prev) => applyCommandTransition(prev, transitionResponse)
+      .map((item) => (item.id === turnId ? { ...item, results: [...item.results, response] } : item)));
   }
 
   function appendDictatedText(transcript) {
@@ -836,7 +865,7 @@ export default function CopilotPanel({ queryClient }) {
             patchTurn(assistantId, (item) => ({ ...item, narrative: event.data }));
           } else if (event.type === 'result') {
             const response = event.data;
-            patchTurn(assistantId, (item) => ({ ...item, results: [...item.results, response] }));
+            appendResultWithTransition(assistantId, response);
             if (response.status === 'executed') {
               refreshAppData();
               window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
@@ -907,10 +936,14 @@ export default function CopilotPanel({ queryClient }) {
             patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
           } else if (event.type === 'result') {
             const response = event.data;
-            patchTurn(assistantId, (item) => ({ ...item, results: [...item.results, response] }));
-            addToast({ type: 'success', title: 'Acción confirmada', message: response.message });
-            refreshAppData();
-            window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+            appendResultWithTransition(assistantId, response, { ...response, commandId: response.commandId || commandId });
+            if (['executed', 'completed'].includes(response.status)) {
+              addToast({ type: 'success', title: 'Acción confirmada', message: response.message });
+              refreshAppData();
+              window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+            } else {
+              addToast({ type: 'info', title: 'La propuesta cambió', message: response.message });
+            }
           } else if (event.type === 'error') {
             patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'No se pudo confirmar la acción.' }));
           }
@@ -949,6 +982,7 @@ export default function CopilotPanel({ queryClient }) {
         nextConversationId = result?.conversationId || null;
       }
       clearCopilotConversation(scope);
+      hydratedConversationRef.current = null;
       conversationIdRef.current = nextConversationId;
       setHasConversation(Boolean(nextConversationId));
       if (nextConversationId) persistCopilotConversation(scope, nextConversationId);
