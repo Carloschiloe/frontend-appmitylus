@@ -18,6 +18,30 @@ export const fmtTons = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximum
 export const fmtTonsInt = (n) => (Number(n) || 0).toLocaleString('es-CL', { maximumFractionDigits: 0 }) + ' t';
 export const fmtNumber = (n, digits = 1) => Number(n || 0).toLocaleString('es-CL', { maximumFractionDigits: digits });
 
+// Calibre registrado por proveedor, tomado de Disponibilidad (mes más reciente con dato).
+// El calibre de un programa no se mide en el muestreo de cosecha: viene de lo declarado
+// en la MMPP (Disponibilidad) del proveedor.
+export const buildCalibreByProveedor = (disp) => {
+  const map = new Map();
+  (disp || []).forEach((d) => {
+    if (d.calibreMin == null && d.calibreMax == null) return;
+    const nombre = d.proveedorNombre;
+    if (!nombre) return;
+    const prev = map.get(nombre);
+    if (!prev || String(d.mesKey || '') > String(prev.mesKey || '')) {
+      map.set(nombre, { calibreMin: d.calibreMin ?? null, calibreMax: d.calibreMax ?? null, mesKey: d.mesKey });
+    }
+  });
+  return map;
+};
+
+export const fmtCalibre = (calibre) => {
+  if (!calibre || (calibre.calibreMin == null && calibre.calibreMax == null)) return null;
+  return calibre.calibreMin != null && calibre.calibreMax != null
+    ? `${calibre.calibreMin}–${calibre.calibreMax} uk`
+    : `${calibre.calibreMin ?? calibre.calibreMax} uk`;
+};
+
 // Lee un número desde el primer alias presente; soporta strings con coma decimal.
 const pickNum = (obj, aliases) => {
   for (const k of aliases) {

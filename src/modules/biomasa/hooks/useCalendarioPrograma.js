@@ -4,6 +4,7 @@ import {
   SANITARIO_ORDER,
   getSanitarioEstado,
   isSanitarioRelevant,
+  buildCalibreByProveedor,
 } from '../utils/programaCalculos';
 import { addDaysToKey, dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
 import { esFechaEnVigencia } from '../utils/programaImpacto';
@@ -20,19 +21,7 @@ export function useCalendarioPrograma({
 }) {
   // ── Calibre registrado por proveedor (disponibilidad), para cuando el
   //    programa aún no tiene un muestreo propio ──────────────────────────────────
-  const calibreByProveedor = useMemo(() => {
-    const map = new Map();
-    (disp || []).forEach((d) => {
-      if (d.calibreMin == null && d.calibreMax == null) return;
-      const nombre = d.proveedorNombre;
-      if (!nombre) return;
-      const prev = map.get(nombre);
-      if (!prev || String(d.mesKey || '') > String(prev.mesKey || '')) {
-        map.set(nombre, { calibreMin: d.calibreMin ?? null, calibreMax: d.calibreMax ?? null, mesKey: d.mesKey });
-      }
-    });
-    return map;
-  }, [disp]);
+  const calibreByProveedor = useMemo(() => buildCalibreByProveedor(disp), [disp]);
   // ── Días del mes ──────────────────────────────────────────────────────────────
   const monthData = useMemo(() => {
     if (!mes) return { days: [], padding: 0 };
@@ -488,6 +477,7 @@ export function useCalendarioPrograma({
   return {
     monthData,
     weekDays,
+    calibreByProveedor,
     programasById,
     programasFiltrados,
     filteredProgramIds,

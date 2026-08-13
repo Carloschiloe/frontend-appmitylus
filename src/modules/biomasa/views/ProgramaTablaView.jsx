@@ -25,7 +25,7 @@ import {
 } from '../utils/productoLabels';
 import {
   fmtTonsInt, fmtNumber, calcTotalToneladasDia,
-  getProgramVolumeProgress, getEffectiveTonsPerTruck,
+  getProgramVolumeProgress, getEffectiveTonsPerTruck, fmtCalibre,
 } from '../utils/programaCalculos';
 import CentroCodeBadge from '../../../components/CentroCodeBadge';
 import ProgramaEstadoBadge from '../components/ProgramaEstadoBadge';
@@ -41,6 +41,7 @@ export default function ProgramaTablaView({
   tonsPerTruck,
   getProgramCamionesStatus,
   tratosAcordados,
+  calibreByProveedor,
   handleOpenModal,
   handleOpenFinalizeModal,
   handleStatusChange,
@@ -213,7 +214,7 @@ export default function ProgramaTablaView({
                   </td>
 
                   <td className="harvest-prog-calibre-cell" data-label="Calibre">
-                    {Number(p.uxkg) > 0 ? `${Math.round(Number(p.uxkg))} un/kg` : <span style={{ color: 'var(--color-text-subtle)' }}>—</span>}
+                    {fmtCalibre(calibreByProveedor?.get(p.proveedorNombre)) || <span style={{ color: 'var(--color-text-subtle)' }}>—</span>}
                   </td>
 
                   <td className="harvest-prog-rendimiento-cell" data-label="Rendimiento">

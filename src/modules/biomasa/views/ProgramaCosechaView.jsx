@@ -30,6 +30,7 @@ export default function ProgramaCosechaView({
   calData,
   notasDia,
   tratosAcordados,
+  calibreByProveedor,
   handleOpenModal,
   handleOpenAdjustModal,
   handleOpenFinalizeModal,
@@ -65,6 +66,7 @@ export default function ProgramaCosechaView({
           tonsPerTruck={tonsPerTruck}
           getProgramCamionesStatus={getProgramCamionesStatus}
           tratosAcordados={tratosAcordados}
+          calibreByProveedor={calibreByProveedor}
           handleOpenModal={handleOpenModal}
           handleOpenFinalizeModal={handleOpenFinalizeModal}
           handleStatusChange={handleStatusChange}

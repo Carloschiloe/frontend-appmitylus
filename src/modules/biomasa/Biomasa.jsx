@@ -124,6 +124,7 @@ export default function Biomasa() {
   const {
     monthData,
     weekDays,
+    calibreByProveedor,
     programasById,
     filteredProgramIds,
     enrichCalendarItem,
@@ -384,6 +385,7 @@ export default function Biomasa() {
               calData={calData}
               notasDia={notasDia}
               tratosAcordados={tratosAcordados}
+              calibreByProveedor={calibreByProveedor}
               handleOpenModal={handleOpenModal}
               handleOpenAdjustModal={handleOpenAdjustModal}
               handleOpenFinalizeModal={handleOpenFinalizeModal}
