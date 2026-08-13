@@ -66,6 +66,7 @@ const ESTADO_COMERCIAL_LABELS = {
 };
 
 const PROVIDER_SORT_GETTERS = {
+  fechaIngreso: (p) => (p.fechaIngreso ? new Date(p.fechaIngreso).getTime() : 0),
   nombre: (p) => (p.nombre || '').toLowerCase(),
   contacto: (p) => (p.contactoPrincipal || '').toLowerCase(),
   estado: (p) => (STATUS_META[p.seguimientoEstado || 'none']?.label || '').toLowerCase(),
@@ -87,6 +88,12 @@ const SortableTh = ({ label, sortKey, sortConfig, onSort, className }) => {
 
 function normalizeKey(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function earlierDate(a, b) {
+  if (!a) return b || '';
+  if (!b) return a;
+  return new Date(a) < new Date(b) ? a : b;
 }
 
 function formatShortDate(value) {
@@ -155,12 +162,14 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         ultimaInteraccionResumen: '',
         ultimaInteraccionFecha: '',
         ultimoResponsable: '',
+        fechaIngreso: centro.createdAt || '',
       });
     }
 
     const item = providers.get(key);
     item.centros += 1;
     if ((!item.comuna || item.comuna === '-') && centro.comuna) item.comuna = centro.comuna;
+    item.fechaIngreso = earlierDate(item.fechaIngreso, centro.createdAt);
   });
 
   // Empresas registradas como Proveedor propiamente (independiente de sus
@@ -191,6 +200,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
         ultimaInteraccionResumen: '',
         ultimaInteraccionFecha: '',
         ultimoResponsable: '',
+        fechaIngreso: prov.createdAt || '',
       });
     }
     const item = providers.get(key);
@@ -201,6 +211,7 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     item.registradoManualmente = true;
     if (!item.contactoTelefono && prov.telefono) item.contactoTelefono = prov.telefono;
     if (!item.contactoEmail && prov.email) item.contactoEmail = prov.email;
+    item.fechaIngreso = earlierDate(item.fechaIngreso, prov.createdAt);
   });
 
   const contactsByProvider = new Map();
@@ -281,7 +292,10 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     if (!provider.tipoFromProveedorDoc && providerContacts.some((c) => c.tipo === 'comercializadora')) {
       provider.tipo = 'comercializadora';
     }
-    provider.fechaIngreso = earliestContact?.createdAt || '';
+    // Fecha de registro: la mas antigua entre centro/Proveedor (ya seteadas
+    // arriba) y el primer contacto — cualquiera de esos caminos "registra"
+    // al proveedor por primera vez.
+    provider.fechaIngreso = earlierDate(provider.fechaIngreso, earliestContact?.createdAt);
     provider.ingresadoPor = earliestContact?.creadoPor || earliestContact?.createdBy || earliestContact?.responsable || '';
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
     if (firstContact) {
@@ -1008,6 +1022,7 @@ export default function Directorio() {
             <thead>
               {tab === 'proveedores' ? (
                 <tr>
+                  <SortableTh label="Fecha de registro" sortKey="fechaIngreso" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-fecha-registro" />
                   <SortableTh label="Proveedor" sortKey="nombre" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-provider" />
                   <SortableTh label="Contacto principal" sortKey="contacto" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-main-contact" />
                   <SortableTh label="Estado comercial" sortKey="estado" sortConfig={providerSortConfig} onSort={handleProviderSort} className="dir-col-followup" />
@@ -1046,6 +1061,9 @@ export default function Directorio() {
 
                   return (
                     <tr key={provider.providerKey} className={`dir-row-${provider.seguimientoEstado || 'none'}`}>
+                      <td data-label="Fecha de registro">
+                        <div className="dir-muted-note">{formatShortDate(provider.fechaIngreso)}</div>
+                      </td>
                       <td data-label="Proveedor">
                         <div className="dir-provider-cell">
                           <div className={`dir-provider-avatar is-${provider.seguimientoEstado || 'none'}`}>
