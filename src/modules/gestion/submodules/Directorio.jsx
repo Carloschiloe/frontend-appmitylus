@@ -32,12 +32,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../../api/apiClient';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
-import { 
-  useCentros, 
-  useContactos, 
-  useOportunidades, 
+import {
+  useCentros,
+  useContactos,
+  useOportunidades,
   useInteracciones,
-  useMuestreos
+  useMuestreos,
+  useProveedores
 } from '../hooks/useGestionQueries';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import ProviderMapModal from './ProviderMapModal';
@@ -127,7 +128,7 @@ function contactEmail(contact) {
   return contact?.contactoEmail || contact?.email || '';
 }
 
-function buildProviderRows(centros = [], contactos = [], oportunidades = [], interacciones = [], muestreos = []) {
+function buildProviderRows(centros = [], contactos = [], oportunidades = [], interacciones = [], muestreos = [], proveedores = []) {
   const providers = new Map();
 
   centros.forEach((centro, index) => {
@@ -160,6 +161,46 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     const item = providers.get(key);
     item.centros += 1;
     if ((!item.comuna || item.comuna === '-') && centro.comuna) item.comuna = centro.comuna;
+  });
+
+  // Empresas registradas como Proveedor propiamente (independiente de sus
+  // contactos/centros) — su `tipo` es la fuente de verdad, y su sola
+  // existencia cuenta como "actividad" para que se sigan mostrando aunque
+  // todavia no tengan ningun contacto asociado (ver filtro final).
+  proveedores.forEach((prov) => {
+    const nombre = String(prov.nombre || '').trim() || 'Proveedor sin nombre';
+    const key = normalizeKey(prov.proveedorKey || nombre);
+    if (!providers.has(key)) {
+      providers.set(key, {
+        nombre,
+        key: prov.proveedorKey || '',
+        providerKey: key,
+        primaryCenterId: '',
+        primaryCenterCode: '',
+        centros: 0,
+        comuna: '-',
+        tipo: '',
+        totalContactos: 0,
+        contactoPrincipal: '',
+        contactoTelefono: '',
+        contactoEmail: '',
+        seguimientoEstado: '',
+        estadoComercial: '',
+        proximaAccion: '',
+        fechaProximaAccion: '',
+        ultimaInteraccionResumen: '',
+        ultimaInteraccionFecha: '',
+        ultimoResponsable: '',
+      });
+    }
+    const item = providers.get(key);
+    item.proveedorId = prov._id;
+    item.razonSocial = prov.razonSocial || '';
+    item.tipo = prov.tipo || 'titular';
+    item.tipoFromProveedorDoc = true;
+    item.registradoManualmente = true;
+    if (!item.contactoTelefono && prov.telefono) item.contactoTelefono = prov.telefono;
+    if (!item.contactoEmail && prov.email) item.contactoEmail = prov.email;
   });
 
   const contactsByProvider = new Map();
@@ -234,12 +275,19 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
     const earliestContact = sortedContacts[0] || null;
 
     provider.totalContactos = providerContacts.length;
-    if (providerContacts.some((c) => c.tipo === 'comercializadora')) provider.tipo = 'comercializadora';
+    // Si la empresa tiene un Proveedor registrado, su `tipo` es la fuente de
+    // verdad (independiente de sus contactos) — el heuristico viejo basado en
+    // contactos solo se aplica a empresas que aun no tienen un registro propio.
+    if (!provider.tipoFromProveedorDoc && providerContacts.some((c) => c.tipo === 'comercializadora')) {
+      provider.tipo = 'comercializadora';
+    }
     provider.fechaIngreso = earliestContact?.createdAt || '';
     provider.ingresadoPor = earliestContact?.creadoPor || earliestContact?.createdBy || earliestContact?.responsable || '';
     provider.contactoPrincipal = contactName(firstContact) || 'Primer contacto pendiente';
-    provider.contactoTelefono = contactPhone(firstContact);
-    provider.contactoEmail = contactEmail(firstContact);
+    if (firstContact) {
+      provider.contactoTelefono = contactPhone(firstContact);
+      provider.contactoEmail = contactEmail(firstContact);
+    }
     // Si no hay un Trato abierto, el seguimiento registrado vía "Acción rápida"
     // (Interacción con proximoPaso/fechaProximo/estado) es la fuente válida más reciente.
     provider.seguimientoEstado = latestOpportunity?.seguimientoEstado || latestInteraction?.estado || '';
@@ -266,8 +314,10 @@ function buildProviderRows(centros = [], contactos = [], oportunidades = [], int
 
   // 4. Filtrar para mostrar solo los que tienen alguna actividad (contactos, oportunidades, interacciones o muestreos)
   // Esto evita mostrar el "directorio global" de 1000+ empresas sin relacion.
+  // Una empresa registrada explicitamente como Proveedor cuenta como actividad
+  // por si sola, aunque todavia no tenga contactos ni gestiones.
   return Array.from(providers.values())
-    .filter(p => p.totalContactos > 0 || p.seguimientoEstado || p.ultimaInteraccionFecha)
+    .filter(p => p.totalContactos > 0 || p.seguimientoEstado || p.ultimaInteraccionFecha || p.registradoManualmente)
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
@@ -316,8 +366,9 @@ export default function Directorio() {
   const { data: oportunidadesRaw, isLoading: loadingOpp, refetch: refetchOpp } = useOportunidades();
   const { data: interaccionesRaw, isLoading: loadingInt, refetch: refetchInt } = useInteracciones({ limit: 500 });
   const { data: muestreosRaw, isLoading: loadingMuestreos, refetch: refetchMuestreos } = useMuestreos();
+  const { data: proveedoresRaw, isLoading: loadingProveedores, refetch: refetchProveedores } = useProveedores();
 
-  const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt || loadingMuestreos;
+  const loading = loadingCentros || loadingContactos || loadingOpp || loadingInt || loadingMuestreos || loadingProveedores;
 
   const loadData = useCallback(async () => {
     // Usamos queryClient para invalidar cache si estuviera disponible, pero refetch funciona
@@ -327,8 +378,9 @@ export default function Directorio() {
       refetchOpp(),
       refetchInt(),
       refetchMuestreos(),
+      refetchProveedores(),
     ]);
-  }, [refetchCentros, refetchContactos, refetchOpp, refetchInt, refetchMuestreos]);
+  }, [refetchCentros, refetchContactos, refetchOpp, refetchInt, refetchMuestreos, refetchProveedores]);
 
   useEffect(() => {
     const refreshContacts = () => refetchContactos();
@@ -343,15 +395,16 @@ export default function Directorio() {
     const oportunidades = Array.isArray(oportunidadesRaw) ? oportunidadesRaw : (oportunidadesRaw?.items || []);
     const interacciones = Array.isArray(interaccionesRaw) ? interaccionesRaw : (interaccionesRaw?.items || []);
     const muestreos = Array.isArray(muestreosRaw) ? muestreosRaw : (muestreosRaw?.items || []);
+    const proveedores = Array.isArray(proveedoresRaw) ? proveedoresRaw : (proveedoresRaw?.items || []);
 
-    const allProviders = buildProviderRows(centros, contactos, oportunidades, interacciones, muestreos);
-    
+    const allProviders = buildProviderRows(centros, contactos, oportunidades, interacciones, muestreos, proveedores);
+
     return {
       proveedores: allProviders.filter(p => !deletedProviders.has(p.providerKey) && !deletedProviders.has(p.key)),
       contactos: contactos.filter(c => !deletedContacts.has(c._id)),
       centros,
     };
-  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw, deletedProviders, deletedContacts]);
+  }, [centrosRaw, contactosRaw, oportunidadesRaw, interaccionesRaw, muestreosRaw, proveedoresRaw, deletedProviders, deletedContacts]);
 
   const [detailModal, setDetailModal] = useState({ open: false, provider: null });
   const [mapModal, setMapModal] = useState({ open: false, provider: null });
@@ -646,19 +699,31 @@ export default function Directorio() {
     const contactNombre = String(fd.get('contactNombre') || '').trim();
     const email = String(fd.get('email') || '').trim();
     const telefono = String(fd.get('telefono') || '').trim();
+    const razonSocial = String(fd.get('razonSocial') || '').trim();
     try {
-      await apiClient.post('/contactos', {
-        nombre: contactNombre || addProviderSelected.nombre,
-        contactoNombre: contactNombre || addProviderSelected.nombre,
-        contactoEmail: email,
-        contactoTelefono: telefono,
+      // El proveedor (la empresa) se registra siempre, independiente de si se
+      // carga un contacto — son dos entidades separadas.
+      await apiClient.post('/proveedores', {
+        nombre: addProviderSelected.nombre,
+        razonSocial,
         proveedorKey: addProviderSelected.key,
-        proveedorNombre: addProviderSelected.nombre,
-        entidad: addProviderSelected.nombre,
         centroCodigo: addProviderSelected.centros?.[0] || '',
         tipo: addProviderTipo,
-        creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
       });
+      // El contacto (persona) solo se crea si el usuario efectivamente cargo
+      // algun dato de contacto — nunca se inventa uno con el nombre de la empresa.
+      if (contactNombre || email || telefono) {
+        await apiClient.post('/contactos', {
+          contactoNombre: contactNombre,
+          contactoEmail: email,
+          contactoTelefono: telefono,
+          proveedorKey: addProviderSelected.key,
+          proveedorNombre: addProviderSelected.nombre,
+          centroCodigo: addProviderSelected.centros?.[0] || '',
+          tipo: addProviderTipo,
+          creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
+        });
+      }
       const nombreRegistrado = addProviderSelected.nombre;
       setShowAddProviderModal(false);
       setAddProviderStep(1);
@@ -669,7 +734,7 @@ export default function Directorio() {
     } catch (err) {
       addToast({ title: 'Error', message: err?.data?.error || err?.message || 'No se pudo agregar el proveedor.', type: 'error' });
     }
-  }, [addProviderSelected, addToast, loadData]);
+  }, [addProviderSelected, addProviderTipo, user, addToast, loadData]);
 
   const openCreateModal = useCallback(() => {
     if (tab === 'proveedores') {
@@ -786,26 +851,16 @@ export default function Directorio() {
           if (modalState.item?.primaryCenterId) {
             await apiClient.patch(`/centros/${modalState.item.primaryCenterId}`, centroPayload);
           }
-          // Actualizar tipo en los contactos del proveedor
-          const providerKey = normalizeKey(modalState.item?.key || modalState.item?.providerKey || '');
-          if (providerKey) {
-            const providerContactos = (data.contactos || []).filter(
-              (c) => normalizeKey(c.proveedorKey || c.proveedorNombre) === providerKey
-            );
-            if (providerContactos.length > 0) {
-              await Promise.all(providerContactos.map((c) =>
-                apiClient.patch(`/contactos/${c._id}`, { tipo: editProviderTipo || 'titular' })
-              ));
-            } else if (editProviderTipo === 'comercializadora') {
-              await apiClient.post('/contactos', {
-                nombre: payload.nombre,
-                contactoNombre: payload.nombre,
-                proveedorKey: modalState.item.key || modalState.item.providerKey || '',
-                proveedorNombre: payload.nombre,
-                tipo: 'comercializadora',
-                creadoPor: user?.nombre || user?.email?.split('@')[0] || '',
-              });
-            }
+          // El tipo de la EMPRESA se guarda en su propio registro de Proveedor
+          // (upsert por proveedorKey) — nunca en sus contactos, que son
+          // personas independientes y no deberian cambiar por esto.
+          const providerKeyRaw = modalState.item?.key || modalState.item?.providerKey || '';
+          if (providerKeyRaw) {
+            await apiClient.post('/proveedores', {
+              nombre: payload.nombre,
+              proveedorKey: providerKeyRaw,
+              tipo: editProviderTipo || 'titular',
+            });
           }
         } else {
           await apiClient.post('/centros', centroPayload);
@@ -1605,24 +1660,39 @@ export default function Directorio() {
                   </p>
                 )}
 
-                {/* Opción comercializadora */}
+                {/* Opciones para una empresa que todavia no existe en el listado */}
                 <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
                   <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
-                    ¿No aparece en el listado? Puede ser una comercializadora sin concesiones propias.
+                    ¿No aparece en el listado? Registra la empresa manualmente.
                   </p>
-                  <button
-                    type="button"
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', fontSize: '0.87rem', fontWeight: 600, color: 'var(--color-text)' }}
-                    onClick={() => {
-                      const nombre = addProviderQuery.trim() || 'Nueva comercializadora';
-                      setAddProviderSelected({ nombre, key: nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-'), centros: [], comunas: [] });
-                      setAddProviderTipo('comercializadora');
-                      setAddProviderStep(2);
-                    }}
-                  >
-                    <Building2 size={15} />
-                    Registrar como comercializadora
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', fontSize: '0.87rem', fontWeight: 600, color: 'var(--color-text)' }}
+                      onClick={() => {
+                        const nombre = addProviderQuery.trim() || 'Nuevo proveedor';
+                        setAddProviderSelected({ nombre, key: nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-'), centros: [], comunas: [] });
+                        setAddProviderTipo('titular');
+                        setAddProviderStep(2);
+                      }}
+                    >
+                      <Building2 size={15} />
+                      Registrar como proveedor (titular)
+                    </button>
+                    <button
+                      type="button"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', fontSize: '0.87rem', fontWeight: 600, color: 'var(--color-text)' }}
+                      onClick={() => {
+                        const nombre = addProviderQuery.trim() || 'Nueva comercializadora';
+                        setAddProviderSelected({ nombre, key: nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-'), centros: [], comunas: [] });
+                        setAddProviderTipo('comercializadora');
+                        setAddProviderStep(2);
+                      }}
+                    >
+                      <Building2 size={15} />
+                      Registrar como comercializadora
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1643,6 +1713,11 @@ export default function Directorio() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div className="mx-form-group">
+                    <label className="mx-label">Razón social / entidad que factura (si es distinta)</label>
+                    <input name="razonSocial" className="mx-input" placeholder="Ej: Comercial Los Lagos Ltda." />
                   </div>
 
                   <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>

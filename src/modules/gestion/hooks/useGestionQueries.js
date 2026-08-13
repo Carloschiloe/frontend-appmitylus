@@ -144,6 +144,18 @@ export function useContactos(filters = {}, options = {}) {
 }
 
 /**
+ * Hook para obtener proveedores (registro propio, independiente de contactos).
+ */
+export function useProveedores(options = {}) {
+  return useQuery({
+    queryKey: ['proveedores'],
+    queryFn: ({ signal }) => apiClient.get('/proveedores', { signal }),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+/**
  * Hook para obtener tratos (negociaciones avanzadas).
  */
 export function useTratos(options = {}) {

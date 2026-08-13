@@ -130,7 +130,7 @@ function initialState() {
   };
 }
 
-function buildProviderDirectory(centros = [], contactos = []) {
+function buildProviderDirectory(centros = [], contactos = [], proveedores = []) {
   // Todos los contactos por proveedor (no solo el primero), para que la busqueda
   // por nombre/telefono/email de CUALQUIER contacto encuentre a su empresa.
   const contactsByKey = new Map();
@@ -193,6 +193,28 @@ function buildProviderDirectory(centros = [], contactos = []) {
       contactoTelefono: item.contactoTelefono || '',
       contactoEmail: item.contactoEmail || '',
       contactosSearchText: `${item.contactoNombre || item.nombre || ''} ${item.contactoTelefono || ''} ${item.contactoEmail || ''}`,
+      comuna: '',
+      centros: 0,
+    });
+  });
+
+  // Empresas registradas como Proveedor propiamente, aunque todavia no
+  // tengan ningun centro ni contacto asociado (recien creadas como "titular"
+  // o "comercializadora" desde el Directorio).
+  proveedores.forEach((prov) => {
+    const key = String(prov.proveedorKey || '').trim().toLowerCase();
+    if (key && providers.has(key)) return;
+    const soloId = key || `proveedor-${prov._id}`;
+    if (providers.has(soloId)) return;
+    providers.set(soloId, {
+      id: soloId,
+      contactoId: '',
+      proveedorKey: prov.proveedorKey || '',
+      proveedorNombre: prov.nombre || '',
+      contactoNombre: '',
+      contactoTelefono: prov.telefono || '',
+      contactoEmail: prov.email || '',
+      contactosSearchText: '',
       comuna: '',
       centros: 0,
     });
@@ -262,15 +284,17 @@ export default function QuickCaptureModal() {
     async function loadProviders() {
       setLoadingProviders(true);
       try {
-        const [centrosRes, contactosRes] = await Promise.all([
+        const [centrosRes, contactosRes, proveedoresRes] = await Promise.all([
           apiClient.get('/centros', { signal: controller.signal }),
           apiClient.get('/contactos', { signal: controller.signal }),
+          apiClient.get('/proveedores', { signal: controller.signal }),
         ]);
 
         if (!cancelled) {
           const centros = Array.isArray(centrosRes) ? centrosRes : (centrosRes.items || []);
           const contactos = Array.isArray(contactosRes) ? contactosRes : (contactosRes.items || []);
-          setProviders(buildProviderDirectory(centros, contactos));
+          const proveedores = Array.isArray(proveedoresRes) ? proveedoresRes : (proveedoresRes.items || []);
+          setProviders(buildProviderDirectory(centros, contactos, proveedores));
         }
       } catch (error) {
         if (error.name === 'AbortError') return;
