@@ -343,8 +343,12 @@
   overflow: hidden;
 }
 
+.dir-col-fecha-registro {
+  width: 11%;
+}
+
 .dir-col-provider {
-  width: 26%;
+  width: 24%;
 }
 
 .dir-th-sort {
@@ -383,11 +387,11 @@
 }
 
 .dir-col-main-contact {
-  width: 17%;
+  width: 16%;
 }
 
 .dir-col-last {
-  width: 13%;
+  width: 12%;
 }
 
 .dir-col-followup,
@@ -396,7 +400,7 @@
 }
 
 .dir-col-next {
-  width: 16%;
+  width: 14%;
 }
 
 .dir-col-actions {
