@@ -251,7 +251,6 @@ export default function DisponibilidadModal({
       centroId: form.centroId,
       responsable: form.responsable || responsableNombre,
       producto: form.producto,
-      estado: item ? form.estado : 'disponible',
       origen: form.origen,
       observacion: form.observacion,
       motivo: form.motivo,
@@ -282,9 +281,12 @@ export default function DisponibilidadModal({
     }
     onSave(form.mesesRows.map((row, index) => ({
       ...sharedFields(),
-      // En edición: el estado del form aplica solo al primer registro (el que se edita)
-      // Los nuevos registros añadidos arrancan como 'disponible'
-      estado: item && index > 0 ? 'disponible' : sharedFields().estado,
+      // El estado de un registro YA EXISTENTE no se edita a mano: lo
+      // mantiene el backend, recalculado siempre desde el trato vinculado
+      // (ver syncDisponibilidadEstado). No se envia para no pisarlo con un
+      // valor viejo. Las filas nuevas (agregadas al editar, o toda
+      // creacion) arrancan en 'disponible'.
+      estado: item && index === 0 ? undefined : 'disponible',
       mesKey: row.mesKey,
       tonsDisponible: Number(row.tonsDisponible),
       calibreMin: row.calibreMin ? Number(row.calibreMin) : null,
@@ -484,15 +486,6 @@ export default function DisponibilidadModal({
                 {DISPONIBILIDAD_ORIGENES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </label>
-
-            {item && (
-              <label className="mx-form-group">
-                <span className="mx-form-label">Estado del registro editado</span>
-                <select className="mx-select" value={form.estado} onChange={(e) => update('estado', e.target.value)}>
-                  {DISPONIBILIDAD_ESTADOS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </label>
-            )}
 
             <label className="mx-form-group disponibilidad-field-wide">
               <span className="mx-form-label">Observación</span>
