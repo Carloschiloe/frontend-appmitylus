@@ -317,9 +317,14 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const handleSave = async (payloads) => {
     setSaving(true);
     try {
+      let cascade = null;
       for (let i = 0; i < payloads.length; i++) {
-        if (modalItem?._id && i === 0) await editarDisponibilidad(modalItem._id, payloads[i]);
-        else await crearDisponibilidad(payloads[i]);
+        if (modalItem?._id && i === 0) {
+          const res = await editarDisponibilidad(modalItem._id, payloads[i]);
+          cascade = res?.cascade || null;
+        } else {
+          await crearDisponibilidad(payloads[i]);
+        }
       }
       closeModal();
       setAnnualReloadKey((current) => current + 1);
@@ -335,6 +340,16 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
           : `${first.proveedorNombre || first.contactoNombre}: ${payloads.map((p) => mesLabel(p.mesKey)).join(', ')}.`,
         type: 'success',
       });
+      if (cascade?.tratoAjustado) {
+        const partes = [`Trato: ${cascade.tonsAcordadasAntes} t → ${cascade.tonsAcordadasDespues} t.`];
+        if (cascade.programaAjustado) {
+          partes.push(`Programa activo: ${cascade.camionesAntes} → ${cascade.camionesDespues} camiones.`);
+        }
+        addToast({ title: 'Cambio propagado', message: partes.join(' '), type: 'info' });
+      }
+      if (cascade?.warning) {
+        addToast({ title: 'Revisa el trato/programa', message: cascade.warning, type: 'warning' });
+      }
     } catch (error) {
       addToast({ title: 'No se pudo guardar', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
     } finally {
