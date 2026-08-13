@@ -295,6 +295,48 @@ export default function TratoFormModal({
               );
             })()}
 
+            {editingId && (
+              <div className="tratos-cierre-section">
+                <label className="mx-label">Estado del trato</label>
+                <div className="tratos-cierre-toggle">
+                  <button
+                    type="button"
+                    className={`tratos-cierre-btn${!form.estadoCierre ? ' is-active' : ''}`}
+                    onClick={() => onFormChange({ ...form, estadoCierre: '', motivoCierre: '' })}
+                  >
+                    En negociación
+                  </button>
+                  <button
+                    type="button"
+                    className={`tratos-cierre-btn${form.estadoCierre === 'perdido' ? ' is-active-danger' : ''}`}
+                    onClick={() => onFormChange({ ...form, estadoCierre: 'perdido' })}
+                  >
+                    Perdido
+                  </button>
+                  <button
+                    type="button"
+                    className={`tratos-cierre-btn${form.estadoCierre === 'descartado' ? ' is-active-danger' : ''}`}
+                    onClick={() => onFormChange({ ...form, estadoCierre: 'descartado' })}
+                  >
+                    Descartado
+                  </button>
+                </div>
+                {['perdido', 'descartado'].includes(form.estadoCierre) && (
+                  <div className="mx-form-group" style={{ marginTop: 10 }}>
+                    <label className="mx-label">Motivo</label>
+                    <textarea
+                      className="mx-textarea"
+                      rows="2"
+                      value={form.motivoCierre || ''}
+                      onChange={e => onFormChange({ ...form, motivoCierre: e.target.value })}
+                      placeholder="Indica por qué el trato se perdió o fue descartado"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="mx-form-group">
               <label className="mx-label">Notas</label>
               <textarea

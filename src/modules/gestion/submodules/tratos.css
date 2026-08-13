@@ -455,6 +455,42 @@
   font-size: 0.88rem;
 }
 
+.tratos-cierre-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.tratos-cierre-toggle {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.tratos-cierre-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tratos-cierre-btn.is-active {
+  border-color: var(--color-primary);
+  background: rgba(10, 92, 255, 0.08);
+  color: var(--color-primary);
+}
+
+.tratos-cierre-btn.is-active-danger {
+  border-color: var(--color-danger);
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--color-danger);
+}
+
 .tratos-provider-readonly {
   margin-top: 8px;
   border: 1px solid var(--color-border);
