@@ -49,13 +49,13 @@ export function useCalendarioPrograma({
     };
   }, [mes]);
 
-  // ── Días de la semana activa (lunes → domingo, hora Chile) ────────────────────
+  // ── Días de la semana activa (domingo → sábado, hora Chile) ────────────────────
   const weekDays = useMemo(() => {
     const today = todayKey();
     const dow = dayOfWeekFromKey(today); // 0=domingo … 6=sábado
-    const diffToMonday = dow === 0 ? -6 : 1 - dow; // retrocede hasta el lunes de esta semana
-    const monday = addDaysToKey(today, diffToMonday + currentWeekOffset * 7);
-    return Array.from({ length: 7 }, (_, i) => addDaysToKey(monday, i));
+    const diffToSunday = -dow; // retrocede hasta el domingo de esta semana
+    const sunday = addDaysToKey(today, diffToSunday + currentWeekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => addDaysToKey(sunday, i));
   }, [currentWeekOffset]);
 
   // ── Índice de programas ───────────────────────────────────────────────────────
