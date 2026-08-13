@@ -36,6 +36,7 @@ import DisponibilidadTratoModal from './DisponibilidadTratoModal';
 import DisponibilidadProviderCell from './DisponibilidadProviderCell';
 import DisponibilidadResumen from './DisponibilidadResumen';
 import DisponibilidadEditTratoModal from './DisponibilidadEditTratoModal';
+import DisponibilidadCascadeModal from './DisponibilidadCascadeModal';
 import DisponibilidadSimulador from './DisponibilidadSimulador';
 import { maestrosApi } from '../../../api/api-maestros';
 import CentroCodeBadge from '../../../components/CentroCodeBadge';
@@ -100,6 +101,7 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
   const [tratoItem, setTratoItem] = useState(null);
   const [editTratoId, setEditTratoId] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
+  const [cascadeResult, setCascadeResult] = useState(null);
   const [activeTab, setActiveTab] = useState('listado');
   const [annualItems, setAnnualItems] = useState([]);
   const [annualLoading, setAnnualLoading] = useState(false);
@@ -331,24 +333,20 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       const first = payloads[0];
       if (payloads.length === 1 && first.mesKey !== mes) setMes(first.mesKey);
       else await reload();
-      addToast({
-        title: modalItem
-          ? (payloads.length > 1 ? `Actualizado + ${payloads.length - 1} nuevo${payloads.length - 1 !== 1 ? 's' : ''} registrado${payloads.length - 1 !== 1 ? 's' : ''}` : 'Disponibilidad actualizada')
-          : (payloads.length > 1 ? `${payloads.length} disponibilidades registradas` : 'Disponibilidad registrada'),
-        message: payloads.length === 1
-          ? `${first.proveedorNombre || first.contactoNombre}: ${fmtTons(first.tonsDisponible)} para ${mesLabel(first.mesKey)}.`
-          : `${first.proveedorNombre || first.contactoNombre}: ${payloads.map((p) => mesLabel(p.mesKey)).join(', ')}.`,
-        type: 'success',
-      });
-      if (cascade?.tratoAjustado) {
-        const partes = [`Trato: ${cascade.tonsAcordadasAntes} t → ${cascade.tonsAcordadasDespues} t.`];
-        if (cascade.programaAjustado) {
-          partes.push(`Programa activo: ${cascade.camionesAntes} → ${cascade.camionesDespues} camiones.`);
-        }
-        addToast({ title: 'Cambio propagado', message: partes.join(' '), type: 'info' });
-      }
-      if (cascade?.warning) {
-        addToast({ title: 'Revisa el trato/programa', message: cascade.warning, type: 'warning' });
+      if (cascade) {
+        // El modal de cascada ya muestra el cambio de disponibilidad + trato +
+        // programa junto, así que reemplaza al toast rápido en este caso.
+        setCascadeResult(cascade);
+      } else {
+        addToast({
+          title: modalItem
+            ? (payloads.length > 1 ? `Actualizado + ${payloads.length - 1} nuevo${payloads.length - 1 !== 1 ? 's' : ''} registrado${payloads.length - 1 !== 1 ? 's' : ''}` : 'Disponibilidad actualizada')
+            : (payloads.length > 1 ? `${payloads.length} disponibilidades registradas` : 'Disponibilidad registrada'),
+          message: payloads.length === 1
+            ? `${first.proveedorNombre || first.contactoNombre}: ${fmtTons(first.tonsDisponible)} para ${mesLabel(first.mesKey)}.`
+            : `${first.proveedorNombre || first.contactoNombre}: ${payloads.map((p) => mesLabel(p.mesKey)).join(', ')}.`,
+          type: 'success',
+        });
       }
     } catch (error) {
       addToast({ title: 'No se pudo guardar', message: error.message || 'Revisa los datos e intenta nuevamente.', type: 'error' });
@@ -648,6 +646,10 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
         tratoId={editTratoId}
         onClose={() => setEditTratoId(null)}
         onSuccess={reload}
+      />
+      <DisponibilidadCascadeModal
+        cascade={cascadeResult}
+        onClose={() => setCascadeResult(null)}
       />
       <ConfirmDeleteModal
         isOpen={Boolean(deleteItem)}
