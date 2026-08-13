@@ -88,6 +88,9 @@ export function useBiomasaData(mes, viewContext = {}) {
         if (progSubTab === 'programa') {
           promises.push(apiClient.get('/programa-cosecha/tratos-acordados', { signal }).catch(() => ({ items: [] })));
           keys.push('tratosRes');
+          // Calibre registrado por proveedor (disponibilidad), para la columna Calibre de la tabla.
+          promises.push(getDisponibilidades({ from: '2020-01', to: '2035-12' }).catch(() => []));
+          keys.push('disp');
         }
       }
 
