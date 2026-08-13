@@ -5699,12 +5699,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .harvest-prog-table { table-layout: fixed; width: 100%; }
 
 /* Anchos de columna */
-.harvest-prog-col-provider { width: 210px; }
-.harvest-prog-col-volume   { width: 155px; }
-.harvest-prog-col-period   { width: 115px; }
-.harvest-prog-col-product  { width: 160px; }
-.harvest-prog-col-status   { width: 155px; }
-.harvest-prog-col-actions  { width: 170px; text-align: right; }
+.harvest-prog-col-provider    { width: 200px; }
+.harvest-prog-col-volume      { width: 145px; }
+.harvest-prog-col-period      { width: 110px; }
+.harvest-prog-col-product     { width: 150px; }
+.harvest-prog-col-calibre     { width: 90px; }
+.harvest-prog-col-rendimiento { width: 100px; }
+.harvest-prog-col-status      { width: 145px; }
+.harvest-prog-col-actions     { width: 60px; text-align: right; }
 
 /* Fila finalizado */
 .harvest-prog-row.is-finalizado > td { opacity: 0.52; }
@@ -5735,6 +5737,36 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.harvest-prog-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.harvest-prog-name-row .harvest-prog-name { flex: 1; min-width: 0; }
+.harvest-prog-nota-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-warning-bg, #fffbeb);
+  color: var(--color-warning, #d97706);
+  cursor: pointer;
+}
+.harvest-prog-nota-btn:hover { background: #fef3c7; }
+.harvest-prog-nota-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 /* Col 2 — Volumen */
@@ -5839,6 +5871,15 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   font-weight: 600;
 }
 
+/* Col Calibre / Rendimiento — derivados del último muestreo del proveedor */
+.harvest-prog-calibre-cell,
+.harvest-prog-rendimiento-cell {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
 /* Col 5 — Estado + Sanitario integrado */
 .harvest-prog-status-stack {
   display: flex;
@@ -5875,6 +5916,32 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .biomasa-action-bar .mx-action-btn.pause:hover { background: var(--color-border); color: var(--color-text-muted); }
 .biomasa-action-bar .mx-action-btn.play        { background: var(--color-success-bg); color: var(--color-success); }
 .biomasa-action-bar .mx-action-btn.play:hover  { background: var(--color-success-bg); color: var(--color-success); }
+
+/* Menú flotante de acciones del programa (botón ⋮) */
+.harvest-prog-actions-menu {
+  padding: 6px;
+  gap: 2px;
+  min-width: 190px;
+  max-width: 220px;
+}
+.harvest-prog-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+.harvest-prog-menu-item:hover { background: var(--color-bg); }
+.harvest-prog-menu-item--danger { color: var(--color-error); }
+.harvest-prog-menu-item--danger:hover { background: var(--color-error-bg); }
 
 /* ── Selector de vista compacto — dentro de disp-filter-bar ── */
 .disp-view-selector {

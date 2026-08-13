@@ -12,6 +12,8 @@ import {
   Edit,
   Trash,
   AlertTriangle,
+  MoreVertical,
+  MessageSquare,
 } from 'lucide-react';
 
 import {
@@ -50,6 +52,8 @@ export default function ProgramaTablaView({
 }) {
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [actionsMenu, setActionsMenu] = useState(null); // { id, x, y }
+  const [notaView, setNotaView] = useState(null); // { id, x, y, text }
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -120,6 +124,8 @@ export default function ProgramaTablaView({
               <th className="harvest-prog-col-volume">Volumen</th>
               <th className="harvest-prog-col-period">Período</th>
               <th className="harvest-prog-col-product">Producto</th>
+              <th className="harvest-prog-col-calibre">Calibre</th>
+              <th className="harvest-prog-col-rendimiento">Rendimiento</th>
               <th className="harvest-prog-col-status">Estado</th>
               <th className="harvest-prog-col-actions">Acciones</th>
             </tr>
@@ -138,7 +144,23 @@ export default function ProgramaTablaView({
               return (
                 <tr key={p._id} className={`harvest-prog-row${p.estado === 'finalizado' ? ' is-finalizado' : ''}`}>
                   <td data-label="Proveedor / Centro">
-                    <div className="harvest-prog-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
+                    <div className="harvest-prog-name-row">
+                      <div className="harvest-prog-name">{p.proveedorNombre || 'Proveedor Desconocido'}</div>
+                      {p.notas?.trim() && (
+                        <button
+                          type="button"
+                          className="harvest-prog-nota-btn"
+                          title="Ver observaciones"
+                          onClick={(e) => {
+                            const r = e.currentTarget.getBoundingClientRect();
+                            setActionsMenu(null);
+                            setNotaView(nv => (nv?.id === p._id ? null : { id: p._id, x: Math.min(r.left, window.innerWidth - 280), y: r.bottom + 6, text: p.notas }));
+                          }}
+                        >
+                          <MessageSquare size={13} />
+                        </button>
+                      )}
+                    </div>
                     {(p.centroNombre || p.centroCodigo) && (
                       <div className="harvest-prog-centro"><CentroCodeBadge code={p.centroCodigo} fallback={p.centroNombre} /></div>
                     )}
@@ -190,28 +212,31 @@ export default function ProgramaTablaView({
                     </div>
                   </td>
 
+                  <td className="harvest-prog-calibre-cell" data-label="Calibre">
+                    {Number(p.uxkg) > 0 ? `${Math.round(Number(p.uxkg))} un/kg` : <span style={{ color: 'var(--color-text-subtle)' }}>—</span>}
+                  </td>
+
+                  <td className="harvest-prog-rendimiento-cell" data-label="Rendimiento">
+                    {Number(p.rendimiento) > 0 ? `${fmtNumber(p.rendimiento, 1)}%` : <span style={{ color: 'var(--color-text-subtle)' }}>—</span>}
+                  </td>
+
                   <td data-label="Estado">
                     <ProgramaEstadoBadge programa={p} />
                   </td>
 
                   <td className="harvest-prog-actions-cell" data-label="Acciones">
                     <div className="biomasa-action-bar write-only">
-                      {p.estado === 'activo' && (
-                        <button className="mx-action-btn pause" title="Pausar" onClick={() => { setPauseForm({ pausadoDesde: todayKey(), motivoPausa: '' }); setPauseModal({ id: p._id, proveedorNombre: p.proveedorNombre }); }}><Pause size={14} /></button>
-                      )}
-                      {p.estado === 'pausado' && (
-                        <button className="mx-action-btn play" title="Reanudar" onClick={() => handleStatusChange(p._id, 'activo')}><Play size={14} /></button>
-                      )}
-                      {p.estado === 'finalizado' && (
-                        <button className="mx-action-btn play" title="Reabrir programa" onClick={() => handleStatusChange(p._id, 'activo')}><RotateCcw size={14} /></button>
-                      )}
-                      {(p.estado === 'activo' || p.estado === 'pausado') && (
-                        <button className="mx-action-btn" title="Finalizar programa" style={{ color: 'var(--color-success)' }} onClick={() => handleOpenFinalizeModal(p)}><CheckCircle2 size={14} /></button>
-                      )}
-                      {p.estado !== 'finalizado' && (
-                        <button className="mx-action-btn edit" title="Editar" onClick={() => handleOpenModal(p)}><Edit size={14} /></button>
-                      )}
-                      <button className="mx-action-btn delete" title="Eliminar" onClick={() => setConfirmDelete(p)}><Trash size={14} /></button>
+                      <button
+                        className="mx-action-btn"
+                        title="Más acciones"
+                        onClick={(e) => {
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setNotaView(null);
+                          setActionsMenu(am => (am?.id === p._id ? null : { id: p._id, x: Math.min(r.left, window.innerWidth - 200), y: r.bottom + 6 }));
+                        }}
+                      >
+                        <MoreVertical size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -219,7 +244,7 @@ export default function ProgramaTablaView({
             })}
             {!programasPeriodo.length && (
               <tr>
-                <td colSpan="6">
+                <td colSpan="8">
                   <div className="mx-empty-state">
                     <Droplet size={36} />
                     <p className="mx-empty-state__title">Sin programación disponible</p>
@@ -231,6 +256,56 @@ export default function ProgramaTablaView({
           </tbody>
         </table>
       </div>
+
+      {actionsMenu && (() => {
+        const p = programasPeriodo.find(x => x._id === actionsMenu.id);
+        if (!p) return null;
+        return (
+          <>
+            <div className="suspend-popover-backdrop" onClick={() => setActionsMenu(null)} />
+            <div className="suspend-popover harvest-prog-actions-menu" style={{ left: actionsMenu.x, top: actionsMenu.y }}>
+              {p.estado === 'activo' && (
+                <button type="button" className="harvest-prog-menu-item" onClick={() => { setActionsMenu(null); setPauseForm({ pausadoDesde: todayKey(), motivoPausa: '' }); setPauseModal({ id: p._id, proveedorNombre: p.proveedorNombre }); }}>
+                  <Pause size={14} /> Pausar
+                </button>
+              )}
+              {p.estado === 'pausado' && (
+                <button type="button" className="harvest-prog-menu-item" onClick={() => { setActionsMenu(null); handleStatusChange(p._id, 'activo'); }}>
+                  <Play size={14} /> Reanudar
+                </button>
+              )}
+              {p.estado === 'finalizado' && (
+                <button type="button" className="harvest-prog-menu-item" onClick={() => { setActionsMenu(null); handleStatusChange(p._id, 'activo'); }}>
+                  <RotateCcw size={14} /> Reabrir programa
+                </button>
+              )}
+              {(p.estado === 'activo' || p.estado === 'pausado') && (
+                <button type="button" className="harvest-prog-menu-item" style={{ color: 'var(--color-success)' }} onClick={() => { setActionsMenu(null); handleOpenFinalizeModal(p); }}>
+                  <CheckCircle2 size={14} /> Finalizar programa
+                </button>
+              )}
+              {p.estado !== 'finalizado' && (
+                <button type="button" className="harvest-prog-menu-item" onClick={() => { setActionsMenu(null); handleOpenModal(p); }}>
+                  <Edit size={14} /> Editar
+                </button>
+              )}
+              <button type="button" className="harvest-prog-menu-item harvest-prog-menu-item--danger" onClick={() => { setActionsMenu(null); setConfirmDelete(p); }}>
+                <Trash size={14} /> Eliminar
+              </button>
+            </div>
+          </>
+        );
+      })()}
+
+      {notaView && (
+        <>
+          <div className="suspend-popover-backdrop" onClick={() => setNotaView(null)} />
+          <div className="suspend-popover nota-popover harvest-prog-nota-view" style={{ left: notaView.x, top: notaView.y }}>
+            <div className="suspend-popover-title">Observaciones</div>
+            <p className="harvest-prog-nota-text">{notaView.text}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
