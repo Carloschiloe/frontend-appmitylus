@@ -1,9 +1,5 @@
 /* src/modules/biomasa/biomasa.css */
 
-.biomasa-container {
-  animation: fadeIn 0.2s ease-out;
-}
-
 /* Hero y content-frame con estilos globales desde enterprise-polish.css */
 .mx-content-frame.biomasa-content-frame {
   padding-top: 8px;
@@ -17,28 +13,10 @@
   min-width: 0;
 }
 
-.disponibilidad-actions-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.disponibilidad-actions-row h2 {
-  margin: 0 0 2px;
-  color: var(--color-text);
-  font-size: 20px;
-}
-
-.disponibilidad-actions-row p,
 .disponibilidad-modal-subtitle {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 13px;
-}
-
-.disponibilidad-tabs {
-  justify-self: start;
 }
 
 .disponibilidad-kpi-grid {
@@ -114,17 +92,6 @@
   border-color: #60a5fa;
   background: #eff6ff;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.13);
-}
-
-.disponibilidad-filter-card {
-  display: grid;
-  grid-template-columns: minmax(155px, 0.8fr) minmax(210px, 1.4fr) minmax(155px, 0.8fr) minmax(155px, 0.8fr) auto;
-  align-items: end;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
 }
 
 .disponibilidad-filter {
@@ -346,38 +313,6 @@
   white-space: nowrap;
 }
 
-.disponibilidad-create-trato-modal {
-  width: min(720px, calc(100% - 28px));
-}
-
-.disponibilidad-create-trato-origin {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius-md);
-  background: #eff6ff;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.disponibilidad-create-trato-origin strong {
-  color: #1d4ed8;
-  font-size: 14px;
-}
-
-.disponibilidad-create-trato-responsable {
-  margin-top: 12px;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  background: #f8fafc;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
 .disponibilidad-form-error {
   margin-top: 10px;
   color: var(--color-danger);
@@ -472,9 +407,7 @@
 }
 
 .disponibilidad-provider-selected,
-.disponibilidad-contact-selected,
-.disponibilidad-readonly-field,
-.disponibilidad-initial-state {
+.disponibilidad-contact-selected {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -525,12 +458,6 @@
   color: #b91c1c;
   font-size: 12px;
   font-weight: 600;
-}
-
-.disponibilidad-readonly-field {
-  border-color: var(--color-border);
-  background: #f8fafc;
-  color: var(--color-text);
 }
 
 .disponibilidad-inline-empty {
@@ -667,90 +594,11 @@
   font-size: 19px;
 }
 
-.disponibilidad-state-groups {
-  display: grid;
-  gap: 14px;
-  margin-top: 20px;
-}
-
-.disponibilidad-state-group {
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-left: 4px solid #94a3b8;
-  border-radius: var(--radius-md);
-  background: #fff;
-}
-
 .disponibilidad-state-group--info { border-left-color: #3b82f6; }
 .disponibilidad-state-group--warning { border-left-color: #f59e0b; }
 .disponibilidad-state-group--success { border-left-color: #10b981; }
 .disponibilidad-state-group--danger { border-left-color: #ef4444; }
 .disponibilidad-state-group--muted { border-left-color: #64748b; }
-
-.disponibilidad-state-group-toggle {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.disponibilidad-state-group-toggle:hover {
-  background: #f8fafc;
-}
-
-.disponibilidad-state-group-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-}
-
-.disponibilidad-state-group-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px 9px;
-}
-
-.disponibilidad-state-group-total {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.disponibilidad-state-group-total strong {
-  color: var(--color-text);
-  font-size: 17px;
-}
-
-.disponibilidad-state-group-total svg {
-  color: var(--color-text-muted);
-  transition: transform 160ms ease;
-}
-
-.disponibilidad-state-group.is-open .disponibilidad-state-group-total svg {
-  transform: rotate(180deg);
-}
-
-.disponibilidad-state-group-toggle > .disponibilidad-bar-track {
-  margin: 0 16px 13px;
-}
-
-.disponibilidad-bar-track {
-  height: 12px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e2e8f0;
-}
-
-.disponibilidad-bar-fill {
-  min-width: 2px;
-  height: 100%;
-  border-radius: inherit;
-  transition: width 0.2s ease;
-}
 
 .disponibilidad-bar-fill--info { background: #3b82f6; }
 .disponibilidad-bar-fill--warning { background: #f59e0b; }
@@ -968,24 +816,6 @@
   display: block;
 }
 
-.disponibilidad-annual-track {
-  display: block;
-  width: 150px;
-  height: 5px;
-  margin-top: 7px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e2e8f0;
-}
-
-.disponibilidad-annual-track span {
-  display: block;
-  min-width: 2px;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary), #60a5fa);
-}
-
 .disponibilidad-annual-loading,
 .disponibilidad-annual-empty {
   padding: 14px;
@@ -1064,24 +894,6 @@
   gap: 9px;
 }
 
-.disponibilidad-analysis-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 2px;
-}
-
-.disponibilidad-analysis-header h3 {
-  margin: 2px 0 0;
-  color: var(--color-text);
-  font-size: 17px;
-}
-
-.disponibilidad-analysis-header .mx-eyebrow {
-  font-size: 9px;
-}
-
 .disponibilidad-kpi small {
   display: block;
   margin-top: 6px;
@@ -1092,189 +904,18 @@
 .is-positive { color: #047857; }
 .is-negative { color: #dc2626; }
 
-.disponibilidad-analysis-toolbar {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(135px, 0.6fr) minmax(150px, 0.7fr) minmax(240px, 1.5fr) auto;
-  align-items: end;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.disponibilidad-analysis-control {
-  position: relative;
-  display: grid;
-  gap: 3px;
-}
-
-.disponibilidad-analysis-control > span {
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.disponibilidad-analysis-refresh {
-  min-height: 34px;
-  padding: 6px 10px;
-  white-space: nowrap;
-}
-
-.disponibilidad-analysis-toolbar .mx-input,
-.disponibilidad-analysis-toolbar .mx-select,
-.disponibilidad-analysis-toolbar .disponibilidad-search-input {
-  min-height: 34px;
-  height: 34px;
-}
-
-.disponibilidad-analysis-toolbar .mx-input,
-.disponibilidad-analysis-toolbar .mx-select {
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-
-.disponibilidad-analysis-search-results {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 5px);
-  left: 0;
-  display: grid;
-  width: min(440px, 90vw);
-  max-height: 300px;
-  gap: 5px;
-  padding: 7px;
-  overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
-}
-
-.disponibilidad-analysis-search-results .disponibilidad-provider-option {
-  padding: 7px 9px;
-  border: 0;
-  border-radius: var(--radius-sm);
-}
-
-.disponibilidad-analysis-search-group {
-  padding: 4px 7px 1px;
-  color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.disponibilidad-analysis-summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05);
-}
-
-.disponibilidad-analysis-summary-total {
-  display: grid;
-  gap: 2px;
-  min-width: 130px;
-  padding-right: 14px;
-  border-right: 1px solid var(--color-border);
-}
-
-.disponibilidad-analysis-summary-total span,
-.disponibilidad-analysis-summary-state span {
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.disponibilidad-analysis-summary-total strong {
-  color: var(--color-primary);
-  font-size: 19px;
-}
-
-.disponibilidad-analysis-summary-total small {
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-}
-
-.disponibilidad-analysis-summary-states {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(90px, 1fr));
-  gap: 10px;
-  width: 100%;
-}
-
-.disponibilidad-analysis-summary-state {
-  display: grid;
-  gap: 1px;
-  padding-left: 7px;
-  border-left: 3px solid #94a3b8;
-}
-
-.disponibilidad-analysis-summary-state strong {
-  color: var(--color-text);
-  font-size: 13px;
-}
-
 .disponibilidad-analysis-summary-state--info { border-left-color: #3b82f6; }
 .disponibilidad-analysis-summary-state--warning { border-left-color: #f59e0b; }
 .disponibilidad-analysis-summary-state--success { border-left-color: #10b981; }
 .disponibilidad-analysis-summary-state--danger { border-left-color: #ef4444; }
 .disponibilidad-analysis-summary-state--muted { border-left-color: #64748b; }
 
-.disponibilidad-analysis-filter-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.disponibilidad-more-filters {
-  min-height: 30px;
-  padding: 4px 8px;
-}
-
-.disponibilidad-more-filters svg:last-child,
 .disponibilidad-comparison-toggle svg {
   transition: transform 150ms ease;
 }
 
-.disponibilidad-more-filters.is-open svg:last-child,
 .disponibilidad-comparison-toggle[aria-expanded="true"] svg {
   transform: rotate(180deg);
-}
-
-.disponibilidad-active-filters {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.disponibilidad-active-filters strong {
-  overflow: hidden;
-  color: var(--color-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.disponibilidad-active-filters button {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-primary);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: var(--weight-bold);
 }
 
 .disponibilidad-analysis-more-filters {
@@ -1298,33 +939,6 @@
   font-size: 10px;
   font-weight: var(--weight-bold);
   text-transform: uppercase;
-}
-
-.disponibilidad-filter-chips {
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  overflow-x: auto;
-  padding: 2px;
-}
-
-.disponibilidad-filter-chips button {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: var(--weight-semibold);
-}
-
-.disponibilidad-filter-chips button:hover,
-.disponibilidad-filter-chips button.is-active {
-  border-color: #60a5fa;
-  background: #eff6ff;
-  color: #1d4ed8;
 }
 
 .disponibilidad-analysis-card {
@@ -1730,17 +1344,6 @@
   font-size: 14px;
 }
 
-.disponibilidad-analysis-detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 10px;
-}
-
-.disponibilidad-analysis-detail-meta span {
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
 .disponibilidad-analysis-detail-meta-row {
   display: flex;
   flex-wrap: wrap;
@@ -1756,13 +1359,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px 10px;
-}
-
-.disponibilidad-analysis-detail-meta span:last-child {
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .disp-analysis-tag-info {
@@ -1804,12 +1400,6 @@
 
 .disponibilidad-field-wide {
   grid-column: 1 / -1;
-}
-
-.disp-form-triple {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
 }
 
 /* ── Sección agregar disponibilidades (DisponibilidadModal creación) ───── */
@@ -1959,26 +1549,6 @@
     grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 
-  .disponibilidad-filter-card {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .disponibilidad-analysis-toolbar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .disponibilidad-analysis-control--search {
-    grid-column: 1 / -1;
-  }
-
-  .disponibilidad-analysis-summary {
-    align-items: flex-start;
-  }
-
-  .disponibilidad-analysis-summary-states {
-    grid-template-columns: repeat(3, minmax(90px, 1fr));
-  }
-
   .disponibilidad-state-record {
     grid-template-columns: minmax(200px, 1fr) minmax(120px, auto) auto;
   }
@@ -2005,75 +1575,23 @@
 }
 
 @media (max-width: 680px) {
-  .disponibilidad-actions-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .disponibilidad-summary-header,
-  .disponibilidad-analysis-header {
+  .disponibilidad-summary-header {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .disponibilidad-kpi-grid,
-  .disponibilidad-filter-card,
   .disponibilidad-form-grid {
     grid-template-columns: 1fr;
   }
 
-  .disponibilidad-create-trato-origin {
-    grid-template-columns: 1fr;
-  }
-
-  .disponibilidad-analysis-toolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .disponibilidad-analysis-control--search {
-    grid-column: auto;
-  }
-
-  .disponibilidad-analysis-summary {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .disponibilidad-analysis-summary-total {
-    width: 100%;
-    padding: 0 0 10px;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .disponibilidad-analysis-summary-states {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 3px;
-  }
-
-  .disponibilidad-analysis-summary-state {
-    flex: 0 0 105px;
-  }
-
-  .disponibilidad-analysis-filter-row,
   .disponibilidad-analysis-more-filters > div {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .disponibilidad-active-filters {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
   .disponibilidad-analysis-more-filters > div > span {
     flex: auto;
-  }
-
-  .disponibilidad-filter-chips {
-    width: 100%;
   }
 
   .disponibilidad-totals-summary {
@@ -2087,16 +1605,6 @@
 
   .disponibilidad-kpi-grid--month-detail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .disponibilidad-tabs {
-    display: flex;
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .disponibilidad-tabs .mx-toggle-btn {
-    flex: 0 0 auto;
   }
 
   .disponibilidad-state-record {
@@ -2161,97 +1669,9 @@
   font-weight: 600;
 }
 
-/* Popover "Agregar / Quitar camión" por tipo de transporte (vista semana) */
-.truck-popover {
-  position: fixed;
-  z-index: 1000;
-  min-width: 200px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-  padding: 8px;
-}
-.truck-popover-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--color-text-muted, #64748b);
-  padding: 2px 6px 6px;
-}
-.truck-popover-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.truck-popover-opt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 13px;
-  text-align: left;
-  color: var(--color-text, #1e293b);
-}
-.truck-popover-opt:hover {
-  background: var(--color-surface-muted, #f1f5f9);
-}
-.truck-popover-opt-name { font-weight: 600; }
-.truck-popover-opt-cap {
-  font-weight: 700;
-  color: var(--color-primary, #2563eb);
-  white-space: nowrap;
-}
-
-
 .biomasa-actions {
   display: flex;
   gap: 12px;
-}
-
-.biomasa-date-picker {
-  background: rgba(255,255,255,0.1);
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.2);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  backdrop-filter: blur(10px);
-}
-
-.biomasa-date-picker input {
-  background: none;
-  border: none;
-  font-weight: 700;
-  outline: none;
-  color: white;
-  font-size: 15px;
-}
-
-/* Chrome/Safari fixes for month picker */
-.biomasa-date-picker input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  cursor: pointer;
-}
-
-.biomasa-btn-reload {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  width: 42px;
-  height: 42px;
-}
-
-.biomasa-btn-reload:hover {
-  background: rgba(255,255,255,0.2);
 }
 
 /* Tabs */
@@ -2295,136 +1715,6 @@
 
 .biomasa-content {
   margin-top: -24px;
-}
-
-.biomasa-sub-tabs {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-  background: var(--color-surface);
-  padding: 10px 12px;
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-.biomasa-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
-}
-
-.biomasa-toolbar-left,
-.biomasa-toolbar-right,
-.biomasa-period-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.biomasa-period-label {
-  min-width: 160px;
-  color: #334155;
-  font-size: 13px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.biomasa-date-picker-light {
-  min-width: 200px;
-  background: #f8fafc;
-  border: 1px solid #dbe7f3;
-  border-radius: 10px;
-  padding: 0 10px;
-}
-
-.biomasa-date-picker-light svg {
-  color: #64748b;
-}
-
-.biomasa-date-picker-light input {
-  color: #1e293b;
-}
-
-.biomasa-btn-reload-light {
-  background: #f8fafc;
-  border: 1px solid #dbe7f3;
-  color: #475569;
-}
-
-.biomasa-btn-reload-light:hover {
-  background: #eef6ff;
-  color: var(--color-primary-dark);
-}
-
-/* KPIs */
-.biomasa-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.biomasa-kpi-card {
-  background: var(--color-surface);
-  padding: 18px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-}
-
-.biomasa-kpi-label {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-
-.biomasa-kpi-val {
-  margin: 6px 0;
-  font-size: 24px;
-  font-weight: var(--weight-bold);
-}
-
-.biomasa-table-card {
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-}
-
-@media (max-width: 900px) {
-  .biomasa-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .biomasa-toolbar-left,
-  .biomasa-period-nav {
-    flex-wrap: wrap;
-  }
-
-  .biomasa-toolbar-right {
-    justify-content: flex-end;
-  }
-
-  .biomasa-period-label {
-    min-width: 0;
-    text-align: left;
-  }
-
-  .biomasa-date-picker-light {
-    min-width: 0;
-    width: 100%;
-  }
 }
 
 /* Calendario Grid */
@@ -2631,85 +1921,10 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   z-index: 10;
 }
 
-.cal-day-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .cal-day-num {
   font-size: 12px;
   font-weight: var(--weight-bold);
   color: var(--color-text-muted);
-}
-
-.cal-day-total {
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
-  color: white;
-  padding: 4px 8px;
-  font-weight: var(--weight-bold);
-  font-size: 11px;
-  box-shadow: 0 4px 10px rgba(15,118,110,0.3);
-}
-
-.cal-day-compact-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex: 1;
-  min-height: 0;
-  transform: translateY(-3px);
-}
-
-.cal-day-primary-total {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: end;
-  justify-content: center;
-  gap: 1px 4px;
-  min-width: 76px;
-  border: 1px solid #d7eee9;
-  border-radius: 10px;
-  background: #f7fffc;
-  color: var(--color-primary-dark);
-  padding: 8px 12px 7px;
-  text-align: center;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-
-.cal-day-primary-total span {
-  grid-column: 1 / -1;
-  color: #64748b;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.cal-day-primary-total strong {
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: 0;
-}
-
-.cal-day-primary-total em {
-  color: #475569;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 900;
-  line-height: 1.1;
-  text-transform: uppercase;
-}
-
-.cal-day-primary-total.is-canceled {
-  background: #f1f5f9;
-  color: #64748b;
-  box-shadow: none;
 }
 
 .cal-day-empty {
@@ -2724,166 +1939,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-align: center;
 }
 
-.cal-day-product-stack {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.cal-day-product-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #dbe7f3;
-  border-left: 3px solid #64748b;
-  border-radius: 999px;
-  background: #f8fafc;
-  padding: 3px 6px 3px 5px;
-  color: var(--color-text);
-  font-size: 9px;
-  font-weight: var(--weight-bold);
-  line-height: 1.15;
-  min-width: 0;
-}
-
-.cal-day-product-chip span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.82);
-  color: var(--color-text);
-  font-size: 8px;
-  font-weight: 900;
-}
-
-.cal-day-product-chip b {
-  color: var(--color-primary-dark);
-  font-size: 9px;
-  white-space: nowrap;
-}
-
-.cal-day-product-chip.product-entero {
-  border-color: #99f6e4;
-  border-left-color: var(--color-primary);
-  background: #ecfdf5;
-}
-
-.cal-day-product-chip.product-carne {
-  border-color: #fecdd3;
-  border-left-color: #e11d48;
-  background: #fff1f2;
-}
-
-.cal-day-product-chip.product-mc {
-  border-color: #fde68a;
-  border-left-color: #d97706;
-  background: #fffbeb;
-}
-
-.cal-day-meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 5px;
-  width: 100%;
-  min-height: 18px;
-}
-
-.cal-day-provider-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.1;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.cal-day-provider-count svg {
-  color: #94a3b8;
-  width: 14px;
-  height: 14px;
-}
-
-.cal-day-provider-count b {
-  color: #475569;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.cal-day-adjust-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  min-width: 58px;
-  max-width: none;
-  border: 1px solid #ffedd5;
-  border-radius: 999px;
-  background: #fffaf4;
-  color: #b45309;
-  padding: 3px 7px;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.cal-day-adjust-badge.is-canceled {
-  border-color: #fee2e2;
-  background: #fff7f7;
-  color: #991b1b;
-}
-
-.cal-day-adjusted {
-  align-self: flex-start;
-  border: 1px solid #fed7aa;
-  border-radius: 999px;
-  background: #fff7ed;
-  color: #9a3412;
-  padding: 2px 6px;
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.cal-day-adjusted.is-canceled {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.cal-day-more-products {
-  color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.cal-day-items {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-height: 0;
-}
-
-.cal-day-program {
-  border: 1px solid #dbe7f3;
-  border-left: 3px solid var(--color-primary);
-  border-radius: 8px;
-  padding: 6px 7px;
-  background: #f8fbfd;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-}
-
 /* Entero = azul */
-.cal-day-program.product-entero,
 .harvest-week-cell.product-entero,
 .harvest-product-pill.product-entero {
   border-color: #bfdbfe;
@@ -2892,7 +1948,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* Carne = rojo suave */
-.cal-day-program.product-carne,
 .harvest-week-cell.product-carne,
 .harvest-product-pill.product-carne {
   border-color: #fecdd3;
@@ -2901,7 +1956,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* Media Concha = verde */
-.cal-day-program.product-mc,
 .harvest-week-cell.product-mc,
 .harvest-product-pill.product-mc {
   border-color: #bbf7d0;
@@ -2909,53 +1963,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #f0fdf4;
 }
 
-.cal-day-program.product-sin_definir,
 .harvest-week-cell.product-sin_definir,
 .harvest-product-pill.product-sin_definir {
   border-color: #dbe7f3;
   border-left-color: #64748b;
   background: #f8fafc;
-}
-
-.cal-day-program-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-}
-
-.cal-day-provider {
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cal-day-camiones {
-  color: var(--color-primary-dark);
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  white-space: nowrap;
-}
-
-.cal-day-program-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  margin-top: 3px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-semibold);
-}
-
-.cal-day-more {
-  color: var(--color-primary-dark);
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-  padding-left: 4px;
 }
 
 /* ── Vista mes: burbuja + puntos ────────────────────────────────── */
@@ -3413,38 +2425,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   box-shadow: 0 1px 3px rgba(15,23,42,0.07);
 }
 .wk-btn:hover { background: #EFF6FF; border-color: #93C5FD; color: #2563EB; }
-.wk-btn-add:hover { background: #ECFDF5; border-color: #6EE7B7; color: #059669; }
-.wk-btn-susp { color: #F43F5E; }
-.wk-btn-susp:hover { background: #FFF1F2; border-color: #FCA5A5; color: #E11D48; }
-
-/* Custom tooltips */
-.wk-btn-tip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0F172A;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 7px;
-  border-radius: 5px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 20;
-}
-.wk-btn-tip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: #0F172A;
-}
-.wk-btn:hover .wk-btn-tip { opacity: 1; }
 
 .wk-btn-react {
   display: inline-flex;
@@ -3638,16 +2618,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   gap: 5px;
 }
 
-/* ── Celda día: chips por proveedor ─────────────────────────────── */
-.cal-day-program.is-finalizado {
-  opacity: 0.5;
-  filter: grayscale(0.4);
-}
-.cal-day-program.is-canceled .cal-day-provider {
-  color: var(--color-text-muted);
-  text-decoration: line-through;
-}
-
 /* ── Panel detalle día ───────────────────────────────────────────── */
 .cal-detail-wrap {
   display: flex;
@@ -3781,56 +2751,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   font-size: 15px;
 }
 
-.harvest-calendar-shell.board-mode .cal-day-primary-total {
-  min-width: 96px;
-  padding: 12px 14px 10px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-primary-total strong {
-  font-size: 32px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-primary-total em,
-.harvest-calendar-shell.board-mode .cal-day-primary-total span {
-  font-size: 12px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-compact-summary {
-  transform: translateY(-5px);
-}
-
-.harvest-calendar-shell.board-mode .cal-day-provider-count svg {
-  width: 16px;
-  height: 16px;
-}
-
 .harvest-calendar-shell.board-mode .cal-day-empty {
   font-size: 20px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-product-chip {
-  font-size: 11px;
-  padding: 5px 8px 5px 6px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-product-chip b,
-.harvest-calendar-shell.board-mode .cal-day-provider-count {
-  font-size: 11px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-product-chip span {
-  width: 18px;
-  height: 18px;
-  font-size: 10px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-provider,
-.harvest-calendar-shell.board-mode .cal-day-camiones {
-  font-size: 13px;
-}
-
-.harvest-calendar-shell.board-mode .cal-day-program-meta {
-  font-size: 11px;
 }
 
 .harvest-calendar-shell.board-mode .harvest-day-detail,
@@ -4022,8 +2944,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-sanitary-badge,
-.cal-day-sanitary,
-.harvest-week-sanitary,
 .harvest-day-sanitary-alert {
   display: inline-flex;
   align-items: center;
@@ -4053,16 +2973,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   white-space: nowrap;
 }
 
-.cal-day-sanitary,
-.harvest-week-sanitary {
-  padding: 4px 6px;
-  font-size: 10px;
-}
-
-.harvest-week-sanitary {
-  margin-top: 5px;
-}
-
 .harvest-day-sanitary-alert {
   border-radius: 10px;
   padding: 8px 10px;
@@ -4071,8 +2981,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-sanitary-badge.verde,
-.cal-day-sanitary.verde,
-.harvest-week-sanitary.verde,
 .harvest-day-sanitary-alert.verde {
   border-color: #bbf7d0;
   background: #f0fdf4;
@@ -4080,8 +2988,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-sanitary-badge.amarillo,
-.cal-day-sanitary.amarillo,
-.harvest-week-sanitary.amarillo,
 .harvest-day-sanitary-alert.amarillo {
   border-color: #fde68a;
   background: #fffbeb;
@@ -4089,8 +2995,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-sanitary-badge.naranja,
-.cal-day-sanitary.naranja,
-.harvest-week-sanitary.naranja,
 .harvest-day-sanitary-alert.naranja {
   border-color: #fed7aa;
   background: #fff7ed;
@@ -4098,137 +3002,10 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .harvest-sanitary-badge.rojo,
-.cal-day-sanitary.rojo,
-.harvest-week-sanitary.rojo,
 .harvest-day-sanitary-alert.rojo {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
-}
-
-.harvest-week-wrap {
-  border: 1px solid #dbe7f3;
-  border-radius: 14px;
-  overflow-x: visible;
-  background: #ffffff;
-}
-
-.harvest-week-layout {
-  display: block;
-  min-width: 0;
-}
-
-.harvest-week-table {
-  width: 100%;
-  min-width: 0;
-  table-layout: fixed;
-}
-
-.harvest-week-day-total {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 66px;
-  border: 1px solid #d7eee9;
-  border-radius: 9px;
-  background: #f8fffc;
-  color: var(--color-primary-dark);
-  padding: 5px 8px;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.harvest-week-table th,
-.harvest-week-table td {
-  vertical-align: top;
-  padding: 9px 7px;
-}
-
-.harvest-week-table th.calendar-red-day,
-.harvest-week-total-row td.calendar-red-day {
-  background: #fffafa;
-}
-
-.harvest-week-table th.calendar-red-day div,
-.harvest-week-total-row td.calendar-red-day .harvest-week-day-total {
-  color: #ef4444 !important;
-}
-
-.harvest-week-table th {
-  background: #fbfdff;
-  color: #334155;
-  font-size: 10px;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.harvest-week-total-row td {
-  vertical-align: middle;
-  background: #fbfdff;
-  border-top: 1px solid #dbe7f3;
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-.harvest-week-total-row td:first-child {
-  color: #334155;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.harvest-week-table th:first-child,
-.harvest-week-table td:first-child {
-  width: 142px;
-}
-
-.harvest-week-table th:last-child,
-.harvest-week-table td:last-child {
-  width: 104px;
-}
-
-.harvest-week-row-total,
-.harvest-week-grand-total {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  border: 1px solid #d7eee9;
-  border-radius: 10px;
-  background: #f8fffc;
-  color: var(--color-primary-dark);
-  padding: 7px 9px;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.harvest-week-grand-total {
-  background: #ecfdf5;
-  border-color: #99f6e4;
-}
-
-.harvest-week-provider {
-  color: var(--color-text);
-  font-size: 12px;
-  font-weight: 850;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.harvest-week-center {
-  margin-top: 3px;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: var(--weight-semibold);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .harvest-week-cell {
@@ -4248,59 +3025,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   border-left-color: #dc2626;
   background: #fef2f2;
   box-shadow: none;
-}
-
-.harvest-week-cell.is-canceled .harvest-week-camiones {
-  color: #b91c1c;
-}
-
-.harvest-week-camiones {
-  color: var(--color-primary-dark);
-  font-size: 14px;
-  font-weight: 900;
-  line-height: 1.05;
-  white-space: nowrap;
-}
-
-.harvest-week-product {
-  margin-top: 2px;
-  color: var(--color-text);
-  font-size: 10px;
-  font-weight: 850;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.harvest-week-adjusted {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 4px;
-  border: 1px solid #ffedd5;
-  border-radius: 999px;
-  background: #fffaf4;
-  color: #b45309;
-  padding: 2px 6px;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.harvest-week-quality,
-.harvest-program-quality {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px 5px;
-  margin-top: 3px;
-  color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: var(--weight-semibold);
-}
-
-.harvest-program-quality {
-  font-size: 11px;
 }
 
 .harvest-program-table-card {
@@ -4338,413 +3062,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   text-align: center;
 }
 
-.harvest-program-grid-wrap {
-  width: 100%;
-  max-width: 100%;
-}
-
-.harvest-program-grid {
-  --program-grid-columns: minmax(160px, 2fr) 130px 130px 68px minmax(200px, 2fr) 100px 130px 165px;
-}
-
-.harvest-program-grid-head,
-.harvest-program-grid-row {
-  display: grid;
-  grid-template-columns: var(--program-grid-columns);
-  align-items: center;
-}
-
-.harvest-program-grid-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  border-bottom: 1px solid var(--color-border);
-  background: #f2f7fd;
-}
-
-.harvest-program-grid-head > div {
-  min-width: 0;
-  padding: 13px 14px;
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.harvest-program-grid-head > div:nth-child(4),
-.harvest-program-grid-head > div:nth-child(8) {
-  text-align: center;
-}
-
-.harvest-program-grid-row {
-  min-height: 78px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.harvest-program-grid-row:hover {
-  background: #f7fbff;
-}
-
-.harvest-program-grid-row.is-finalizado {
-  opacity: 0.55;
-  background: #f8f8f8;
-}
-.harvest-program-grid-row.is-finalizado:hover {
-  opacity: 0.75;
-  background: #f3f3f3;
-}
-
-.harvest-program-grid-row > div {
-  min-width: 0;
-  padding: 10px 14px;
-}
-
-.harvest-program-grid-row > div:nth-child(4),
-.harvest-program-grid-row > div:nth-child(6),
-.harvest-program-grid-row > div:nth-child(8) {
-  align-self: stretch;
-  align-items: center;
-}
-
-.harvest-program-provider-cell {
-  overflow: hidden;
-}
-
-.harvest-program-grid .biomasa-avatar {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  flex: 0 0 30px;
-  border-radius: 8px;
-  font-size: 11px;
-}
-
-.harvest-program-grid .biomasa-provider-text {
-  min-width: 0;
-}
-
-.harvest-program-grid .biomasa-prov-name {
-  max-width: 174px;
-  font-size: 12px;
-  line-height: 1.15;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-}
-
-.harvest-program-grid .biomasa-centro-name,
-.harvest-program-grid .biomasa-date-range {
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.harvest-program-grid .biomasa-date-range {
-  min-width: 0;
-  white-space: nowrap;
-}
-
-.harvest-program-grid .biomasa-camiones-badge {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  font-size: 13px;
-}
-
-.harvest-program-camiones-cell,
-.harvest-program-status-cell,
-.harvest-program-actions-cell {
-  display: flex;
-  justify-content: center;
-}
-
-.harvest-program-volume-cell {
-  overflow: hidden;
-}
-
-.harvest-program-camiones {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.harvest-program-camiones-adjusted {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  border: 1px solid #fed7aa;
-  border-radius: 999px;
-  background: #fff7ed;
-  color: #9a3412;
-  padding: 2px 7px;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.harvest-program-volume {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #dbeafe;
-  border-radius: 11px;
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-  padding: 6px 8px;
-}
-
-.harvest-program-volume-head,
-.harvest-program-volume-foot {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
-
-.harvest-program-volume-head {
-  justify-content: flex-start;
-  white-space: nowrap;
-}
-
-.harvest-program-volume-foot {
-  justify-content: space-between;
-  gap: 10px;
-  min-width: 0;
-}
-
-.harvest-program-volume-head span {
-  color: var(--color-text-muted);
-  font-size: 9px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.harvest-program-volume-head strong {
-  color: var(--color-text);
-  font-size: 12px;
-  font-weight: var(--weight-bold);
-  white-space: nowrap;
-}
-
-.harvest-program-volume-bar {
-  width: 100%;
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e5edf5;
-}
-
-.harvest-program-volume-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary-light));
-}
-
-.harvest-program-volume-foot span {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
-  min-width: 0;
-  color: var(--color-text-muted);
-  font-size: 8px;
-  font-weight: var(--weight-semibold);
-  line-height: 1.1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.harvest-program-volume-foot span:last-child {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.harvest-program-volume-foot b {
-  color: var(--color-primary-dark);
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  text-transform: none;
-  white-space: nowrap;
-}
-
-.harvest-program-volume-foot .is-over,
-.harvest-program-volume-foot .is-over b {
-  color: var(--color-error);
-}
-
-.harvest-program-volume-foot .is-over b {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.harvest-program-adjusted-badge {
-  display: inline-flex;
-  margin-top: 3px;
-  border: 1px solid #fed7aa;
-  border-radius: 999px;
-  background: #fff7ed;
-  color: #9a3412;
-  padding: 2px 6px;
-  font-size: 8px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.harvest-program-grid .mx-badge,
-.harvest-program-grid .harvest-sanitary-badge {
-  max-width: 100%;
-}
-
-.harvest-program-status-cell .mx-badge {
-  justify-content: center;
-  width: fit-content;
-}
-
-.harvest-program-status-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.harvest-program-status-date {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-align: center;
-  line-height: 1.2;
-}
-
-.harvest-program-grid .biomasa-action-bar {
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.harvest-program-grid .mx-btn-icon.sm {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  flex: 0 0 32px;
-}
-
-.harvest-program-empty {
-  padding: 28px !important;
-  color: var(--color-text-muted);
-  font-weight: 700;
-  text-align: center;
-}
-
-.harvest-week-tons,
-.harvest-week-meta {
-  margin-top: 2px;
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: var(--weight-semibold);
-}
-
-.harvest-provider-summary h4 {
-  margin: 0 0 10px 0;
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-}
-
-.harvest-provider-summary {
-  border: 1px solid #dbe7f3;
-  border-radius: 12px;
-  background: white;
-  padding: 10px;
-  align-self: start;
-}
-
-.harvest-provider-summary p {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 12px;
-}
-
-.harvest-provider-total {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid #eef2f7;
-}
-
-.harvest-provider-total:first-of-type {
-  border-top: none;
-}
-
-.harvest-provider-total strong,
-.harvest-provider-total b {
-  color: var(--color-text);
-  font-size: 12px;
-}
-
-.harvest-provider-total span {
-  display: block;
-  margin-top: 2px;
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.harvest-week-row-total {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  min-height: auto;
-  border: 1px solid #d7eee9;
-  border-radius: 10px;
-  background: #f8fffc;
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.1;
-  white-space: nowrap;
-  padding: 7px 9px;
-}
-
-.harvest-week-total-row td {
-  background: #fbfdff;
-  border-top: 1px solid #dbe7f3;
-  vertical-align: middle;
-}
-
-.harvest-week-total-row td:first-child {
-  color: #334155;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.harvest-week-grand-total {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  min-height: auto;
-  border: 1px solid #99f6e4;
-  border-radius: 10px;
-  background: #ecfdf5;
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.1;
-  white-space: nowrap;
-  padding: 7px 9px;
-  box-shadow: none;
-}
-
 @media (max-width: 1200px) {
   .harvest-calendar-shell {
     grid-template-columns: 1fr;
@@ -4769,10 +3086,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     flex-wrap: wrap;
   }
 
-  .harvest-week-layout {
-    grid-template-columns: 1fr;
-  }
-
   .harvest-calendar-title {
     min-width: 120px;
   }
@@ -4788,367 +3101,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   }
 }
 
-/* Seguimiento Cards */
-.harvest-followup-layout {
-  display: grid;
-  gap: 14px;
-}
-
-.harvest-followup-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-}
-
-.harvest-followup-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.harvest-followup-period {
-  display: inline-flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.harvest-followup-period > span {
-  min-width: 170px;
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.harvest-followup-panel {
-  padding: 12px 14px;
-}
-
-.harvest-followup-panel .mx-card-header {
-  margin-bottom: 10px;
-}
-
-.harvest-followup-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.harvest-followup-kpis > div {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fff;
-  padding: 10px 12px;
-}
-
-.harvest-followup-kpis span {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.harvest-followup-kpis strong {
-  display: block;
-  margin-top: 3px;
-  color: var(--color-text);
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.harvest-followup-kpis strong.positive {
-  color: #047857;
-}
-
-.harvest-followup-kpis strong.negative {
-  color: #b91c1c;
-}
-
-.harvest-followup-table-wrap {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-}
-
-.harvest-followup-table th {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-.harvest-followup-table td {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  vertical-align: middle;
-}
-
-.harvest-followup-table .biomasa-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  font-size: 11px;
-}
-
-.harvest-followup-table .biomasa-prov-name {
-  font-size: 12px;
-  line-height: 1.15;
-}
-
-.harvest-followup-table .biomasa-centro-name {
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.harvest-followup-number {
-  display: inline-flex;
-  min-width: 54px;
-  justify-content: center;
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: var(--color-text);
-  padding: 5px 8px;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.harvest-followup-number.today {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.harvest-followup-novelty {
-  max-width: 520px;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.harvest-followup-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.harvest-followup-list,
-.harvest-adjustment-history {
-  display: grid;
-  gap: 8px;
-}
-
-.harvest-followup-row,
-.harvest-adjustment-item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: #fff;
-  padding: 8px 10px;
-}
-
-.harvest-novelty-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 12px;
-}
-
-.harvest-novelty-card {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-}
-
-.harvest-novelty-header {
-  margin: 0;
-}
-
-.harvest-novelty-note {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: start;
-  border: none;
-  background: var(--color-bg);
-  box-shadow: none;
-  padding: 12px;
-}
-
-.harvest-novelty-note > div:first-child {
-  min-width: 0;
-}
-
-.harvest-novelty-note > div:nth-child(2) {
-  grid-column: 1 / -1;
-}
-
-.harvest-followup-row strong,
-.harvest-adjustment-item strong {
-  display: block;
-  color: var(--color-text);
-  font-weight: 800;
-}
-
-.harvest-followup-row span,
-.harvest-followup-row small,
-.harvest-adjustment-item span,
-.harvest-adjustment-item small {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.harvest-adjustment-item b {
-  border-radius: 999px;
-  background: var(--color-bg);
-  color: var(--color-text);
-  padding: 7px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.harvest-adjustment-item b.positive {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.harvest-adjustment-item b.negative {
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.harvest-adjust-context {
-  border: 1px solid #ccfbf1;
-  border-radius: 14px;
-  background: #f0fdfa;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-}
-
-.harvest-adjust-context strong,
-.harvest-adjust-context span {
-  display: block;
-}
-
-.harvest-adjust-context span {
-  color: var(--color-text-muted);
-  font-size: 13px;
-  margin-top: 3px;
-}
-
-.seg-card {
-  border-radius: 24px;
-  border: none;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
-  transition: transform 0.2s;
-  cursor: default;
-}
-
-.seg-card-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--mx-gradient-accent);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--weight-bold);
-  font-size: 18px;
-  box-shadow: 0 8px 16px rgba(37,99,235,0.2);
-}
-
-.seg-badge-active {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: var(--weight-bold);
-}
-
-.seg-nota-box {
-  background: var(--color-bg);
-  padding: 16px;
-  border-radius: 16px;
-  border: 1px solid var(--color-border);
-  position: relative;
-}
-
-.seg-nota-text {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  line-height: 1.6;
-  font-weight: 500;
-}
-
 /* Biomasa Table Specifics */
-.biomasa-prov-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.biomasa-avatar {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
-  flex: 0 0 40px;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-light) 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 14px;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.biomasa-prov-name {
-  min-width: 0;
-  font-weight: 700;
-  color: var(--color-text);
-  font-size: 14px;
-}
-
 .biomasa-centro-name {
   font-size: 12px;
   color: var(--color-text-muted);
   font-weight: 500;
-}
-
-.biomasa-date-range {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.biomasa-camiones-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--color-primary-bg);
-  color: var(--color-primary-dark);
-  font-weight: var(--weight-bold);
-  font-size: 14px;
 }
 
 .biomasa-action-bar {
@@ -5449,70 +3406,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   margin: 0;
 }
 
-/* Provider rows */
-.hds-provider-row {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.hds-provider-clickable {
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 8px;
-  margin: 0 -8px;
-  transition: background 0.15s;
-}
-.hds-provider-clickable:hover {
-  background: #f1f5f9;
-}
-.hds-provider-clickable.is-filter-active {
-  background: #eff6ff;
-  outline: 1.5px solid #bfdbfe;
-}
-.hds-provider-clickable.is-filter-active .hds-provider-name {
-  color: #1d4ed8;
-  font-weight: 600;
-}
 .hds-filter-clear {
   color: #ef4444 !important;
   font-size: 11px !important;
-}
-.hds-provider-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.hds-provider-name {
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex: 1;
-}
-.hds-provider-val {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.hds-provider-bar {
-  width: 100%;
-  height: 4px;
-  background: #e2e8f0;
-  border-radius: 2px;
-  overflow: hidden;
-}
-.hds-provider-bar-fill {
-  height: 100%;
-  background: #2563eb;
-  border-radius: 2px;
-  transition: width 0.4s ease;
-  min-width: 2px;
 }
 
 /* Donut chart */
@@ -6029,12 +3925,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 /* ── Status chips: reemplazan el grid de 5 tarjetas KPI ── */
-.disp-status-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .disp-status-chip {
   display: inline-flex;
   align-items: center;
@@ -6278,33 +4168,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .disp-res-stacked-segment--danger  { background: #ef4444; }
 .disp-res-stacked-segment--muted   { background: #94a3b8; }
 
-/* ── Porcentaje junto al total por estado ── */
-.disp-res-pct {
-  min-width: 34px;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: right;
-}
-
-/* ── Estado vacío (0 t): fila compacta y sutil ── */
-.disponibilidad-state-group.is-empty {
-  opacity: 0.62;
-}
-.disponibilidad-state-group.is-empty .disponibilidad-state-group-header {
-  padding-top: 9px;
-  padding-bottom: 6px;
-}
-.disponibilidad-state-group.is-empty .disponibilidad-state-group-toggle > .disponibilidad-bar-track {
-  height: 4px;
-  margin-bottom: 8px;
-}
-.disponibilidad-state-group.is-empty .disponibilidad-state-group-total strong {
-  color: var(--color-text-muted);
-  font-size: 14px;
-  font-weight: 600;
-}
-
 /* ── Animación al expandir registros de un estado ── */
 .disponibilidad-state-records {
   animation: disp-slide-down 0.18s ease;
@@ -6491,23 +4354,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: var(--color-border);
   margin: 0 10px;
   flex-shrink: 0;
-}
-
-/* Meta del drawer en una sola línea */
-.disponibilidad-analysis-detail-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 0;
-  overflow: hidden;
-}
-.disponibilidad-analysis-detail-meta span:last-child {
-  width: auto;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ── Panel de filtros del análisis gráfico ── */
@@ -6800,7 +4646,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 @media (max-width: 640px) {
-  .biomasa-container,
   .biomasa-content-frame,
   .tab-content-area {
     min-width: 0;
@@ -6811,18 +4656,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     padding-right: 10px;
   }
 
-  .disponibilidad-tabs,
   .prog-sub-nav-bar,
-  .harvest-program-toolbar,
-  .harvest-followup-toolbar,
-  .biomasa-toolbar {
+  .harvest-program-toolbar {
     display: grid !important;
     grid-template-columns: 1fr;
     gap: 10px;
     align-items: stretch !important;
   }
 
-  .disponibilidad-tabs,
   .prog-sub-nav,
   .disp-filter-bar {
     overflow-x: auto;
@@ -6830,7 +4671,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     scrollbar-width: none;
   }
 
-  .disponibilidad-tabs::-webkit-scrollbar,
   .prog-sub-nav::-webkit-scrollbar,
   .disp-filter-bar::-webkit-scrollbar {
     display: none;
@@ -6868,9 +4708,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   .disp-filter-bar__cta,
   .disp-view-selector,
   .harvest-program-toolbar .mx-btn,
-  .harvest-program-toolbar .mx-btn-icon,
-  .harvest-followup-toolbar .mx-btn,
-  .harvest-followup-toolbar .mx-btn-icon {
+  .harvest-program-toolbar .mx-btn-icon {
     width: 100%;
     min-height: 42px;
     justify-content: center;
@@ -6891,8 +4729,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   }
 
   .disponibilidad-table-card,
-  .harvest-program-table-card,
-  .harvest-followup-panel {
+  .harvest-program-table-card {
     margin: 12px 8px 16px;
     border: none !important;
     background: transparent !important;
@@ -6900,36 +4737,31 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   }
 
   .disponibilidad-table-scroll,
-  .harvest-program-table-card .mx-table-wrap,
-  .harvest-followup-table-wrap {
+  .harvest-program-table-card .mx-table-wrap {
     overflow: visible !important;
   }
 
   .disponibilidad-table,
-  .harvest-prog-table,
-  .harvest-followup-table {
+  .harvest-prog-table {
     display: block;
     width: 100%;
     min-width: 0 !important;
   }
 
   .disponibilidad-table thead,
-  .harvest-prog-table thead,
-  .harvest-followup-table thead {
+  .harvest-prog-table thead {
     display: none;
   }
 
   .disponibilidad-table tbody,
-  .harvest-prog-table tbody,
-  .harvest-followup-table tbody {
+  .harvest-prog-table tbody {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
   .disponibilidad-table tr,
-  .harvest-prog-table tr,
-  .harvest-followup-table tr {
+  .harvest-prog-table tr {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -6941,8 +4773,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   }
 
   .disponibilidad-table td,
-  .harvest-prog-table td,
-  .harvest-followup-table td {
+  .harvest-prog-table td {
     display: flex;
     min-width: 0;
     flex-direction: column;
@@ -6956,8 +4787,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
   .disponibilidad-table td[data-label]::before,
   .disponibilidad-table .disponibilidad-observation::before,
-  .harvest-prog-table td[data-label]::before,
-  .harvest-followup-table td[data-label]::before {
+  .harvest-prog-table td[data-label]::before {
     content: attr(data-label);
     font-size: 0.68rem;
     font-weight: 900;
@@ -6975,16 +4805,12 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   .disponibilidad-table td[data-label="Acciones"],
   .disponibilidad-table .disponibilidad-observation,
   .harvest-prog-table td[data-label="Proveedor / Centro"],
-  .harvest-prog-table td[data-label="Acciones"],
-  .harvest-followup-table td[data-label="Proveedor / Centro"],
-  .harvest-followup-table td[data-label="Última novedad"],
-  .harvest-followup-table td[data-label="Acción"] {
+  .harvest-prog-table td[data-label="Acciones"] {
     grid-column: 1 / -1;
   }
 
   .disponibilidad-row-actions,
-  .biomasa-action-bar,
-  .harvest-followup-actions {
+  .biomasa-action-bar {
     width: 100%;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6994,8 +4820,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
   .disponibilidad-row-actions .mx-btn,
   .disponibilidad-row-actions .mx-btn-icon,
-  .biomasa-action-bar .mx-action-btn,
-  .harvest-followup-actions .mx-btn {
+  .biomasa-action-bar .mx-action-btn {
     width: 100%;
     min-height: 42px;
     justify-content: center;
@@ -7006,8 +4831,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     grid-column: 1 / -1;
   }
 
-  .harvest-prog-name,
-  .biomasa-prov-name {
+  .harvest-prog-name {
     font-size: 1rem;
     line-height: 1.2;
     word-break: break-word;
@@ -7099,9 +4923,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     grid-template-columns: 1fr !important;
   }
 
-  .disp-form-triple {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Programa de cosecha: calendario semana/mes usable en celular */
@@ -8240,75 +6061,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   background: #DBEAFE;
   border-color: #93C5FD;
   color: #1D4ED8;
-}
-
-/* ── Avance de consumo inline (vista semanal, fila proveedor) ──── */
-.wk-prov-product-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.wk-avance-inline {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.wk-avance-bar {
-  height: 3px;
-  background: var(--color-border, #e5e7eb);
-  border-radius: 2px;
-  overflow: hidden;
-  min-width: 36px;
-}
-
-.wk-avance-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.4s ease;
-}
-
-.wk-avance-text {
-  font-size: 10px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  line-height: 1;
-  letter-spacing: 0.01em;
-}
-
-/* ── Avance programado acumulado (panel derecho) ──────────────── */
-.hds-avance-prog {
-  margin-top: 6px;
-  padding-top: 5px;
-  border-top: 1px dashed var(--color-border, #e5e7eb);
-}
-.hds-avance-prog-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--color-text-muted);
-  margin-bottom: 4px;
-  gap: 4px;
-}
-.hds-avance-prog-label span:last-child {
-  font-weight: 600;
-  color: var(--color-text);
-  white-space: nowrap;
-}
-.hds-avance-prog-bar {
-  height: 3px;
-  background: var(--color-border, #e5e7eb);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.hds-avance-prog-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.4s ease;
 }
 
 /* ── Provider mini-cards (panel derecho semanal + mensual) ── */
