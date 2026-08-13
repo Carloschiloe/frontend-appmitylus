@@ -433,40 +433,44 @@ export default function ProgramaModalesView({
                   {centroStr && <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>{centroStr}</div>}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Total programado</span>
-                  <div style={{ ...S.valLg, color: '#2563EB' }}>{totalPrograma > 0 ? `${fmtNumber(totalPrograma, 0)} t` : '—'}</div>
+              {/* Metricas clave: lo que realmente decide si conviene confirmar */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ ...S.card, background: '#EFF6FF', border: '1px solid #BFDBFE', textAlign: 'center', padding: '16px 12px' }}>
+                  <span style={{ ...S.label, color: '#3B82F6' }}>Total programado</span>
+                  <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1, color: '#1D4ED8' }}>{totalPrograma > 0 ? `${fmtNumber(totalPrograma, 0)} t` : '—'}</div>
                 </div>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Saldo del trato</span>
-                  <div style={{ ...S.valLg, color: saldo != null && saldo < 0 ? '#EF4444' : '#10B981' }}>
+                <div style={{ ...S.card, background: saldo != null && saldo < 0 ? '#FEF2F2' : '#F0FDF4', border: `1px solid ${saldo != null && saldo < 0 ? '#FECACA' : '#BBF7D0'}`, textAlign: 'center', padding: '16px 12px' }}>
+                  <span style={{ ...S.label, color: saldo != null && saldo < 0 ? '#DC2626' : '#16A34A' }}>Saldo tras este programa</span>
+                  <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1, color: saldo != null && saldo < 0 ? '#DC2626' : '#16A34A' }}>
                     {saldo != null ? `${fmtNumber(Math.max(0, saldo), 0)} t` : '—'}
                   </div>
                 </div>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Producto</span>
-                  <div style={{ ...S.valMd }}>{prodLabel}</div>
-                </div>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Inicio</span>
-                  <div style={{ ...S.valMd }}>{fmtDate(formData.vigenciaDesde)}</div>
-                </div>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Total diario</span>
-                  <div style={{ ...S.valMd }}>{totalToneladasDia > 0 ? `${fmtNumber(totalToneladasDia, 0)} t/día` : '—'}</div>
-                </div>
-                <div style={{ ...S.card, textAlign: 'center' }}>
-                  <span style={S.label}>Días efectivos</span>
-                  <div style={{ ...S.valMd }}>{dias != null ? `${dias} días` : '—'}</div>
-                </div>
               </div>
-              {terminoEstimado && (
+
+              {/* Datos de referencia: secundarios, mismo peso visual entre si */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  { label: 'Producto', value: prodLabel },
+                  { label: 'Inicio', value: fmtDate(formData.vigenciaDesde) },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ flex: '1 1 140px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '8px 12px' }}>
+                    <span style={{ fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em' }}>{label}</span>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1E293B', marginTop: 2 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Ritmo -> dias -> termino, como una sola idea en vez de 3 cajas sueltas */}
+              {(totalToneladasDia > 0 || dias != null || terminoEstimado) && (
                 <div style={{ ...S.card, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={S.iconCircle('#DBEAFE')}><CalendarIcon size={20} color="#2563EB" /></div>
-                  <div>
-                    <span style={{ ...S.label, color: '#3B82F6', marginBottom: 3 }}>Término estimado</span>
-                    <div style={{ ...S.valMd, fontSize: 18, color: '#1D4ED8' }}>{terminoEstimado}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 8px', alignItems: 'baseline', flex: 1 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#1D4ED8' }}>{totalToneladasDia > 0 ? `${fmtNumber(totalToneladasDia, 0)} t/día` : '—'}</span>
+                    <span style={{ fontSize: 13, color: '#94A3B8' }}>·</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#1D4ED8' }}>{dias != null ? `${dias} días` : '—'}</span>
+                    <span style={{ fontSize: 13, color: '#94A3B8' }}>·</span>
+                    <span style={{ fontSize: 13, color: '#64748B' }}>termina</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#1D4ED8' }}>{terminoEstimado || 'Pendiente'}</span>
                   </div>
                 </div>
               )}
@@ -506,12 +510,6 @@ export default function ProgramaModalesView({
                   <div style={{ fontSize: 13, color: '#78350F', lineHeight: 1.6 }}>{formData.notas}</div>
                 </div>
               )}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: '11px 14px' }}>
-                <AlertTriangle size={16} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5 }}>
-                  Este programa se {editingId ? 'actualizará' : 'creará'} para <strong>{provNombre}</strong>{centroStr ? ` · ${centroStr}` : ''}.
-                </span>
-              </div>
             </div>
             <div style={{ background: '#fff', padding: '14px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
               <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowConfirm(false)}>← Volver a editar</button>
