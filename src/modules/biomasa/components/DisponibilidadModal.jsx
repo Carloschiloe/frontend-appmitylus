@@ -264,8 +264,9 @@ export default function DisponibilidadModal({
       centroOrigenComuna: form.centroOrigenComuna || '',
       centroOrigenProveedor: form.centroOrigenProveedor || '',
       // Si el proveedor seleccionado tiene un tipo definido (ej: comercializadora, titular), usarlo.
-      // Si no, recurrir a la lógica legacy (sin centros propios => comercializadora) a menos que ya estemos editando
-      tipo: form.tipo || selectedProvider?.tipo || (showCentroOrigen ? 'comercializadora' : ''),
+      // Si no, recurrir a la lógica legacy (centro de origen distinto => comercializadora) SOLO al crear:
+      // un registro existente nunca se re-clasifica solo por editarlo.
+      tipo: form.tipo || selectedProvider?.tipo || (!item && showCentroOrigen ? 'comercializadora' : ''),
     };
   };
 
@@ -393,6 +394,17 @@ export default function DisponibilidadModal({
             </div>
 
             {validationError && <div className="disponibilidad-form-error disponibilidad-field-wide">{validationError}</div>}
+
+            {/* ── Tipo de proveedor (editable a mano, no se infiere solo) ───── */}
+            {form.proveedorKey && (
+              <div className="mx-form-group disponibilidad-field-wide">
+                <span className="mx-form-label">Tipo de proveedor</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className={`mx-btn sm ${form.tipo !== 'comercializadora' ? 'mx-btn-primary' : 'mx-btn-outline'}`} onClick={() => update('tipo', 'titular')}>Titular</button>
+                  <button type="button" className={`mx-btn sm ${form.tipo === 'comercializadora' ? 'mx-btn-primary' : 'mx-btn-outline'}`} onClick={() => update('tipo', 'comercializadora')}>Comercializadora</button>
+                </div>
+              </div>
+            )}
 
             {/* ── Centro / Chip comuna / Producto ───────────────────────────── */}
             {showCentroOrigen ? (
