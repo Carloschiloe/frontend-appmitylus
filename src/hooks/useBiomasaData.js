@@ -34,6 +34,7 @@ export function useBiomasaData(mes, viewContext = {}) {
   const [programas, setProgramas] = useState([]);
   const [calData, setCalData] = useState({});
   const [notasDia, setNotasDia] = useState({});
+  const [notasSemana, setNotasSemana] = useState({});
   const [tratosAcordados, setTratosAcordados] = useState([]);
   const [tratosBiomasa, setTratosBiomasa] = useState([]);
   const [perdidasBiomasa, setPerdidasBiomasa] = useState([]);
@@ -54,6 +55,7 @@ export function useBiomasaData(mes, viewContext = {}) {
     if (cached) {
       setCalData(cached.calendario);
       setNotasDia(cached.notas);
+      setNotasSemana(cached.notasSemana);
     }
 
     setLoading(!cached);
@@ -101,6 +103,8 @@ export function useBiomasaData(mes, viewContext = {}) {
         keys.push('calRes');
         promises.push(apiClient.get(`/notas-dia?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
         keys.push('notasRes');
+        promises.push(apiClient.get(`/notas-semana?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
+        keys.push('notasSemanaRes');
         // Calibre registrado por proveedor (disponibilidad), para mostrar cuando el
         // programa aún no tiene muestreo propio.
         promises.push(getDisponibilidades({ from: '2020-01', to: '2035-12' }).catch(() => []));
@@ -114,12 +118,14 @@ export function useBiomasaData(mes, viewContext = {}) {
       if (resMap.disp) setDisp(resMap.disp || []);
       if (resMap.asig) setAsig(resMap.asig || []);
       if (resMap.progRes) setProgramas(resMap.progRes.items || []);
-      if (resMap.calRes || resMap.notasRes) {
+      if (resMap.calRes || resMap.notasRes || resMap.notasSemanaRes) {
         const calendario = resMap.calRes?.calendario || {};
         const notas = resMap.notasRes?.notas || {};
+        const notasSemana = resMap.notasSemanaRes?.notas || {};
         setCalData(calendario);
         setNotasDia(notas);
-        if (isCalendario) calCacheRef.current.set(mes, { calendario, notas });
+        setNotasSemana(notasSemana);
+        if (isCalendario) calCacheRef.current.set(mes, { calendario, notas, notasSemana });
       }
       if (resMap.tratosRes) setTratosAcordados(resMap.tratosRes.items || []);
 
@@ -159,6 +165,7 @@ export function useBiomasaData(mes, viewContext = {}) {
     programas,
     calData,
     notasDia,
+    notasSemana,
     tratosAcordados,
     tratosBiomasa,
     perdidasBiomasa,

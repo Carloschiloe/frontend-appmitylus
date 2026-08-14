@@ -2728,6 +2728,23 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 .wk-nota-add:hover { color: var(--color-text-subtle); }
 
+/* Observación general de la semana — celda ancha (spans las columnas de días+SEM+Condición) */
+.wk-nota-semana-cell {
+  background: #F8FAFC;
+  border-left: 1px solid #E2E8F0;
+  padding: 6px 14px;
+}
+.wk-nota-semana-cell .wk-nota-text { font-size: 11px; }
+.wk-nota-semana-add {
+  opacity: 1;
+  pointer-events: auto;
+  text-align: left;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 500;
+}
+.wk-nota-semana-add:hover { color: #64748B; }
+
 /* En pantallas tactiles no existe un hover persistente fiable: si una accion
    nace oculta, el primer toque solo la revela y el segundo ejecuta el click. */
 @media (hover: none), (pointer: coarse) {

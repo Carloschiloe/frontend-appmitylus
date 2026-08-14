@@ -20,6 +20,7 @@ export function useProgramaActions({
   setPauseModal,
   setSuspendPopover,
   setNotaPopover,
+  setNotaSemanaPopover,
   setFinalizingProgram,
   setFinalizeForm,
   setShowFinalizeModal,
@@ -193,6 +194,28 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
+  // Observación general de la semana (no ligada a un día ni a un proveedor puntual).
+  const handleUpsertNotaSemana = useCallback(async (weekKey, nota) => {
+    if (!weekKey || !String(nota || '').trim()) return;
+    try {
+      await apiClient.post('/notas-semana', { weekKey, nota });
+      setNotaSemanaPopover(null);
+      load();
+    } catch (e) {
+      addToast({ title: 'Error', message: e.message, type: 'error' });
+    }
+  }, [addToast, load]);
+
+  const handleDeleteNotaSemana = useCallback(async (weekKey) => {
+    try {
+      await apiClient.delete(`/notas-semana/${weekKey}`);
+      setNotaSemanaPopover(null);
+      load();
+    } catch (e) {
+      addToast({ title: 'Error', message: e.message, type: 'error' });
+    }
+  }, [addToast, load]);
+
   // Condición de materia prima de un proveedor para una semana puntual (distinto
   // de las notas fijas del programa: esta sí puede cambiar semana a semana).
   const handleUpsertCondicionSemana = useCallback(async (programaId, weekKey, nota) => {
@@ -273,6 +296,8 @@ export function useProgramaActions({
     handleReactivateDay,
     handleUpsertNotaDia,
     handleDeleteNotaDia,
+    handleUpsertNotaSemana,
+    handleDeleteNotaSemana,
     handleUpsertCondicionSemana,
     handleOpenAdjustModal,
     handleAplicarAjusteDia,

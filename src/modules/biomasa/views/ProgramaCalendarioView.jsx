@@ -65,7 +65,9 @@ export default function ProgramaCalendarioView({
   handleQuickAdjustTipo,
   tiposTransporte = [],
   notasDia,
+  notasSemana,
   setNotaPopover,
+  setNotaSemanaPopover,
   setCondicionPopover,
   weekSummaries,
   weekSummaryFull,
@@ -645,6 +647,34 @@ export default function ProgramaCalendarioView({
               })}
               <div className="harvest-week-v2-cell" />
               <div className="harvest-week-v2-cell" />
+            </div>
+
+            <div className="harvest-week-v2-row harvest-week-v2-notas">
+              <div className="harvest-week-v2-label wk-nota-label">Nota semana</div>
+              <div className="harvest-week-v2-meta is-empty" />
+              <div className="harvest-week-v2-meta is-empty" />
+              {(() => {
+                const weekKey = weekDays[0];
+                const notaSemana = notasSemana?.[weekKey];
+                return (
+                  <div className="harvest-week-v2-cell wk-nota-cell wk-nota-semana-cell" style={{ gridColumn: 'span 9' }}>
+                    {notaSemana ? (
+                      <div className="wk-nota-content">
+                        <span className="wk-nota-text" title={notaSemana.nota}>{notaSemana.nota}</span>
+                        <button className="wk-nota-btn" title="Editar observación de la semana" onClick={e => {
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setNotaSemanaPopover({ weekKey, nota: notaSemana.nota, x: Math.min(r.left, window.innerWidth - 290), y: r.bottom + 6 });
+                        }}>✏</button>
+                      </div>
+                    ) : (
+                      <button className="wk-nota-add wk-nota-semana-add" title="Agregar observación de la semana" onClick={e => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setNotaSemanaPopover({ weekKey, nota: '', x: Math.min(r.left, window.innerWidth - 290), y: r.bottom + 6 });
+                      }}>＋ Agregar observación general de la semana</button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
           </>

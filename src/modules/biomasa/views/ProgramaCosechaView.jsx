@@ -29,6 +29,7 @@ export default function ProgramaCosechaView({
   filteredProgramIds,
   calData,
   notasDia,
+  notasSemana,
   tratosAcordados,
   calibreByProveedor,
   handleOpenModal,
@@ -42,6 +43,7 @@ export default function ProgramaCosechaView({
   handleCalendarBoardToggle,
   setSuspendPopover,
   setNotaPopover,
+  setNotaSemanaPopover,
   setCondicionPopover,
   setPauseModal,
   setPauseForm,
@@ -110,7 +112,9 @@ export default function ProgramaCosechaView({
           tiposTransporte={tiposTransporte}
           setSuspendPopover={setSuspendPopover}
           notasDia={notasDia}
+          notasSemana={notasSemana}
           setNotaPopover={setNotaPopover}
+          setNotaSemanaPopover={setNotaSemanaPopover}
           setCondicionPopover={setCondicionPopover}
           weekSummaries={weekSummaries}
           weekSummaryFull={weekSummaryFull}

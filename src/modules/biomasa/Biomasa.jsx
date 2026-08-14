@@ -35,7 +35,7 @@ export default function Biomasa() {
   const statusSubTab = 'disponibilidad';
   const [progSubTab, setProgSubTab] = useState('programa');
   const [mes, setMes] = useState(mesActual);
-  const { loading, disp, programas, calData, notasDia, tratosAcordados, reload: load } = useBiomasaData(mes, {
+  const { loading, disp, programas, calData, notasDia, notasSemana, tratosAcordados, reload: load } = useBiomasaData(mes, {
     isStatusView,
     isTratosView,
     isProgramView,
@@ -79,6 +79,7 @@ export default function Biomasa() {
 
   const [suspendPopover, setSuspendPopover] = useState(null); // { programa, fecha, x, y, motivo, nota }
   const [notaPopover, setNotaPopover] = useState(null); // { fechaKey, nota, x, y }
+  const [notaSemanaPopover, setNotaSemanaPopover] = useState(null); // { weekKey, nota, x, y }
   const [condicionPopover, setCondicionPopover] = useState(null); // { programaId, weekKey, nota, x, y, proveedorNombre }
   const [pauseModal, setPauseModal] = useState(null); // { id, proveedorNombre }
   const [pauseForm, setPauseForm] = useState({ pausadoDesde: todayKey(), motivoPausa: '' });
@@ -275,6 +276,8 @@ export default function Biomasa() {
     handleReactivateDay,
     handleUpsertNotaDia,
     handleDeleteNotaDia,
+    handleUpsertNotaSemana,
+    handleDeleteNotaSemana,
     handleUpsertCondicionSemana,
     handleOpenAdjustModal,
     handleAplicarAjusteDia,
@@ -292,6 +295,7 @@ export default function Biomasa() {
     setPauseModal,
     setSuspendPopover,
     setNotaPopover,
+    setNotaSemanaPopover,
     setFinalizingProgram,
     setFinalizeForm,
     setShowFinalizeModal,
@@ -386,6 +390,7 @@ export default function Biomasa() {
               filteredProgramIds={filteredProgramIds}
               calData={calData}
               notasDia={notasDia}
+              notasSemana={notasSemana}
               tratosAcordados={tratosAcordados}
               calibreByProveedor={calibreByProveedor}
               handleOpenModal={handleOpenModal}
@@ -397,6 +402,7 @@ export default function Biomasa() {
               handleCalendarBoardToggle={handleCalendarBoardToggle}
               setSuspendPopover={setSuspendPopover}
               setNotaPopover={setNotaPopover}
+              setNotaSemanaPopover={setNotaSemanaPopover}
               setCondicionPopover={setCondicionPopover}
               setPauseModal={setPauseModal}
               setPauseForm={setPauseForm}
@@ -477,6 +483,11 @@ export default function Biomasa() {
         notasDia={notasDia}
         handleUpsertNotaDia={handleUpsertNotaDia}
         handleDeleteNotaDia={handleDeleteNotaDia}
+        notaSemanaPopover={notaSemanaPopover}
+        setNotaSemanaPopover={setNotaSemanaPopover}
+        notasSemana={notasSemana}
+        handleUpsertNotaSemana={handleUpsertNotaSemana}
+        handleDeleteNotaSemana={handleDeleteNotaSemana}
         condicionPopover={condicionPopover}
         setCondicionPopover={setCondicionPopover}
         handleUpsertCondicionSemana={handleUpsertCondicionSemana}

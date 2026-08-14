@@ -45,6 +45,10 @@ export default function ProgramaModalesView({
   notaPopover, setNotaPopover,
   notasDia,
   handleUpsertNotaDia, handleDeleteNotaDia,
+  // NotaSemanaPopover (observación general de la semana, no ligada a un día ni proveedor)
+  notaSemanaPopover, setNotaSemanaPopover,
+  notasSemana,
+  handleUpsertNotaSemana, handleDeleteNotaSemana,
   // CondicionPopover (condicion de materia prima por semana, por proveedor)
   condicionPopover, setCondicionPopover,
   handleUpsertCondicionSemana,
@@ -658,6 +662,28 @@ export default function ProgramaModalesView({
               <button className="mx-btn mx-btn-outline sm" onClick={() => setNotaPopover(null)}>Cancelar</button>
               <button className="mx-btn mx-btn-primary sm" disabled={!notaPopover.nota?.trim()}
                 onClick={() => handleUpsertNotaDia(notaPopover.fechaKey, notaPopover.nota)}>Guardar</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── POPOVER NOTA DE LA SEMANA (observación general, no ligada a un día ni proveedor) ── */}
+      {notaSemanaPopover && (
+        <>
+          <div className="suspend-popover-backdrop" onClick={() => setNotaSemanaPopover(null)} />
+          <div className="suspend-popover nota-popover" style={{ left: notaSemanaPopover.x, top: notaSemanaPopover.y }}>
+            <div className="suspend-popover-title">Nota de la semana</div>
+            <textarea className="mx-textarea" rows={3} autoFocus
+              placeholder="Ej: Semana con marea roja en Hualaihué, revisar continuidad..."
+              value={notaSemanaPopover.nota}
+              onChange={e => setNotaSemanaPopover(p => ({ ...p, nota: e.target.value }))} />
+            <div className="suspend-popover-footer">
+              {notasSemana?.[notaSemanaPopover.weekKey] && (
+                <button className="mx-btn mx-btn-danger sm" onClick={() => handleDeleteNotaSemana(notaSemanaPopover.weekKey)}>Eliminar</button>
+              )}
+              <button className="mx-btn mx-btn-outline sm" onClick={() => setNotaSemanaPopover(null)}>Cancelar</button>
+              <button className="mx-btn mx-btn-primary sm" disabled={!notaSemanaPopover.nota?.trim()}
+                onClick={() => handleUpsertNotaSemana(notaSemanaPopover.weekKey, notaSemanaPopover.nota)}>Guardar</button>
             </div>
           </div>
         </>
