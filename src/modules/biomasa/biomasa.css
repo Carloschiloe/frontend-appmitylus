@@ -2104,6 +2104,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   display: flex;
   align-items: center;
 }
+.harvest-week-v2-head .harvest-week-v2-label:not(:first-child) {
+  border-left: 1px solid #E2E8F0;
+  justify-content: center;
+  text-align: center;
+}
 .harvest-week-v2-daycol {
   padding: 14px 6px 12px;
   text-align: center;

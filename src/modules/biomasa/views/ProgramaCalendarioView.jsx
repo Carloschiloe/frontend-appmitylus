@@ -413,7 +413,7 @@ export default function ProgramaCalendarioView({
           <div className="harvest-week-v2">
             <div className="harvest-week-v2-head">
               <div className="harvest-week-v2-label">Proveedor</div>
-              <div className="harvest-week-v2-label">Ton cerradas</div>
+              <div className="harvest-week-v2-label">Tons total</div>
               <div className="harvest-week-v2-label">Calibre</div>
               {weekDays.map(d => {
                 const isToday = d === todayKey();
