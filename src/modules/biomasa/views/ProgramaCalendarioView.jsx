@@ -113,9 +113,26 @@ export default function ProgramaCalendarioView({
     }).filter(([, prog]) => prog),
   );
 
-  // Suma de tonsEstimadas de los programas visibles esta semana (mismo campo que ya
-  // guarda cada programa; "Ton cerradas" = lo comprometido en total, no lo de la semana).
-  const tonsCerradasSemana = Object.keys(weekData).reduce((s, id) => s + (Number(programasById.get(id)?.tonsEstimadas) || 0), 0);
+  // Saldo del trato AL INICIO de la semana que se está viendo (total acordado menos
+  // lo ya consumido en semanas ANTERIORES) — misma fórmula que ya usa el resto de la
+  // app (getProgramVolumeProgress), solo que aquí "hasta" es el día antes de esta
+  // semana en vez de "hoy". Así "Ton cerradas" baja semana a semana a medida que se
+  // va consumiendo, en vez de mostrar siempre el total original del contrato.
+  const saldoByProgram = useMemo(() => {
+    const map = {};
+    if (!weekDays.length) return map;
+    const diaAnterior = new Date(weekDays[0] + 'T00:00:00Z');
+    diaAnterior.setUTCDate(diaAnterior.getUTCDate() - 1);
+    Object.entries(weekData).forEach(([id]) => {
+      const prog = programasById.get(id);
+      if (!prog) return;
+      const vol = getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), diaAnterior);
+      map[id] = Math.max(0, vol.balance);
+    });
+    return map;
+  }, [weekData, programasById, weekDays, tiposTransporte]);
+
+  const tonsCerradasSemana = Object.values(saldoByProgram).reduce((s, v) => s + v, 0);
 
   // Mapa id→vol para detectar sobrepaso de biomasa acordada en cualquier programa activo.
   const overageMap = useMemo(() => {
@@ -482,7 +499,7 @@ export default function ProgramaCalendarioView({
                     )}
                   </div>
                   <div className={`harvest-week-v2-meta ${data.centro ? '' : 'is-empty'}`}>{data.centro || '—'}</div>
-                  <div className={`harvest-week-v2-meta ${programa?.tonsEstimadas ? '' : 'is-empty'}`}>{programa?.tonsEstimadas ? fmtTonsInt(programa.tonsEstimadas) : '—'}</div>
+                  <div className={`harvest-week-v2-meta ${saldoByProgram[id] ? '' : 'is-empty'}`} title="Saldo del trato al inicio de esta semana">{saldoByProgram[id] ? fmtTonsInt(saldoByProgram[id]) : '—'}</div>
                   <div className={`harvest-week-v2-meta ${(data.calibreMin != null || data.calibreMax != null) ? '' : 'is-empty'}`}>
                     {(data.calibreMin != null || data.calibreMax != null) ? `${data.calibreMin ?? '?'}–${data.calibreMax ?? '?'}` : '—'}
                   </div>
