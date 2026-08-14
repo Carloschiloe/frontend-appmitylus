@@ -13,6 +13,10 @@ import {
   AlertTriangle,
   SlidersHorizontal,
   MapPin,
+  Droplet,
+  Truck,
+  Users,
+  TrendingUp,
 } from 'lucide-react';
 import ProgramaSemanaModal from '../components/ProgramaSemanaModal';
 import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
@@ -329,6 +333,37 @@ export default function ProgramaCalendarioView({
           </div>
           </>
         ) : (
+          <>
+          <div className="harvest-week-kpi-strip">
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Droplet size={15} /></span>
+              <div>
+                <strong>{fmtNumber(weekSummaryFull.total.tons, 0)} t</strong>
+                <span>Total semana</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Truck size={15} /></span>
+              <div>
+                <strong>{weekSummaryFull.total.camiones}</strong>
+                <span>Camiones totales</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Users size={15} /></span>
+              <div>
+                <strong>{weekSummaryFull.providers.length}</strong>
+                <span>Proveedores</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><TrendingUp size={15} /></span>
+              <div>
+                <strong>{fmtNumber(weekSummaryFull.promedioDiario, 0)} t</strong>
+                <span>Promedio diario</span>
+              </div>
+            </div>
+          </div>
           <div className="harvest-week-v2">
             <div className="harvest-week-v2-head">
               <div className="harvest-week-v2-label" />
@@ -344,6 +379,9 @@ export default function ProgramaCalendarioView({
               <div className="harvest-week-v2-daycol harvest-week-v2-semcol">
                 <div className="harvest-week-v2-dayname">SEM</div>
                 <div className="harvest-week-v2-daynum">Σ</div>
+              </div>
+              <div className="harvest-week-v2-daycol harvest-week-v2-condicol">
+                <div className="harvest-week-v2-dayname">Condición MP</div>
               </div>
             </div>
 
@@ -483,6 +521,13 @@ export default function ProgramaCalendarioView({
                   <div className="harvest-week-v2-cell harvest-week-v2-total">
                     {calendarMetric === 'tons' ? fmtTonsInt(rowTotal.tons) : calendarMetric === 'both' ? <>{rowTotal.camiones} <span style={{fontSize:'0.75em'}}>cam</span>{rowTotal.tons > 0 && <span className="wk-tons-sub">{fmtTonsInt(rowTotal.tons)}</span>}</> : rowTotal.camiones}
                   </div>
+                  <div className="harvest-week-v2-cell harvest-week-v2-condicion">
+                    {programa?.notas?.trim() ? (
+                      <span className="wk-condicion-text" title={programa.notas}>{programa.notas}</span>
+                    ) : (
+                      <span className="harvest-week-v2-empty">—</span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -500,6 +545,7 @@ export default function ProgramaCalendarioView({
               <div className="harvest-week-v2-cell harvest-week-v2-total">
                 <strong>{calendarMetric === 'tons' ? fmtTonsInt(weekSummaries.total.tons) : calendarMetric === 'both' ? <>{weekSummaries.total.camiones} cam{weekSummaries.total.tons > 0 && <span className="wk-tons-sub">{fmtTonsInt(weekSummaries.total.tons)}</span>}</> : weekSummaries.total.camiones}</strong>
               </div>
+              <div className="harvest-week-v2-cell" />
             </div>
 
             <div className="harvest-week-v2-row harvest-week-v2-notas">
@@ -526,8 +572,10 @@ export default function ProgramaCalendarioView({
                 );
               })}
               <div className="harvest-week-v2-cell" />
+              <div className="harvest-week-v2-cell" />
             </div>
           </div>
+          </>
         )}
       </div>
 
@@ -646,19 +694,6 @@ export default function ProgramaCalendarioView({
               <div className="hds-header">
                 <div className="hds-header-icon"><Activity size={16} /></div>
                 <span className="hds-header-title">RESUMEN DE LA SEMANA</span>
-              </div>
-              <div className="hds-kpi-hero">
-                <span className="hds-kpi-big">{fmtNumber(weekSummaryFull.total.tons, 0)}</span>
-                <span className="hds-kpi-unit">t</span>
-                <span className="hds-kpi-sub">{weekSummaryFull.total.camiones} camiones · {weekSummaryFull.providers.length} proveedores</span>
-              </div>
-              <div className="hds-kpi-row">
-                <div className="hds-kpi-card"><strong>{fmtNumber(weekSummaryFull.promedioDiario, 0)} t</strong><span>Promedio diario</span></div>
-                <div className="hds-kpi-card"><strong>{weekSummaryFull.total.camiones}</strong><span>Camiones totales</span></div>
-                <div className="hds-kpi-card">
-                  <strong>{fmtNumber(weekSummaryFull.maximoDia, 0)} t</strong>
-                  <span>Máximo día{weekSummaryFull.maximoDiaKey ? ` (${new Date(weekSummaryFull.maximoDiaKey + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()})` : ''}</span>
-                </div>
               </div>
               <section className="hds-section">
                 <div className="hds-section-head">
