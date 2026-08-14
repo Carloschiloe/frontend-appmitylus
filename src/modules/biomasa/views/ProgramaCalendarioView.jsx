@@ -563,7 +563,7 @@ export default function ProgramaCalendarioView({
                   <div className="harvest-week-v2-cell harvest-week-v2-total">
                     {calendarMetric === 'tons' ? fmtTonsInt(rowTotal.tons) : calendarMetric === 'both' ? <>{rowTotal.camiones} <span style={{fontSize:'0.75em'}}>cam</span>{rowTotal.tons > 0 && <span className="wk-tons-sub">{fmtTonsInt(rowTotal.tons)}</span>}</> : rowTotal.camiones}
                     {weekSummaryFull.total.tons > 0 && rowTotal.tons > 0 && (
-                      <span className="wk-tons-sub">{Math.round((rowTotal.tons / weekSummaryFull.total.tons) * 100)}% de la semana</span>
+                      <span className="wk-tons-sub">{Math.round((rowTotal.tons / weekSummaryFull.total.tons) * 100)}%</span>
                     )}
                   </div>
                   <button
