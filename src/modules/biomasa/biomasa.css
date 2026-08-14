@@ -1747,7 +1747,7 @@
 }
 
 .harvest-calendar-shell.week-mode.board-mode {
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: 1fr;
 }
 
 .harvest-calendar-main {
@@ -2408,7 +2408,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ── Franja de KPIs compacta (arriba de la tabla semanal) ── */
 .harvest-week-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
   margin-bottom: 14px;
 }

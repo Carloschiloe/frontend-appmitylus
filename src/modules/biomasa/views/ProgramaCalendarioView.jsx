@@ -17,6 +17,7 @@ import {
   Truck,
   Users,
   TrendingUp,
+  Wallet,
 } from 'lucide-react';
 import ProgramaSemanaModal from '../components/ProgramaSemanaModal';
 import ProviderMapModal from '../../gestion/submodules/ProviderMapModal';
@@ -357,6 +358,13 @@ export default function ProgramaCalendarioView({
               </div>
             </div>
             <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Wallet size={15} /></span>
+              <div>
+                <strong>{fmtNumber(tonsCerradasSemana - weekSummaryFull.total.tons, 0)} t</strong>
+                <span>Saldo</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
               <span className="harvest-week-kpi-icon"><Truck size={15} /></span>
               <div>
                 <strong>{weekSummaryFull.total.camiones}</strong>
@@ -537,8 +545,8 @@ export default function ProgramaCalendarioView({
                   })}
                   <div className="harvest-week-v2-cell harvest-week-v2-total">
                     {calendarMetric === 'tons' ? fmtTonsInt(rowTotal.tons) : calendarMetric === 'both' ? <>{rowTotal.camiones} <span style={{fontSize:'0.75em'}}>cam</span>{rowTotal.tons > 0 && <span className="wk-tons-sub">{fmtTonsInt(rowTotal.tons)}</span>}</> : rowTotal.camiones}
-                    {programa?.tonsEstimadas > 0 && (
-                      <span className="wk-tons-sub">{Math.round((rowTotal.tons / programa.tonsEstimadas) * 100)}% del total</span>
+                    {weekSummaryFull.total.tons > 0 && rowTotal.tons > 0 && (
+                      <span className="wk-tons-sub">{Math.round((rowTotal.tons / weekSummaryFull.total.tons) * 100)}% de la semana</span>
                     )}
                   </div>
                   <button
