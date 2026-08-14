@@ -2083,9 +2083,9 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .harvest-week-v2-head,
 .harvest-week-v2-row {
   display: grid;
-  grid-template-columns: 190px repeat(7, 1fr) 88px 150px;
+  grid-template-columns: 170px 100px 90px 90px repeat(7, 1fr) 88px 150px;
   align-items: stretch;
-  min-width: 850px;
+  min-width: 1200px;
 }
 
 /* ── Header ── */
@@ -2344,6 +2344,21 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   justify-content: center;
   gap: 2px;
 }
+
+/* ── Origen / Ton cerradas / Calibre (columnas fijas por proveedor) ── */
+.harvest-week-v2-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  border-left: 1px solid #E2E8F0;
+}
+.harvest-week-v2-meta.is-empty { color: #CBD5E1; }
 
 /* ── Condición MP (columna, viene de programa.notas) ── */
 .harvest-week-v2-condicol {
@@ -5219,8 +5234,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
   .harvest-week-v2-head,
   .harvest-week-v2-row {
-    grid-template-columns: 150px repeat(7, 78px) 70px 130px !important;
-    min-width: 896px !important;
+    grid-template-columns: 140px 90px 80px 80px repeat(7, 78px) 70px 130px !important;
+    min-width: 1236px !important;
   }
 
   .harvest-week-kpi-strip {

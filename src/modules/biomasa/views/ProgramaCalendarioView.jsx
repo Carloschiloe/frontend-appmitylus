@@ -109,6 +109,10 @@ export default function ProgramaCalendarioView({
     }).filter(([, prog]) => prog),
   );
 
+  // Suma de tonsEstimadas de los programas visibles esta semana (mismo campo que ya
+  // guarda cada programa; "Ton cerradas" = lo comprometido en total, no lo de la semana).
+  const tonsCerradasSemana = Object.keys(weekData).reduce((s, id) => s + (Number(programasById.get(id)?.tonsEstimadas) || 0), 0);
+
   // Mapa id→vol para detectar sobrepaso de biomasa acordada en cualquier programa activo.
   const overageMap = useMemo(() => {
     const map = {};
@@ -338,8 +342,15 @@ export default function ProgramaCalendarioView({
             <div className="harvest-week-kpi-card">
               <span className="harvest-week-kpi-icon"><Droplet size={15} /></span>
               <div>
+                <strong>{fmtNumber(tonsCerradasSemana, 0)} t</strong>
+                <span>Ton cerradas</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><TrendingUp size={15} /></span>
+              <div>
                 <strong>{fmtNumber(weekSummaryFull.total.tons, 0)} t</strong>
-                <span>Total semana</span>
+                <span>Programadas</span>
               </div>
             </div>
             <div className="harvest-week-kpi-card">
@@ -356,17 +367,13 @@ export default function ProgramaCalendarioView({
                 <span>Proveedores</span>
               </div>
             </div>
-            <div className="harvest-week-kpi-card">
-              <span className="harvest-week-kpi-icon"><TrendingUp size={15} /></span>
-              <div>
-                <strong>{fmtNumber(weekSummaryFull.promedioDiario, 0)} t</strong>
-                <span>Promedio diario</span>
-              </div>
-            </div>
           </div>
           <div className="harvest-week-v2">
             <div className="harvest-week-v2-head">
-              <div className="harvest-week-v2-label" />
+              <div className="harvest-week-v2-label">Proveedor</div>
+              <div className="harvest-week-v2-label">Origen</div>
+              <div className="harvest-week-v2-label">Ton cerradas</div>
+              <div className="harvest-week-v2-label">Calibre</div>
               {weekDays.map(d => {
                 const isToday = d === todayKey();
                 return (
@@ -403,23 +410,6 @@ export default function ProgramaCalendarioView({
                       )}
                     </div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
-                    {/* Centro + muestreo en una sola línea */}
-                    <div className="wk-prov-centro-muestreo">
-                      <span className="wk-prov-centro-code">{data.centro || '—'}</span>
-                      <span className="wk-prov-sep">·</span>
-                      {formatMuestreoResumen(data) ? (
-                        <span className="wk-prov-muestreo-inline">
-                          {formatMuestreoFecha(data.muestreoFecha, 'short') ? `${formatMuestreoFecha(data.muestreoFecha, 'short')}: ` : ''}
-                          {formatMuestreoResumen(data)}
-                        </span>
-                      ) : (data.calibreMin != null || data.calibreMax != null) ? (
-                        <span className="wk-prov-muestreo-inline">
-                          Calibre {data.calibreMin ?? '?'}–{data.calibreMax ?? '?'} uk
-                        </span>
-                      ) : (
-                        <span className="wk-prov-muestreo-inline wk-prov-muestreo--vacio">Sin muestreo</span>
-                      )}
-                    </div>
                     {/* Badge de vigencia próxima a vencer */}
                     {(() => {
                       if (!programa?.vigenciaHasta || programa.estado !== 'activo') return null;
@@ -460,6 +450,11 @@ export default function ProgramaCalendarioView({
                         <Pencil size={12} />
                       </button>
                     )}
+                  </div>
+                  <div className={`harvest-week-v2-meta ${data.centro ? '' : 'is-empty'}`}>{data.centro || '—'}</div>
+                  <div className={`harvest-week-v2-meta ${programa?.tonsEstimadas ? '' : 'is-empty'}`}>{programa?.tonsEstimadas ? fmtTonsInt(programa.tonsEstimadas) : '—'}</div>
+                  <div className={`harvest-week-v2-meta ${(data.calibreMin != null || data.calibreMax != null) ? '' : 'is-empty'}`}>
+                    {(data.calibreMin != null || data.calibreMax != null) ? `${data.calibreMin ?? '?'}–${data.calibreMax ?? '?'}` : '—'}
                   </div>
                   {data.dias.map((cell, i) => {
                     const dia = weekDays[i];
@@ -534,6 +529,9 @@ export default function ProgramaCalendarioView({
 
             <div className="harvest-week-v2-row harvest-week-v2-footer">
               <div className="harvest-week-v2-label">Total día</div>
+              <div className="harvest-week-v2-meta is-empty" />
+              <div className="harvest-week-v2-meta is-empty" />
+              <div className="harvest-week-v2-meta is-empty" />
               {weekDays.map(d => {
                 const s = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
                 return (
@@ -550,6 +548,9 @@ export default function ProgramaCalendarioView({
 
             <div className="harvest-week-v2-row harvest-week-v2-notas">
               <div className="harvest-week-v2-label wk-nota-label">Nota del día</div>
+              <div className="harvest-week-v2-meta is-empty" />
+              <div className="harvest-week-v2-meta is-empty" />
+              <div className="harvest-week-v2-meta is-empty" />
               {weekDays.map(d => {
                 const nota = notasDia?.[d];
                 return (
@@ -694,6 +695,19 @@ export default function ProgramaCalendarioView({
               <div className="hds-header">
                 <div className="hds-header-icon"><Activity size={16} /></div>
                 <span className="hds-header-title">RESUMEN DE LA SEMANA</span>
+              </div>
+              <div className="hds-kpi-hero">
+                <span className="hds-kpi-big">{fmtNumber(weekSummaryFull.total.tons, 0)}</span>
+                <span className="hds-kpi-unit">t</span>
+                <span className="hds-kpi-sub">{weekSummaryFull.total.camiones} camiones · {weekSummaryFull.providers.length} proveedores</span>
+              </div>
+              <div className="hds-kpi-row">
+                <div className="hds-kpi-card"><strong>{fmtNumber(weekSummaryFull.promedioDiario, 0)} t</strong><span>Promedio diario</span></div>
+                <div className="hds-kpi-card"><strong>{weekSummaryFull.total.camiones}</strong><span>Camiones totales</span></div>
+                <div className="hds-kpi-card">
+                  <strong>{fmtNumber(weekSummaryFull.maximoDia, 0)} t</strong>
+                  <span>Máximo día{weekSummaryFull.maximoDiaKey ? ` (${new Date(weekSummaryFull.maximoDiaKey + 'T12:00:00Z').toLocaleDateString('es-CL', { weekday: 'short' }).toUpperCase()})` : ''}</span>
+                </div>
               </div>
               <section className="hds-section">
                 <div className="hds-section-head">
