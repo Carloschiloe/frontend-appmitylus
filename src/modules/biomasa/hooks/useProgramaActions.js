@@ -193,6 +193,18 @@ export function useProgramaActions({
     }
   }, [addToast, load]);
 
+  // Condición de materia prima de un proveedor para una semana puntual (distinto
+  // de las notas fijas del programa: esta sí puede cambiar semana a semana).
+  const handleUpsertCondicionSemana = useCallback(async (programaId, weekKey, nota) => {
+    if (!programaId || !weekKey) return;
+    try {
+      await apiClient.patch(`/programa-cosecha/${programaId}/condicion-semana`, { weekKey, nota });
+      load();
+    } catch (e) {
+      addToast({ title: 'Error', message: e.message, type: 'error' });
+    }
+  }, [addToast, load]);
+
   // Abre el modal único "Ajustar día". accion: 'sumar' | 'restar' | 'suspender'.
   // composicionDia = desglose real del día (por tipo) para mostrar estado y validar la resta.
   const handleOpenAdjustModal = useCallback((programa, fecha = todayKey(), _currentCamiones = null, accion = 'sumar', _currentTons = 0, composicionDia = []) => {
@@ -261,6 +273,7 @@ export function useProgramaActions({
     handleReactivateDay,
     handleUpsertNotaDia,
     handleDeleteNotaDia,
+    handleUpsertCondicionSemana,
     handleOpenAdjustModal,
     handleAplicarAjusteDia,
     handleAplicarSemana,

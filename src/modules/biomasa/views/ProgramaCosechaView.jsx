@@ -42,6 +42,7 @@ export default function ProgramaCosechaView({
   handleCalendarBoardToggle,
   setSuspendPopover,
   setNotaPopover,
+  setCondicionPopover,
   setPauseModal,
   setPauseForm,
   setConfirmDelete,
@@ -110,6 +111,7 @@ export default function ProgramaCosechaView({
           setSuspendPopover={setSuspendPopover}
           notasDia={notasDia}
           setNotaPopover={setNotaPopover}
+          setCondicionPopover={setCondicionPopover}
           weekSummaries={weekSummaries}
           weekSummaryFull={weekSummaryFull}
           allWeekProviders={allWeekProviders}

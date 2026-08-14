@@ -45,6 +45,9 @@ export default function ProgramaModalesView({
   notaPopover, setNotaPopover,
   notasDia,
   handleUpsertNotaDia, handleDeleteNotaDia,
+  // CondicionPopover (condicion de materia prima por semana, por proveedor)
+  condicionPopover, setCondicionPopover,
+  handleUpsertCondicionSemana,
   // SuspendPopover
   suspendPopover, setSuspendPopover,
   handleSuspendDay,
@@ -655,6 +658,27 @@ export default function ProgramaModalesView({
               <button className="mx-btn mx-btn-outline sm" onClick={() => setNotaPopover(null)}>Cancelar</button>
               <button className="mx-btn mx-btn-primary sm" disabled={!notaPopover.nota?.trim()}
                 onClick={() => handleUpsertNotaDia(notaPopover.fechaKey, notaPopover.nota)}>Guardar</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── POPOVER CONDICIÓN MP DE LA SEMANA ── */}
+      {condicionPopover && (
+        <>
+          <div className="suspend-popover-backdrop" onClick={() => setCondicionPopover(null)} />
+          <div className="suspend-popover nota-popover" style={{ left: condicionPopover.x, top: condicionPopover.y }}>
+            <div className="suspend-popover-title">Condición MP{condicionPopover.proveedorNombre ? ` · ${condicionPopover.proveedorNombre}` : ''}</div>
+            <textarea className="mx-textarea" rows={3} autoFocus
+              placeholder="Ej: 17% carne, revisar antes de despachar..."
+              value={condicionPopover.nota}
+              onChange={e => setCondicionPopover(p => ({ ...p, nota: e.target.value }))} />
+            <div className="suspend-popover-footer">
+              <button className="mx-btn mx-btn-outline sm" onClick={() => setCondicionPopover(null)}>Cancelar</button>
+              <button className="mx-btn mx-btn-primary sm"
+                onClick={() => { handleUpsertCondicionSemana(condicionPopover.programaId, condicionPopover.weekKey, condicionPopover.nota); setCondicionPopover(null); }}>
+                Guardar
+              </button>
             </div>
           </div>
         </>
