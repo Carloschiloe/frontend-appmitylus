@@ -413,7 +413,6 @@ export default function ProgramaCalendarioView({
           <div className="harvest-week-v2">
             <div className="harvest-week-v2-head">
               <div className="harvest-week-v2-label">Proveedor</div>
-              <div className="harvest-week-v2-label">Origen</div>
               <div className="harvest-week-v2-label">Ton cerradas</div>
               <div className="harvest-week-v2-label">Calibre</div>
               {weekDays.map(d => {
@@ -457,6 +456,17 @@ export default function ProgramaCalendarioView({
                       )}
                     </div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
+                    <div className="wk-prov-centro-muestreo">
+                      {(data.comuna || data.centro) ? (
+                        <>
+                          {data.comuna && <span className="wk-prov-centro-code">{data.comuna}</span>}
+                          {data.comuna && data.centro && <span className="wk-prov-sep">·</span>}
+                          {data.centro && <span className="wk-prov-centro-code">{data.centro}</span>}
+                        </>
+                      ) : (
+                        <span className="wk-prov-muestreo-inline wk-prov-muestreo--vacio">Por definir</span>
+                      )}
+                    </div>
                     {/* Badge de vigencia próxima a vencer */}
                     {(() => {
                       if (!programa?.vigenciaHasta || programa.estado !== 'activo') return null;
@@ -498,7 +508,6 @@ export default function ProgramaCalendarioView({
                       </button>
                     )}
                   </div>
-                  <div className={`harvest-week-v2-meta ${data.centro ? '' : 'is-empty'}`}>{data.centro || '—'}</div>
                   <div className={`harvest-week-v2-meta ${saldoByProgram[id] ? '' : 'is-empty'}`} title="Saldo del trato al inicio de esta semana">{saldoByProgram[id] ? fmtTonsInt(saldoByProgram[id]) : '—'}</div>
                   <div className={`harvest-week-v2-meta ${(data.calibreMin != null || data.calibreMax != null) ? '' : 'is-empty'}`}>
                     {(data.calibreMin != null || data.calibreMax != null) ? `${data.calibreMin ?? '?'}–${data.calibreMax ?? '?'}` : '—'}
@@ -595,7 +604,6 @@ export default function ProgramaCalendarioView({
               <div className="harvest-week-v2-label">Total día</div>
               <div className="harvest-week-v2-meta is-empty" />
               <div className="harvest-week-v2-meta is-empty" />
-              <div className="harvest-week-v2-meta is-empty" />
               {weekDays.map(d => {
                 const s = weekSummaries.daily[d] || { camiones: 0, tons: 0 };
                 return (
@@ -612,7 +620,6 @@ export default function ProgramaCalendarioView({
 
             <div className="harvest-week-v2-row harvest-week-v2-notas">
               <div className="harvest-week-v2-label wk-nota-label">Nota del día</div>
-              <div className="harvest-week-v2-meta is-empty" />
               <div className="harvest-week-v2-meta is-empty" />
               <div className="harvest-week-v2-meta is-empty" />
               {weekDays.map(d => {

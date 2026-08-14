@@ -2083,7 +2083,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .harvest-week-v2-head,
 .harvest-week-v2-row {
   display: grid;
-  grid-template-columns: minmax(120px, 150px) minmax(56px, 76px) minmax(56px, 72px) minmax(50px, 64px) repeat(7, minmax(42px, 1fr)) minmax(64px, 80px) minmax(110px, 1.4fr);
+  grid-template-columns: minmax(170px, 220px) minmax(56px, 72px) minmax(50px, 64px) repeat(7, minmax(38px, 1fr)) minmax(64px, 80px) minmax(110px, 1.4fr);
   align-items: stretch;
   min-width: 0;
 }
@@ -5277,8 +5277,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
   .harvest-week-v2-head,
   .harvest-week-v2-row {
-    grid-template-columns: 140px 90px 80px 80px repeat(7, 78px) 70px 130px !important;
-    min-width: 1236px !important;
+    grid-template-columns: 160px 80px 80px repeat(7, 78px) 70px 130px !important;
+    min-width: 1066px !important;
   }
 
   .harvest-week-kpi-strip {
@@ -5311,7 +5311,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
     -webkit-box-orient: vertical;
   }
 
-  .harvest-week-v2-prov-centro,
+  .wk-prov-centro-code,
   .wk-prov-muestreo,
   .wk-product-chip {
     font-size: 0.66rem !important;

@@ -272,6 +272,7 @@ export function useCalendarioPrograma({
         data[p._id] = {
           nombre: p.proveedorNombre,
           centro: p.centroNombre,
+          comuna: p.comuna || '',
           tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
           uxkg: p.uxkg ?? null,
           rendimiento: p.rendimiento ?? null,
