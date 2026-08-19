@@ -364,10 +364,13 @@ export default function CentrosMap() {
   // nativo (desktop) y con el fallback de CSS (iOS).
   useEffect(() => {
     const sidebar = document.querySelector('.mx-sidebar');
+    const speedDial = document.querySelector('.speed-dial');
     if (sidebar) sidebar.style.display = isFullscreen ? 'none' : 'flex';
+    if (speedDial) speedDial.style.display = isFullscreen ? 'none' : '';
     document.body.style.overflow = isFullscreen ? 'hidden' : '';
     return () => {
       if (sidebar) sidebar.style.display = 'flex';
+      if (speedDial) speedDial.style.display = '';
       document.body.style.overflow = '';
     };
   }, [isFullscreen]);
@@ -655,7 +658,7 @@ export default function CentrosMap() {
             preferCanvas
             scrollWheelZoom
             style={{
-              height: isFullscreen ? '100vh' : 'calc(100vh - 160px)',
+              height: isFullscreen ? '100%' : 'calc(100vh - 160px)',
               minHeight: '400px',
               width: '100%',
               borderRadius: isFullscreen ? '0' : '12px',

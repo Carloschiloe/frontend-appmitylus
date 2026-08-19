@@ -530,9 +530,18 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 9999;
   background: var(--color-surface);
   padding: 20px;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .centros-map-container.is-fullscreen {
+    padding: 6px;
+    gap: 6px;
+  }
 }
 
 .map-toolbar {
