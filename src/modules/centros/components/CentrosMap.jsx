@@ -275,6 +275,7 @@ export default function CentrosMap() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchDropdownDismissed, setSearchDropdownDismissed] = useState(false);
   const [concessionFilter, setConcessionFilter] = useState('all');
   const [estadoFilter, setEstadoFilter] = useState('all');
   const [estadoDropdownOpen, setEstadoDropdownOpen] = useState(false);
@@ -422,6 +423,7 @@ export default function CentrosMap() {
     setSearchTerm(centro.code || centro.proveedor || '');
     setFocusedCentroCode(normalizeText(centro.code));
     setSelectedCentro(null);
+    setSearchDropdownDismissed(true);
     if (mapInstance && centro.coords?.length > 0) {
       const targetLat = centro.centerLat ?? centro.coords[0].lat;
       const targetLng = centro.centerLng ?? centro.coords[0].lng;
@@ -435,6 +437,7 @@ export default function CentrosMap() {
     if (!allPoints.length) return;
     setFocusedCentroCode('');
     setSelectedCentro(null);
+    setSearchDropdownDismissed(true);
     if (allPoints.length === 1) {
       mapInstance.flyTo(allPoints[0], 16, { duration: 0.8 });
     } else {
@@ -531,6 +534,7 @@ export default function CentrosMap() {
               onChange={(event) => {
                 setSearchTerm(event.target.value);
                 setFocusedCentroCode('');
+                setSearchDropdownDismissed(false);
               }}
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return;
@@ -548,7 +552,7 @@ export default function CentrosMap() {
                 <X size={14} />
               </button>
             )}
-            {searchSuggestions.length > 0 && (
+            {searchSuggestions.length > 0 && !searchDropdownDismissed && (
               <div className="mx-search-dropdown">
                 {searchMatches.length > 1 && (
                   <div
