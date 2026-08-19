@@ -404,14 +404,19 @@ export default function CentrosMap() {
     });
   }, []);
 
-  const searchSuggestions = useMemo(() => {
+  // Todos los centros que matchean la búsqueda (sin cortar), para poder
+  // ofrecer "ver todos" cuando el término matchea varios (ej: nombre de
+  // empresa con muchos centros) en vez de forzar a elegir uno solo.
+  const searchMatches = useMemo(() => {
     const query = deferredSearchTerm.trim().toLowerCase();
     if (query.length < 2) return [];
     return allowedCentros.filter((centro) =>
       centro.code?.toLowerCase().includes(query) ||
       centro.proveedor?.toLowerCase().includes(query)
-    ).slice(0, 10);
+    );
   }, [allowedCentros, deferredSearchTerm]);
+
+  const searchSuggestions = useMemo(() => searchMatches.slice(0, 10), [searchMatches]);
 
   const handleSelectSuggestion = useCallback((centro) => {
     setSearchTerm(centro.code || centro.proveedor || '');
@@ -423,6 +428,19 @@ export default function CentrosMap() {
       mapInstance.flyTo([targetLat, targetLng], 16, { duration: 0.8 });
     }
   }, [mapInstance]);
+
+  const handleViewAllMatches = useCallback(() => {
+    if (!mapInstance) return;
+    const allPoints = searchMatches.flatMap((centro) => centro.coordsPositions);
+    if (!allPoints.length) return;
+    setFocusedCentroCode('');
+    setSelectedCentro(null);
+    if (allPoints.length === 1) {
+      mapInstance.flyTo(allPoints[0], 16, { duration: 0.8 });
+    } else {
+      mapInstance.fitBounds(allPoints, { padding: [48, 48] });
+    }
+  }, [mapInstance, searchMatches]);
 
   const handleToggleMeasure = useCallback(() => {
     setIsMeasuring((value) => !value);
@@ -515,9 +533,9 @@ export default function CentrosMap() {
                 setFocusedCentroCode('');
               }}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && searchSuggestions[0]) {
-                  handleSelectSuggestion(searchSuggestions[0]);
-                }
+                if (event.key !== 'Enter') return;
+                if (searchMatches.length > 1) handleViewAllMatches();
+                else if (searchSuggestions[0]) handleSelectSuggestion(searchSuggestions[0]);
               }}
             />
             {searchTerm && (
@@ -532,6 +550,14 @@ export default function CentrosMap() {
             )}
             {searchSuggestions.length > 0 && (
               <div className="mx-search-dropdown">
+                {searchMatches.length > 1 && (
+                  <div
+                    className="mx-search-item mx-search-item--all"
+                    onClick={handleViewAllMatches}
+                  >
+                    <div className="search-item-main">Ver los {searchMatches.length} centros</div>
+                  </div>
+                )}
                 {searchSuggestions.map((centro) => (
                   <div
                     key={centro._id}

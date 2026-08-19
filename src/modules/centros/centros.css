@@ -774,6 +774,13 @@
   background: var(--color-primary-bg);
 }
 
+.mx-search-item--all {
+  background: var(--color-primary-bg);
+}
+.mx-search-item--all .search-item-main {
+  color: var(--color-primary);
+}
+
 .search-item-main {
   font-size: 13px;
   font-weight: var(--weight-bold);
