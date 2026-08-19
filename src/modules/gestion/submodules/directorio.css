@@ -1248,4 +1248,16 @@ button.dir-status-item.is-active .dir-status-label {
     flex: 0 0 auto;
     min-width: 128px;
   }
+
+  /* Mapa del proveedor a pantalla completa en mobile */
+  .dir-mapmodal-overlay {
+    padding: 0;
+  }
+  .dir-mapmodal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    height: 100vh;
+    border-radius: 0;
+  }
 }
