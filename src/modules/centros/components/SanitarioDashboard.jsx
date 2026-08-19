@@ -208,7 +208,10 @@ export default function SanitarioDashboard() {
         const matchesQ =
           (area.areaPSMB  || '').toLowerCase().includes(q) ||
           String(area.codigoArea || '').toLowerCase().includes(q) ||
-          (area.centros || []).some((c) => (c.proveedor || '').toLowerCase().includes(q));
+          (area.centros || []).some((c) =>
+            (c.proveedor || '').toLowerCase().includes(q) ||
+            String(c.code || '').toLowerCase().includes(q)
+          );
         if (!matchesQ) return false;
       }
       if (estadoFilter && area.estado !== estadoFilter) return false;
@@ -359,7 +362,10 @@ export default function SanitarioDashboard() {
     if (!q) return null;
     const set = new Set();
     allAreas.forEach((area) => {
-      const matches = (area.centros || []).some((c) => (c.proveedor || '').toLowerCase().includes(q));
+      const matches = (area.centros || []).some((c) =>
+        (c.proveedor || '').toLowerCase().includes(q) ||
+        String(c.code || '').toLowerCase().includes(q)
+      );
       if (matches) set.add(area.areaPSMB);
     });
     return set;
@@ -475,7 +481,7 @@ export default function SanitarioDashboard() {
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar área, código o proveedor..."
+            placeholder="Buscar área, código de área, centro o proveedor..."
             className="centros-search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
