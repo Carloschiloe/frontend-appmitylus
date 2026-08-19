@@ -330,30 +330,47 @@ export default function CentrosMap() {
     }, 0);
   }, [measurePoints]);
 
+  // iOS Safari (y navegadores basados en WebKit en iOS) no implementan la
+  // Fullscreen API para elementos genéricos — requestFullscreen() ahí no
+  // existe o rechaza en silencio. Por eso el toggle no depende únicamente
+  // del evento nativo: en esos casos cae a un fullscreen "de CSS" (fixed +
+  // 100vw/100vh) manejado directamente por este estado de React.
   const handleToggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
+    if (isFullscreen) {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+      return;
     }
+    const canUseNativeFullscreen = document.fullscreenEnabled
+      && typeof document.documentElement.requestFullscreen === 'function';
+    if (canUseNativeFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => setIsFullscreen(true));
+    } else {
+      setIsFullscreen(true);
+    }
+  }, [isFullscreen]);
+
+  // Sincroniza el estado si el fullscreen nativo se cierra desde fuera del
+  // botón (tecla Esc, gesto del navegador, etc.) — solo aplica donde la
+  // Fullscreen API nativa realmente se usó.
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
+  // Efectos visuales del modo fullscreen (ocultar sidebar, bloquear scroll)
+  // atados al estado de React, para que funcionen igual con fullscreen
+  // nativo (desktop) y con el fallback de CSS (iOS).
   useEffect(() => {
-    const onFsChange = () => {
-      const active = Boolean(document.fullscreenElement);
-      setIsFullscreen(active);
-      const sidebar = document.querySelector('.mx-sidebar');
-      if (sidebar) sidebar.style.display = active ? 'none' : 'flex';
-      document.body.style.overflow = active ? 'hidden' : '';
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
+    const sidebar = document.querySelector('.mx-sidebar');
+    if (sidebar) sidebar.style.display = isFullscreen ? 'none' : 'flex';
+    document.body.style.overflow = isFullscreen ? 'hidden' : '';
     return () => {
-      document.removeEventListener('fullscreenchange', onFsChange);
-      const sidebar = document.querySelector('.mx-sidebar');
       if (sidebar) sidebar.style.display = 'flex';
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [isFullscreen]);
 
   const allowedCentros = useMemo(() => {
     return data.map((centro) => {
