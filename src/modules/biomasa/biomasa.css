@@ -3410,25 +3410,40 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ═══════════════════════════════════════════════════════════════
    LEYENDA INFERIOR DEL CALENDARIO MENSUAL
    ════════════════════════════════════════════════════════════════ */
-/* ── Vista mes: resumen (KPIs arriba de la grilla, sin sidebar permanente) ──
-   El calendario es lo que se quiere ver primero — todo lo demás va en una
-   sola franja angosta (mix, igual que en Semana) y el detalle por proveedor
-   queda oculto detrás de un toggle en vez de ocupar espacio siempre. ── */
-.cal-month-mix-strip {
+/* ── Vista mes: resumen (una sola franja angosta arriba de la grilla) ──
+   El calendario es lo que se quiere ver primero. KPIs + mix van en UNA
+   línea; "Distribución por proveedor" es un modal aparte (no empuja nada,
+   nunca compite por espacio con el calendario, ni en pantalla completa). */
+.cal-month-summary-strip {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 6px 14px;
+  padding: 8px 14px;
   margin-bottom: 12px;
   border: 1px solid #E2E8F0;
   border-radius: 10px;
   background: #F8FAFC;
   font-size: 12px;
 }
+.cal-month-summary-kpis {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #475569;
+}
+.cal-month-summary-kpis strong { color: #0F172A; font-weight: 700; }
+.cal-month-summary-dot { color: #CBD5E1; }
+.cal-month-summary-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #E2E8F0;
+  margin: 0 2px;
+}
 .cal-month-mix-donut svg {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   display: block;
 }
 .cal-month-mix-item-btn {
@@ -3452,7 +3467,6 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 .cal-month-mix-item-btn strong { color: #0F172A; }
 .cal-month-mix-item-btn.is-active strong { color: #1D4ED8; }
-.cal-month-mix-item-btn em { color: #94A3B8; font-style: normal; }
 .cal-month-mix-toggle {
   display: inline-flex;
   align-items: center;
@@ -3466,43 +3480,15 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   cursor: pointer;
   padding: 0;
 }
-.cal-month-mix-toggle .rotated { transform: rotate(180deg); transition: transform 0.15s; }
 
-.cal-month-insight-block {
-  min-width: 0;
-  background: var(--color-surface);
-  border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.cal-month-provider-panel {
-  margin-bottom: 12px;
+/* Modal "Distribución por proveedor" — reutiliza .mx-modal-overlay/.mx-modal */
+.cal-month-provider-modal {
+  max-width: 700px;
 }
 .cal-month-provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 300px));
   gap: 10px;
-  /* Topado en altura con scroll propio: con muchos proveedores esto no
-     debe seguir creciendo y empujando el calendario fuera de pantalla. */
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.cal-month-insight-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.cal-month-insight-head > span {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #64748B;
 }
 .cal-month-sanitary-strip {
   display: flex;
