@@ -363,6 +363,23 @@
   font-size: 0.9rem;
 }
 
+.sanitario-centers-filtered-note {
+  margin-top: 6px !important;
+  color: var(--color-primary) !important;
+  font-size: 0.82rem !important;
+}
+
+.sanitario-centers-showall-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .sanitario-history-empty {
   padding: 36px 24px;
   color: var(--color-text-muted);

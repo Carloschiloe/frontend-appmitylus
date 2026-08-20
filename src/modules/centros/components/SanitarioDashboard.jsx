@@ -308,12 +308,34 @@ export default function SanitarioDashboard() {
     setHistoryModal({ open: false, area: null, loading: false, items: [] });
   }, []);
 
+  // Si hay una búsqueda activa que matchea centros puntuales de esta área,
+  // el modal parte filtrado a esos en vez de mostrar los cientos de centros
+  // del área completa (el usuario buscó un centro, no el área entera).
   const handleOpenCenters = useCallback((area) => {
-    setCentersModal({ open: true, area, items: Array.isArray(area?.centros) ? area.centros : [] });
-  }, []);
+    const allCentros = Array.isArray(area?.centros) ? area.centros : [];
+    const q = searchTerm.trim().toLowerCase();
+    const matches = q
+      ? allCentros.filter((c) =>
+          String(c.code || '').toLowerCase().includes(q) ||
+          (c.proveedor || '').toLowerCase().includes(q)
+        )
+      : [];
+    const isFiltered = matches.length > 0 && matches.length < allCentros.length;
+    setCentersModal({
+      open: true,
+      area,
+      items: isFiltered ? matches : allCentros,
+      allItems: allCentros,
+      isFiltered,
+    });
+  }, [searchTerm]);
 
   const closeCentersModal = useCallback(() => {
     setCentersModal({ open: false, area: null, items: [] });
+  }, []);
+
+  const showAllCentersInModal = useCallback(() => {
+    setCentersModal((prev) => ({ ...prev, items: prev.allItems || prev.items, isFiltered: false }));
   }, []);
 
   // ── Histórico por rango de fechas ────────────────────────────
@@ -860,6 +882,14 @@ export default function SanitarioDashboard() {
               <div>
                 <h3>Centros del área</h3>
                 <p>{centersModal.area?.areaPSMB} · Código {centersModal.area?.codigoArea || '—'}</p>
+                {centersModal.isFiltered && (
+                  <p className="sanitario-centers-filtered-note">
+                    Mostrando {centersModal.items.length} de {centersModal.allItems?.length || 0} centros que coinciden con &quot;{searchTerm}&quot; —{' '}
+                    <button type="button" className="sanitario-centers-showall-btn" onClick={showAllCentersInModal}>
+                      ver los {centersModal.allItems?.length || 0} centros del área
+                    </button>
+                  </p>
+                )}
               </div>
               <button className="mx-btn-icon" onClick={closeCentersModal} title="Cerrar"><X size={18} /></button>
             </header>
