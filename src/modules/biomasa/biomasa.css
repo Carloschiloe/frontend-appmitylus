@@ -3485,6 +3485,11 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 300px));
   gap: 10px;
+  /* Topado en altura con scroll propio: con muchos proveedores esto no
+     debe seguir creciendo y empujando el calendario fuera de pantalla. */
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 .cal-month-insight-head {
   display: flex;

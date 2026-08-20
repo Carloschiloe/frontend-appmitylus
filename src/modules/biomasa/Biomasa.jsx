@@ -116,7 +116,6 @@ export default function Biomasa() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [isCalendarBoard, setIsCalendarBoard] = useState(false);
   const [calendarMetric, setCalendarMetric] = useState('both');
-  const [showAllProviders, setShowAllProviders] = useState(false);
   const [filterProveedor, setFilterProveedor] = useState(null);
   const [filterProducto, setFilterProducto] = useState(null);
   const tonsPerTruck = 11;
@@ -374,8 +373,6 @@ export default function Biomasa() {
               setFilterProveedor={setFilterProveedor}
               filterProducto={filterProducto}
               setFilterProducto={setFilterProducto}
-              showAllProviders={showAllProviders}
-              setShowAllProviders={setShowAllProviders}
               programasPeriodo={programasPeriodo}
               weekData={weekData}
               weekSummaries={weekSummaries}

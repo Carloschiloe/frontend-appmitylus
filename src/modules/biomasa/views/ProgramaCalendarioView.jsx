@@ -75,7 +75,6 @@ export default function ProgramaCalendarioView({
   allWeekProducts,
   monthSummary,
   allMonthProviders,
-  showAllProviders, setShowAllProviders,
   allMonthProducts,
   handleOpenAdjustModal,
   handleAplicarSemana,
@@ -356,22 +355,15 @@ export default function ProgramaCalendarioView({
                   Distribución por proveedor
                   <Info size={12} style={{ opacity: 0.45, flexShrink: 0, cursor: 'default' }} title="Participación del proveedor sobre el total planificado del período. No corresponde a consumo real ni avance del programa." />
                 </span>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {filterProveedor && (
-                    <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProveedor(null)}>× Limpiar</button>
-                  )}
-                  {!filterProveedor && allMonthProviders.length > 2 && (
-                    <button className="hds-link-btn" onClick={() => setShowAllProviders(v => !v)}>
-                      {showAllProviders ? 'Ver menos' : 'Ver todos'}
-                    </button>
-                  )}
-                </div>
+                {filterProveedor && (
+                  <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProveedor(null)}>× Limpiar</button>
+                )}
               </div>
               {allMonthProviders.length === 0 ? (
                 <p className="hds-empty">Sin cosechas en el mes.</p>
               ) : (
                 <div className="cal-month-provider-grid">
-                  {(showAllProviders || filterProveedor ? allMonthProviders : allMonthProviders.slice(0, 2)).map((provider) => {
+                  {allMonthProviders.map((provider) => {
                     const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
                     const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
                     const isActive = filterProveedor === provider.nombre;

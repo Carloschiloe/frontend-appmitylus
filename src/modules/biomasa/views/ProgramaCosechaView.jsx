@@ -14,7 +14,6 @@ export default function ProgramaCosechaView({
   currentWeekOffset, setCurrentWeekOffset,
   filterProveedor, setFilterProveedor,
   filterProducto, setFilterProducto,
-  showAllProviders, setShowAllProviders,
   programasPeriodo,
   weekData,
   weekSummaries,
@@ -124,8 +123,6 @@ export default function ProgramaCosechaView({
           allWeekProducts={allWeekProducts}
           monthSummary={monthSummary}
           allMonthProviders={allMonthProviders}
-          showAllProviders={showAllProviders}
-          setShowAllProviders={setShowAllProviders}
           allMonthProducts={allMonthProducts}
           handleOpenAdjustModal={handleOpenAdjustModal}
           handleAplicarSemana={handleAplicarSemana}
