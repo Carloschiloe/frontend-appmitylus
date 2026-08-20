@@ -2903,13 +2903,13 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   font-style: italic;
 }
 
-.harvest-calendar-shell.board-mode .cal-month-grid {
-  min-height: calc(100vh - 130px);
-}
-
+/* Sin min-height forzado al viewport: con los KPIs/mix/proveedores arriba
+   de la grilla, forzar el 100vh acá garantizaba que todo junto no entrara
+   y la última fila quedara cortada. La grilla ahora mide lo que necesita
+   y es el shell (overflow:auto) el que hace scroll si de verdad no entra. */
 .harvest-calendar-shell.board-mode .cal-pad-day,
 .harvest-calendar-shell.board-mode .cal-day-cell {
-  min-height: 150px;
+  min-height: 112px;
 }
 
 .harvest-calendar-shell.board-mode .cal-header-day {
@@ -3483,7 +3483,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 .cal-month-provider-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 300px));
   gap: 10px;
 }
 .cal-month-insight-head {
