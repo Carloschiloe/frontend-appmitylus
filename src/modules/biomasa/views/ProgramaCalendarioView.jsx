@@ -156,7 +156,7 @@ export default function ProgramaCalendarioView({
   };
 
   return (
-    <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''}`} data-tour="programa-calendario">
+    <div ref={calendarBoardRef} className={`harvest-calendar-shell ${calView === 'week' ? 'week-mode' : 'month-mode'} ${isCalendarBoard ? 'board-mode' : ''} ${calView === 'month' && selectedDay ? 'has-day-detail' : ''}`} data-tour="programa-calendario">
       <div className="mx-card harvest-calendar-main">
         <div className="harvest-calendar-toolbar">
           <div className="harvest-calendar-controls">
@@ -282,6 +282,153 @@ export default function ProgramaCalendarioView({
 
         {calView === 'month' ? (
           <>
+          <div className="harvest-week-kpi-strip">
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Droplet size={15} /></span>
+              <div>
+                <strong>{calendarMetric === 'camiones' ? monthSummary.total.camiones : fmtNumber(monthSummary.total.tons, 0)}{calendarMetric === 'camiones' ? '' : ' t'}</strong>
+                <span>{calendarMetric === 'camiones' ? 'Camiones del mes' : 'Toneladas del mes'}</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><TrendingUp size={15} /></span>
+              <div>
+                <strong>{fmtNumber(monthSummary.promedioDiario, 0)} t</strong>
+                <span>Promedio diario</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><CalendarDays size={15} /></span>
+              <div>
+                <strong>{monthSummary.total.days}</strong>
+                <span>Días activos</span>
+              </div>
+            </div>
+            <div className="harvest-week-kpi-card">
+              <span className="harvest-week-kpi-icon"><Activity size={15} /></span>
+              <div>
+                <strong>{fmtNumber(monthSummary.maximoDia, 0)} t</strong>
+                <span>Máximo día</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="cal-month-insights-row">
+            <div className="cal-month-insight-block">
+              <div className="cal-month-insight-head">
+                <span>Mix de productos</span>
+                {filterProducto && (
+                  <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProducto(null)}>× Limpiar</button>
+                )}
+              </div>
+              {allMonthProducts.products.length === 0 ? (
+                <p className="hds-empty">Sin productos definidos.</p>
+              ) : (
+                <div className="hds-donut-area">
+                  <DonutChart products={allMonthProducts.products} totalTons={allMonthProducts.total} activeKey={filterProducto} />
+                  <div className="hds-donut-legend">
+                    {allMonthProducts.products.map((p) => {
+                      const pct = allMonthProducts.total > 0
+                        ? Math.round(p.tons / allMonthProducts.total * 100)
+                        : 0;
+                      const isActive = filterProducto === p.key;
+                      const isDimmed = filterProducto && !isActive;
+                      return (
+                        <div
+                          key={p.key}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isActive}
+                          className={`hds-legend-row hds-legend-row--filter ${isActive ? 'is-active' : ''} ${isDimmed ? 'is-dimmed' : ''}`}
+                          onClick={() => setFilterProducto(v => v === p.key ? null : p.key)}
+                          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setFilterProducto(v => v === p.key ? null : p.key)}
+                          title={isActive ? `Quitar filtro ${getTipoProductoLabel(p.key)}` : `Filtrar calendario por ${getTipoProductoLabel(p.key)}`}
+                        >
+                          <span className={`hds-legend-dot ${getProductClass(p.key)}`} />
+                          <span className="hds-legend-label">{getTipoProductoLabel(p.key)}</span>
+                          <span className="hds-legend-pct">
+                            {pct}% <em>({fmtNumber(p.tons, 0)} t)</em>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="cal-month-insight-block">
+              <div className="cal-month-insight-head">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  Distribución por proveedor
+                  <Info size={12} style={{ opacity: 0.45, flexShrink: 0, cursor: 'default' }} title="Participación del proveedor sobre el total planificado del período. No corresponde a consumo real ni avance del programa." />
+                </span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {filterProveedor && (
+                    <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProveedor(null)}>× Limpiar</button>
+                  )}
+                  {!filterProveedor && allMonthProviders.length > 2 && (
+                    <button className="hds-link-btn" onClick={() => setShowAllProviders(v => !v)}>
+                      {showAllProviders ? 'Ver menos' : 'Ver todos'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {allMonthProviders.length === 0 ? (
+                <p className="hds-empty">Sin cosechas en el mes.</p>
+              ) : (
+                (showAllProviders || filterProveedor ? allMonthProviders : allMonthProviders.slice(0, 2)).map((provider) => {
+                  const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
+                  const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
+                  const isActive = filterProveedor === provider.nombre;
+                  const metricLabel = calendarMetric === 'camiones'
+                    ? `${provider.camiones} cam · ${pct}%`
+                    : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
+                  const prog = providerProgramMap[provider.nombre];
+                  const lastDayOfMonth = mes && monthData?.days?.length
+                    ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
+                    : null;
+                  const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
+                  return (
+                    <div
+                      key={provider.nombre}
+                      className={`hds-prov-card${isActive ? ' hds-prov-card--active' : ''}`}
+                      onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
+                      title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
+                    >
+                      <div className="hds-prov-card-top">
+                        <span className="hds-prov-card-name">{provider.nombre}</span>
+                        <span className="hds-prov-card-val">{metricLabel}</span>
+                      </div>
+                      <div className="hds-prov-prog-bar">
+                        <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                      {vol?.estimated > 0 && (
+                        <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
+                          {vol.isOver ? '⚠️ ' : ''}programado{provider.comuna ? ` (${provider.comuna})` : ''}: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {monthSummary.sanitaryAlerts.length > 0 && (
+            <div className="cal-month-sanitary-strip">
+              <span className="cal-month-sanitary-label">Alertas sanitarias</span>
+              {monthSummary.sanitaryAlerts.map((alert, i) => (
+                <div key={`alert-${i}`} className={`hds-alert-chip ${getSanitarioEstado(alert)}`}>
+                  <AlertTriangle size={12} />
+                  {getSanitarioLabel(alert)}
+                  {alert?.areaPSMB ? ` - ${alert.areaPSMB}` : ''}
+                  {alert?.codigoArea ? ` - ${alert.codigoArea}` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="cal-month-grid">
             {['LUN','MAR','MIE','JUE','VIE','SAB','DOM'].map(d => (
               <div key={d} className={`cal-header-day ${d === 'DOM' ? 'calendar-red-day' : ''}`}>{d}</div>
@@ -681,11 +828,8 @@ export default function ProgramaCalendarioView({
         )}
       </div>
 
-      {calView === 'month' && (
+      {calView === 'month' && selectedDay && (
         <aside className="hds-panel">
-          {/* El detalle de día solo aplica en Vista Mes; en Vista Semana siempre el resumen. */}
-          {selectedDay && calView !== 'week' ? (
-            <>
               <div className="hds-detail-header">
                 <div>
                   <div className="hds-detail-date">
@@ -790,187 +934,6 @@ export default function ProgramaCalendarioView({
                   ))
                 )}
               </div>
-            </>
-          ) : (
-            <div className="hds-body">
-
-              {/* Header */}
-              <div className="hds-header">
-                <div className="hds-header-icon">
-                  <Activity size={16} />
-                </div>
-                <span className="hds-header-title">RESUMEN DEL MES</span>
-              </div>
-
-              {/* KPI Hero */}
-              <div className="hds-kpi-hero">
-                <div className="hds-kpi-hero-main">
-                  <span className="hds-kpi-big">
-                    {calendarMetric === 'camiones'
-                      ? monthSummary.total.camiones
-                      : fmtNumber(monthSummary.total.tons, 0)}
-                  </span>
-                  <span className="hds-kpi-unit">
-                    {calendarMetric === 'camiones' ? 'cam' : 't'}
-                  </span>
-                </div>
-                <span className="hds-kpi-sub">{monthSummary.total.days} días con cosecha</span>
-              </div>
-
-              {/* Sub KPIs */}
-              <div className="hds-kpi-row">
-                <div className="hds-kpi-card">
-                  <strong>{fmtNumber(monthSummary.promedioDiario, 0)} t</strong>
-                  <span>Promedio diario</span>
-                </div>
-                <div className="hds-kpi-card">
-                  <strong>{monthSummary.total.days}</strong>
-                  <span>Días activos</span>
-                </div>
-                <div className="hds-kpi-card">
-                  <strong>{fmtNumber(monthSummary.maximoDia, 0)} t</strong>
-                  <span>Máximo día</span>
-                </div>
-              </div>
-
-              {/* Providers */}
-              <section className="hds-section">
-                <div className="hds-section-head">
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    DISTRIBUCIÓN POR PROVEEDOR
-                    <Info size={12} style={{ opacity: 0.45, flexShrink: 0, cursor: 'default' }} title="Participación del proveedor sobre el total planificado del período. No corresponde a consumo real ni avance del programa." />
-                  </span>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    {filterProveedor && (
-                      <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProveedor(null)}>× Limpiar</button>
-                    )}
-                    {!filterProveedor && allMonthProviders.length > 2 && (
-                      <button className="hds-link-btn" onClick={() => setShowAllProviders(v => !v)}>
-                        {showAllProviders ? 'Ver menos' : 'Ver todos'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {allMonthProviders.length === 0 ? (
-                  <p className="hds-empty">Sin cosechas en el mes.</p>
-                ) : (
-                  (showAllProviders || filterProveedor ? allMonthProviders : allMonthProviders.slice(0, 2)).map((provider) => {
-                    const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
-                    const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
-                    const isActive = filterProveedor === provider.nombre;
-                    const metricLabel = calendarMetric === 'camiones'
-                      ? `${provider.camiones} cam · ${pct}%`
-                      : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
-                    const prog = providerProgramMap[provider.nombre];
-                    const lastDayOfMonth = mes && monthData?.days?.length
-                      ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
-                      : null;
-                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
-                    return (
-                      <div
-                        key={provider.nombre}
-                        className={`hds-prov-card${isActive ? ' hds-prov-card--active' : ''}`}
-                        onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
-                        title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
-                      >
-                        <div className="hds-prov-card-top">
-                          <span className="hds-prov-card-name">{provider.nombre}</span>
-                          <span className="hds-prov-card-val">{metricLabel}</span>
-                        </div>
-                        <div className="hds-prov-prog-bar">
-                          <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
-                        </div>
-                        {vol?.estimated > 0 && (
-                          <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
-                            {vol.isOver ? '⚠️ ' : ''}programado{provider.comuna ? ` (${provider.comuna})` : ''}: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </section>
-
-              {/* Product Mix */}
-              <section className="hds-section">
-                <div className="hds-section-head">
-                  <span>MIX DE PRODUCTOS</span>
-                  {filterProducto && (
-                    <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProducto(null)}>× Limpiar</button>
-                  )}
-                </div>
-                {allMonthProducts.products.length === 0 ? (
-                  <p className="hds-empty">Sin productos definidos.</p>
-                ) : (
-                  <div className="hds-donut-area">
-                    <DonutChart products={allMonthProducts.products} totalTons={allMonthProducts.total} activeKey={filterProducto} />
-                    <div className="hds-donut-legend">
-                      {allMonthProducts.products.map((p) => {
-                        const pct = allMonthProducts.total > 0
-                          ? Math.round(p.tons / allMonthProducts.total * 100)
-                          : 0;
-                        const isActive = filterProducto === p.key;
-                        const isDimmed = filterProducto && !isActive;
-                        return (
-                          <div
-                            key={p.key}
-                            role="button"
-                            tabIndex={0}
-                            aria-pressed={isActive}
-                            className={`hds-legend-row hds-legend-row--filter ${isActive ? 'is-active' : ''} ${isDimmed ? 'is-dimmed' : ''}`}
-                            onClick={() => setFilterProducto(v => v === p.key ? null : p.key)}
-                            onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setFilterProducto(v => v === p.key ? null : p.key)}
-                            title={isActive ? `Quitar filtro ${getTipoProductoLabel(p.key)}` : `Filtrar calendario por ${getTipoProductoLabel(p.key)}`}
-                          >
-                            <span className={`hds-legend-dot ${getProductClass(p.key)}`} />
-                            <span className="hds-legend-label">{getTipoProductoLabel(p.key)}</span>
-                            <span className="hds-legend-pct">
-                              {pct}% <em>({fmtNumber(p.tons, 0)} t)</em>
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </section>
-
-              {/* Sanitario */}
-              <section className="hds-section">
-                <div className="hds-section-head"><span>ALERTAS SANITARIAS</span></div>
-                {monthSummary.sanitaryOk.map((alert, i) => (
-                  <div key={`ok-${i}`} className="hds-alert-chip verde">
-                    <span className="hds-alert-dot" />
-                    OK{alert?.areaPSMB ? ` - ${alert.areaPSMB}` : ''}
-                    {alert?.codigoArea ? ` - ${alert.codigoArea}` : ''}
-                    {alert?.ultimoAnalisisMrsat ? ` - ${alert.ultimoAnalisisMrsat}` : ''}
-                  </div>
-                ))}
-                {monthSummary.sanitaryAlerts.map((alert, i) => (
-                  <div key={`alert-${i}`} className={`hds-alert-chip ${getSanitarioEstado(alert)}`}>
-                    <AlertTriangle size={12} />
-                    {getSanitarioLabel(alert)}
-                    {alert?.areaPSMB ? ` - ${alert.areaPSMB}` : ''}
-                    {alert?.codigoArea ? ` - ${alert.codigoArea}` : ''}
-                  </div>
-                ))}
-                {monthSummary.sanitaryAlerts.length === 0 && monthSummary.sanitaryOk.length === 0 && (
-                  <div className="hds-alert-chip gris">
-                    <span className="hds-alert-dot gris" /> Sin información sanitaria
-                  </div>
-                )}
-                {monthSummary.sanitaryAlerts.length === 0 && monthSummary.sanitaryOk.length > 0 && (
-                  <div className="hds-alert-info">
-                    Sin alertas críticas
-                  </div>
-                )}
-              </section>
-
-              <div className="hds-hint">
-                Selecciona un día del calendario para ver el desglose operativo diario.
-              </div>
-            </div>
-          )}
         </aside>
       )}
       {mapProvider && (

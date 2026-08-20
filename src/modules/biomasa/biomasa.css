@@ -1724,7 +1724,8 @@
   gap: 24px;
 }
 
-.harvest-calendar-shell.week-mode {
+.harvest-calendar-shell.week-mode,
+.harvest-calendar-shell.month-mode:not(.has-day-detail) {
   grid-template-columns: 1fr;
 }
 
@@ -1746,7 +1747,8 @@
   background: #f4f8fb;
 }
 
-.harvest-calendar-shell.week-mode.board-mode {
+.harvest-calendar-shell.week-mode.board-mode,
+.harvest-calendar-shell.month-mode.board-mode:not(.has-day-detail) {
   grid-template-columns: 1fr;
 }
 
@@ -1995,8 +1997,8 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 }
 
 .cal-month-main {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 19px;
+  font-weight: 600;
   color: var(--color-text);
   line-height: 1;
 }
@@ -2043,6 +2045,21 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .cal-chip.product-carne       { background: #f87171; }
 .cal-chip.product-mc          { background: #34d399; color: #065f46; }
 .cal-chip.product-sin_definir { background: #e2e8f0; color: #64748b; }
+
+/* Vista mes: mismo chip pero en tono suave (fondo tinta + texto de color)
+   en vez de relleno sólido — menos "grito" repetido en cada celda del mes. */
+.cal-month-grid .cal-chip,
+.cal-month-legend .cal-chip {
+  font-weight: 700;
+}
+.cal-month-grid .cal-chip.product-entero,
+.cal-month-legend .cal-chip.product-entero      { background: #DBEAFE; color: #1D4ED8; }
+.cal-month-grid .cal-chip.product-carne,
+.cal-month-legend .cal-chip.product-carne       { background: #FEE2E2; color: #B91C1C; }
+.cal-month-grid .cal-chip.product-mc,
+.cal-month-legend .cal-chip.product-mc          { background: #DCFCE7; color: #15803D; }
+.cal-month-grid .cal-chip.product-sin_definir,
+.cal-month-legend .cal-chip.product-sin_definir { background: #E2E8F0; color: #475569; }
 
 .cal-month-susp {
   font-size: 10px;
@@ -3393,6 +3410,57 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ═══════════════════════════════════════════════════════════════
    LEYENDA INFERIOR DEL CALENDARIO MENSUAL
    ════════════════════════════════════════════════════════════════ */
+/* ── Vista mes: resumen (KPIs arriba de la grilla, sin sidebar permanente) ── */
+.cal-month-insights-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  align-items: stretch;
+}
+.cal-month-insight-block {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cal-month-insight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cal-month-insight-head > span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+.cal-month-sanitary-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  background: #FFF7ED;
+  border: 1px solid #FDE7C7;
+  border-radius: 10px;
+}
+.cal-month-sanitary-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9A3412;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
 .cal-month-legend {
   display: flex;
   flex-wrap: wrap;
