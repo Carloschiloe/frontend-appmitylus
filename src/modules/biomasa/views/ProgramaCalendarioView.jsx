@@ -470,6 +470,9 @@ export default function ProgramaCalendarioView({
                 </div>
               );
             })}
+            {Array.from({ length: monthData.paddingEnd }).map((_, i) => (
+              <div key={`pad-end-${i}`} className="cal-pad-day" />
+            ))}
           </div>
           <div className="cal-month-legend">
             <span className="cal-legend-item"><span className="cal-chip product-entero">E</span> Entero</span>

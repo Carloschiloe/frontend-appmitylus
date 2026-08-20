@@ -1890,7 +1890,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 
 .cal-pad-day {
   background: var(--color-bg);
-  min-height: 112px;
+  min-height: 90px;
 }
 
 .cal-day-cell {

@@ -24,7 +24,7 @@ export function useCalendarioPrograma({
   const calibreByProveedor = useMemo(() => buildCalibreByProveedor(disp), [disp]);
   // ── Días del mes ──────────────────────────────────────────────────────────────
   const monthData = useMemo(() => {
-    if (!mes) return { days: [], padding: 0 };
+    if (!mes) return { days: [], padding: 0, paddingEnd: 0 };
     const [y, m] = mes.split('-');
     const year = parseInt(y, 10);
     const month = parseInt(m, 10) - 1;
@@ -32,10 +32,12 @@ export function useCalendarioPrograma({
     const lastDay = new Date(year, month + 1, 0);
     const dayOfWeek = firstDay.getDay();
     const padding = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    return {
-      days: Array.from({ length: lastDay.getDate() }, (_, i) => i + 1),
-      padding,
-    };
+    const days = Array.from({ length: lastDay.getDate() }, (_, i) => i + 1);
+    // Celdas de relleno al final para que la última semana quede con las
+    // mismas 7 columnas dibujadas que el resto (si no, esa fila se ve
+    // "cortada" — solo el LUN con caja, el resto sin borde ni fondo).
+    const paddingEnd = (7 - ((padding + days.length) % 7)) % 7;
+    return { days, padding, paddingEnd };
   }, [mes]);
 
   // ── Días de la semana activa (domingo → sábado, hora Chile) ────────────────────
