@@ -3413,12 +3413,22 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ── Vista mes: resumen (KPIs arriba de la grilla, sin sidebar permanente) ── */
 .cal-month-insights-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 14px;
   align-items: stretch;
 }
+/* El bloque Mix de productos es angosto por naturaleza (donut + 1-4 líneas
+   de leyenda) — dejarlo en flex:1 igual que Proveedores estira el legend
+   a lo ancho y deja un hueco enorme entre el nombre y el %. Se lo capea y
+   se deja crecer al de Proveedores, que sí aprovecha el espacio extra. */
+.cal-month-insight-block:first-child {
+  flex: 0 1 360px;
+}
+.cal-month-insight-block:last-child {
+  flex: 1 1 380px;
+}
 .cal-month-insight-block {
-  flex: 1;
   min-width: 0;
   background: var(--color-surface);
   border: 1px solid #E2E8F0;
