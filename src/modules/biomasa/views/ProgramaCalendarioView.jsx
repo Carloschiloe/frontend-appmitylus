@@ -85,6 +85,7 @@ export default function ProgramaCalendarioView({
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
   const [mapProvider, setMapProvider] = useState(null);
   const [semanaModal, setSemanaModal] = useState(null);
+  const [showProviderPanel, setShowProviderPanel] = useState(false);
   const calViewDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -313,51 +314,43 @@ export default function ProgramaCalendarioView({
             </div>
           </div>
 
-          <div className="cal-month-insights-row">
-            <div className="cal-month-insight-block">
-              <div className="cal-month-insight-head">
-                <span>Mix de productos</span>
-                {filterProducto && (
-                  <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProducto(null)}>× Limpiar</button>
-                )}
-              </div>
-              {allMonthProducts.products.length === 0 ? (
-                <p className="hds-empty">Sin productos definidos.</p>
-              ) : (
-                <div className="hds-donut-area">
-                  <DonutChart products={allMonthProducts.products} totalTons={allMonthProducts.total} activeKey={filterProducto} />
-                  <div className="hds-donut-legend">
-                    {allMonthProducts.products.map((p) => {
-                      const pct = allMonthProducts.total > 0
-                        ? Math.round(p.tons / allMonthProducts.total * 100)
-                        : 0;
-                      const isActive = filterProducto === p.key;
-                      const isDimmed = filterProducto && !isActive;
-                      return (
-                        <div
-                          key={p.key}
-                          role="button"
-                          tabIndex={0}
-                          aria-pressed={isActive}
-                          className={`hds-legend-row hds-legend-row--filter ${isActive ? 'is-active' : ''} ${isDimmed ? 'is-dimmed' : ''}`}
-                          onClick={() => setFilterProducto(v => v === p.key ? null : p.key)}
-                          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setFilterProducto(v => v === p.key ? null : p.key)}
-                          title={isActive ? `Quitar filtro ${getTipoProductoLabel(p.key)}` : `Filtrar calendario por ${getTipoProductoLabel(p.key)}`}
-                        >
-                          <span className={`hds-legend-dot ${getProductClass(p.key)}`} />
-                          <span className="hds-legend-label">{getTipoProductoLabel(p.key)}</span>
-                          <span className="hds-legend-pct">
-                            {pct}% <em>({fmtNumber(p.tons, 0)} t)</em>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+          {allMonthProducts.products.length > 0 && (
+            <div className="cal-month-mix-strip">
+              <span className="harvest-week-mix-label">Mix de productos</span>
+              <span className="cal-month-mix-donut">
+                <DonutChart products={allMonthProducts.products} totalTons={allMonthProducts.total} activeKey={filterProducto} />
+              </span>
+              {allMonthProducts.products.map((p) => {
+                const pct = allMonthProducts.total > 0 ? Math.round(p.tons / allMonthProducts.total * 100) : 0;
+                const isActive = filterProducto === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    className={`harvest-week-mix-item cal-month-mix-item-btn ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setFilterProducto(v => v === p.key ? null : p.key)}
+                    title={isActive ? `Quitar filtro ${getTipoProductoLabel(p.key)}` : `Filtrar calendario por ${getTipoProductoLabel(p.key)}`}
+                  >
+                    <span className={`hds-legend-dot ${getProductClass(p.key)}`} />
+                    {getTipoProductoLabel(p.key)} <strong>{pct}%</strong> <em>({fmtNumber(p.tons, 0)} t)</em>
+                  </button>
+                );
+              })}
+              {filterProducto && (
+                <button className="hds-link-btn hds-filter-clear" onClick={() => setFilterProducto(null)}>× Limpiar</button>
               )}
+              <button
+                type="button"
+                className="cal-month-mix-toggle"
+                onClick={() => setShowProviderPanel(v => !v)}
+              >
+                Por proveedor <ChevronDown size={13} className={showProviderPanel ? 'rotated' : ''} />
+              </button>
             </div>
+          )}
 
-            <div className="cal-month-insight-block">
+          {showProviderPanel && (
+            <div className="cal-month-insight-block cal-month-provider-panel">
               <div className="cal-month-insight-head">
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   Distribución por proveedor
@@ -377,43 +370,45 @@ export default function ProgramaCalendarioView({
               {allMonthProviders.length === 0 ? (
                 <p className="hds-empty">Sin cosechas en el mes.</p>
               ) : (
-                (showAllProviders || filterProveedor ? allMonthProviders : allMonthProviders.slice(0, 2)).map((provider) => {
-                  const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
-                  const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
-                  const isActive = filterProveedor === provider.nombre;
-                  const metricLabel = calendarMetric === 'camiones'
-                    ? `${provider.camiones} cam · ${pct}%`
-                    : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
-                  const prog = providerProgramMap[provider.nombre];
-                  const lastDayOfMonth = mes && monthData?.days?.length
-                    ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
-                    : null;
-                  const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
-                  return (
-                    <div
-                      key={provider.nombre}
-                      className={`hds-prov-card${isActive ? ' hds-prov-card--active' : ''}`}
-                      onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
-                      title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
-                    >
-                      <div className="hds-prov-card-top">
-                        <span className="hds-prov-card-name">{provider.nombre}</span>
-                        <span className="hds-prov-card-val">{metricLabel}</span>
+                <div className="cal-month-provider-grid">
+                  {(showAllProviders || filterProveedor ? allMonthProviders : allMonthProviders.slice(0, 2)).map((provider) => {
+                    const totalAllTons = allMonthProviders.reduce((s, p) => s + p.tons, 0);
+                    const pct = totalAllTons > 0 ? Math.round(provider.tons / totalAllTons * 100) : 0;
+                    const isActive = filterProveedor === provider.nombre;
+                    const metricLabel = calendarMetric === 'camiones'
+                      ? `${provider.camiones} cam · ${pct}%`
+                      : `${fmtNumber(provider.tons, 0)} t · ${pct}%`;
+                    const prog = providerProgramMap[provider.nombre];
+                    const lastDayOfMonth = mes && monthData?.days?.length
+                      ? `${mes}-${String(monthData.days[monthData.days.length - 1]).padStart(2, '0')}`
+                      : null;
+                    const vol = (prog && lastDayOfMonth) ? getProgramVolumeProgress(prog, getEffectiveTonsPerTruck(prog, 10, tiposTransporte), new Date(lastDayOfMonth + 'T23:59:59Z')) : null;
+                    return (
+                      <div
+                        key={provider.nombre}
+                        className={`hds-prov-card${isActive ? ' hds-prov-card--active' : ''}`}
+                        onClick={() => setFilterProveedor(v => v === provider.nombre ? null : provider.nombre)}
+                        title={isActive ? 'Click para mostrar todos' : 'Click para filtrar por este proveedor'}
+                      >
+                        <div className="hds-prov-card-top">
+                          <span className="hds-prov-card-name">{provider.nombre}</span>
+                          <span className="hds-prov-card-val">{metricLabel}</span>
+                        </div>
+                        <div className="hds-prov-prog-bar">
+                          <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
+                        </div>
+                        {vol?.estimated > 0 && (
+                          <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
+                            {vol.isOver ? '⚠️ ' : ''}programado{provider.comuna ? ` (${provider.comuna})` : ''}: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
+                          </span>
+                        )}
                       </div>
-                      <div className="hds-prov-prog-bar">
-                        <div className="hds-prov-prog-fill" style={{ width: `${pct}%` }} />
-                      </div>
-                      {vol?.estimated > 0 && (
-                        <span className={`hds-prov-prog-text${vol.isOver ? ' hds-prov-prog-text--over' : ''}`}>
-                          {vol.isOver ? '⚠️ ' : ''}programado{provider.comuna ? ` (${provider.comuna})` : ''}: {fmtTonsInt(vol.consumed)}/{fmtTonsInt(vol.estimated)} · {Math.round(vol.progressRaw)}%
-                        </span>
-                      )}
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </div>
+          )}
 
           {monthSummary.sanitaryAlerts.length > 0 && (
             <div className="cal-month-sanitary-strip">

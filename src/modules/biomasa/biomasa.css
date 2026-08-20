@@ -3410,24 +3410,64 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 /* ═══════════════════════════════════════════════════════════════
    LEYENDA INFERIOR DEL CALENDARIO MENSUAL
    ════════════════════════════════════════════════════════════════ */
-/* ── Vista mes: resumen (KPIs arriba de la grilla, sin sidebar permanente) ── */
-.cal-month-insights-row {
+/* ── Vista mes: resumen (KPIs arriba de la grilla, sin sidebar permanente) ──
+   El calendario es lo que se quiere ver primero — todo lo demás va en una
+   sola franja angosta (mix, igual que en Semana) y el detalle por proveedor
+   queda oculto detrás de un toggle en vez de ocupar espacio siempre. ── */
+.cal-month-mix-strip {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 14px;
-  align-items: stretch;
+  gap: 10px;
+  padding: 6px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #F8FAFC;
+  font-size: 12px;
 }
-/* El bloque Mix de productos es angosto por naturaleza (donut + 1-4 líneas
-   de leyenda) — dejarlo en flex:1 igual que Proveedores estira el legend
-   a lo ancho y deja un hueco enorme entre el nombre y el %. Se lo capea y
-   se deja crecer al de Proveedores, que sí aprovecha el espacio extra. */
-.cal-month-insight-block:first-child {
-  flex: 0 1 360px;
+.cal-month-mix-donut svg {
+  width: 30px;
+  height: 30px;
+  display: block;
 }
-.cal-month-insight-block:last-child {
-  flex: 1 1 380px;
+.cal-month-mix-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  background: none;
+  border: none;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
 }
+.cal-month-mix-item-btn:hover { background: #EFF6FF; }
+.cal-month-mix-item-btn.is-active {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  box-shadow: inset 0 0 0 1px #BFDBFE;
+}
+.cal-month-mix-item-btn strong { color: #0F172A; }
+.cal-month-mix-item-btn.is-active strong { color: #1D4ED8; }
+.cal-month-mix-item-btn em { color: #94A3B8; font-style: normal; }
+.cal-month-mix-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563EB;
+  cursor: pointer;
+  padding: 0;
+}
+.cal-month-mix-toggle .rotated { transform: rotate(180deg); transition: transform 0.15s; }
+
 .cal-month-insight-block {
   min-width: 0;
   background: var(--color-surface);
@@ -3436,6 +3476,14 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+.cal-month-provider-panel {
+  margin-bottom: 12px;
+}
+.cal-month-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 10px;
 }
 .cal-month-insight-head {
