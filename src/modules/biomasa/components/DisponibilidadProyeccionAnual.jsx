@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import CentroCodeBadge from '../../../components/CentroCodeBadge';
-import { ArrowRight, ChevronDown, ChevronUp, Eye, Pencil, X, Handshake } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -45,7 +45,7 @@ export default function DisponibilidadProyeccionAnual({
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const { rows, annualTotal } = buildDisponibilidadAnnualProjection(filteredItems, year);
+  const { rows } = buildDisponibilidadAnnualProjection(filteredItems, year);
   const pastRows = rows.filter((r) => r.monthKey < currentMonthKey);
   const currentFutureRows = rows.filter((r) => r.monthKey >= currentMonthKey);
   const pastTotal = pastRows.reduce((sum, r) => sum + r.total, 0);

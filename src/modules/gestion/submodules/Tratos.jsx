@@ -72,7 +72,7 @@ export default function Tratos({ onCrearPrograma }) {
   const [estadoFilter, setEstadoFilter] = useState(_savedFilters.estadoFilter || '');
 
   useEffect(() => {
-    try { sessionStorage.setItem('mx_tratos_filters', JSON.stringify({ mes, showAllMonths, responsableFilter, estadoFilter })); } catch {}
+    try { sessionStorage.setItem('mx_tratos_filters', JSON.stringify({ mes, showAllMonths, responsableFilter, estadoFilter })); } catch { /* sessionStorage no disponible */ }
   }, [mes, showAllMonths, responsableFilter, estadoFilter]);
 
   const moveMes = useCallback((dir) => {

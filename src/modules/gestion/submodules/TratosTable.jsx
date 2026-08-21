@@ -120,7 +120,6 @@ function ActionsMenu({ item, onShare, onEdit, onDelete, onViewReport, onViewCond
 export default function TratosTable({
   items,
   loading,
-  centros = [],
   onShare,
   onEdit,
   onDelete,

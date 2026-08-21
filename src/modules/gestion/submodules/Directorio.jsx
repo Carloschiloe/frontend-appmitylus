@@ -43,7 +43,7 @@ import {
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
 import ProviderMapModal from './ProviderMapModal';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
-import { centroLabel, hasCertificacion } from '../../../utils/centroHelpers';
+import { centroLabel } from '../../../utils/centroHelpers';
 import './directorio.css';
 
 const STATUS_META = {
@@ -367,7 +367,6 @@ export default function Directorio() {
       : { key, dir: 'asc' });
   };
   const [filterEstado, setFilterEstado] = useState('todos');
-  const [filterUsuario, setFilterUsuario] = useState('');
   const [providerRegistered, setProviderRegistered] = useState(null);
   const [openMenuKey, setOpenMenuKey] = useState(null);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -780,14 +779,6 @@ export default function Directorio() {
     setContactSelectedProviderKey('');
     setEditProviderTipo('');
   }, []);
-
-  const openProviderCenters = useCallback((provider) => {
-    const params = new URLSearchParams();
-    const providerKey = provider?.key || provider?.providerKey || '';
-    if (providerKey) params.set('proveedor', providerKey);
-    if (provider?.nombre) params.set('q', provider.nombre);
-    navigate(`/centros/directorio?${params.toString()}`);
-  }, [navigate]);
 
   const handleDeleteProvider = async () => {
     if (!confirmDeleteProvider) return;

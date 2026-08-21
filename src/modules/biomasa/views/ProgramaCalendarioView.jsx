@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -36,12 +36,11 @@ import {
   fmtTonsInt, fmtNumber,
   summarizeHarvestItems,
   getSanitarioEstado, getSanitarioLabel, isSanitarioRelevant,
-  formatMuestreoResumen, formatMuestreoFecha, tonsPorCamionDeTipo,
+  formatMuestreoResumen, formatMuestreoFecha,
   getProgramVolumeProgress, getEffectiveTonsPerTruck,
 } from '../utils/programaCalculos';
 import { esFechaEnVigencia } from '../utils/programaImpacto';
 import DonutChart from '../components/DonutChart';
-import { useToast } from '../../../context/ToastContext';
 
 export default function ProgramaCalendarioView({
   calView, setCalView,
@@ -60,9 +59,6 @@ export default function ProgramaCalendarioView({
   weekData,
   programasById,
   handleStatusChange,
-  handleReactivateDay,
-  handleQuickAdjust,
-  handleQuickAdjustTipo,
   tiposTransporte = [],
   notasDia,
   notasSemana,
@@ -79,8 +75,6 @@ export default function ProgramaCalendarioView({
   handleOpenAdjustModal,
   handleAplicarSemana,
 }) {
-  const { addToast } = useToast();
-  const [truckPopover, setTruckPopover] = useState(null);
   const [calViewDropdownOpen, setCalViewDropdownOpen] = useState(false);
   const [mapProvider, setMapProvider] = useState(null);
   const [semanaModal, setSemanaModal] = useState(null);
@@ -96,16 +90,6 @@ export default function ProgramaCalendarioView({
     if (calViewDropdownOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [calViewDropdownOpen]);
-
-  // Tipos de transporte activos con su capacidad (t/camión) ya calculada.
-  const tiposActivos = (tiposTransporte || [])
-    .filter((t) => t && (t.activo === undefined || t.activo))
-    .map((t) => ({
-      tipoTransporteId: String(t._id || t.id || ''),
-      tipoTransporteNombre: t.nombre || '',
-      toneladasPorCamion: tonsPorCamionDeTipo(t),
-    }))
-    .filter((t) => t.tipoTransporteId);
 
   // Mapa nombre de proveedor → programa, para el avance en el panel derecho.
   const providerProgramMap = Object.fromEntries(

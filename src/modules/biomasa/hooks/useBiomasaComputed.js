@@ -7,7 +7,6 @@ export function useBiomasaComputed({
   weekDays,
   mes,
   programPeriod,
-  enrichCalendarItem,
 }) {
   const programasPeriodo = useMemo(() => {
     if (programPeriod === 'all') return programas;

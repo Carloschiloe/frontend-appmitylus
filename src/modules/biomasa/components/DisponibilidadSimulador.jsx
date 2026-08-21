@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, Fish } from 'lucide-react';
 import { fmtTons, fmtNumber, tonsPorCamionDeTipo } from '../utils/programaCalculos';
-import { optionLabel, DISPONIBILIDAD_PRODUCTOS } from '../disponibilidad.constants';
 import { dayOfWeekFromKey, todayKey, isChileHolidayKey, addDaysToKey } from '../utils/fechasChile';
 
 const DIAS_SEMANA = [

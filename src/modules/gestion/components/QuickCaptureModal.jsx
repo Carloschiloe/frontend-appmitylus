@@ -5,7 +5,6 @@ import {
   MapPin,
   MessageSquare,
   Phone,
-  Plus,
   Search,
   Target,
   X,

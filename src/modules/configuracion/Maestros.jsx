@@ -791,7 +791,7 @@ export default function Maestros({ noPage = false }) {
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
-                      <span className="mx-form-help">Define qué tipo de alerta usa esta lista. Ej: "Sanitario" para las alertas de área/centro con observación.</span>
+                      <span className="mx-form-help">Define qué tipo de alerta usa esta lista. Ej: &quot;Sanitario&quot; para las alertas de área/centro con observación.</span>
                     </div>
                     <div className="mx-form-group">
                       <label className="mx-label">Correos (uno por línea)</label>

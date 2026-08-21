@@ -61,10 +61,10 @@ function ssLoad(tenantDb) {
 function ssSave(tenantDb, areas, resumen, tiposAnalisis) {
   try {
     sessionStorage.setItem(SS_CACHE_KEY, JSON.stringify({ tenantDb, ts: Date.now(), areas, resumen, tiposAnalisis }));
-  } catch {}
+  } catch { /* sessionStorage no disponible */ }
 }
 function ssClear() {
-  try { sessionStorage.removeItem(SS_CACHE_KEY); } catch {}
+  try { sessionStorage.removeItem(SS_CACHE_KEY); } catch { /* sessionStorage no disponible */ }
 }
 
 // Cache en módulo para evitar re-cargas entre navegaciones dentro de la misma pestaña

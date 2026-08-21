@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  User, Lock, ShieldCheck, ShieldOff, Eye, EyeOff,
+  Lock, ShieldCheck, ShieldOff, Eye, EyeOff,
   Loader2, CheckCircle2, AlertCircle, QrCode, Mail, Building2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

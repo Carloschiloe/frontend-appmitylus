@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, MapPin, Pencil, UserRound, X, Handshake } from 'lucide-react';
+import { ChevronDown, ChevronUp, MapPin, UserRound, X } from 'lucide-react';
 import {
   buildDisponibilidadAnnualProjection,
   buildDisponibilidadMonthDetail,
@@ -20,18 +20,11 @@ export default function DisponibilidadAnalisisGrafico({
   items,
   comparisonItems,
   year,
-  onYearChange,
   comparisonYear,
-  onComparisonYearChange,
-  providers,
-  contacts,
-  providerFilter,
-  onProviderFilterChange,
   productFilter,
   onProductFilterChange,
   stateFilter,
   onStateFilterChange,
-  onRefresh,
   loading,
   comparisonLoading,
   onEdit,

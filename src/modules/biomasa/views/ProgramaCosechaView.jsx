@@ -2,7 +2,7 @@
 import ProgramaCalendarioView from './ProgramaCalendarioView';
 
 export default function ProgramaCosechaView({
-  progSubTab, setProgSubTab,
+  progSubTab,
   programPeriod, setProgramPeriod,
   calView, setCalView,
   mes, setMes,

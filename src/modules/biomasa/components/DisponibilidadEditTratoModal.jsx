@@ -15,8 +15,6 @@ import {
   deriveCamionesXDia,
   derivePrecioDesdeCondiciones,
   deriveVolumenDesdeCondiciones,
-  isCondicionCamionesDia,
-  normalizeText,
   parseNumberOrNull,
   getEstadoCierreFromApi,
 } from '../../gestion/submodules/tratos.helpers';
@@ -117,7 +115,7 @@ export default function DisponibilidadEditTratoModal({ open, tratoId, onClose, o
           centroCodigo: item.centroCodigo || '',
         });
       })
-      .catch((err) => {
+      .catch(() => {
         if (active) addToast({ title: 'Error', message: 'No se pudo cargar el trato', type: 'error' });
       })
       .finally(() => {

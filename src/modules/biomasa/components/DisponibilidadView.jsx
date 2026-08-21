@@ -1,18 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronDown, ChevronUp, ChevronsUpDown, Handshake, HelpCircle, MapPin, MessageCircle, Pencil, Phone, Plus, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
-
-const ORIGEN_ICON = {
-  llamada:  Phone,
-  visita:   MapPin,
-  whatsapp: MessageCircle,
-  reunion:  Users,
-  otro:     HelpCircle,
-};
-const OrigenIcon = ({ origen, label }) => {
-  const Icon = ORIGEN_ICON[origen] || HelpCircle;
-  return <span title={label} className="disp-origen-icon"><Icon size={14} /></span>;
-};
+import { ArrowRight, ChevronDown, ChevronUp, ChevronsUpDown, Handshake, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
 import { apiClient } from '../../../api/apiClient';
 import { borrarDisponibilidad, crearDisponibilidad, editarDisponibilidad, getDisponibilidades } from '../../../api/api-mmpp';
 import ConfirmDeleteModal from '../../../components/ConfirmDeleteModal';
@@ -22,7 +10,6 @@ import { fmtTons } from '../utils/programaCalculos';
 import { mesLabel } from '../utils/fechasChile';
 import {
   DISPONIBILIDAD_ESTADOS,
-  DISPONIBILIDAD_ORIGENES,
   DISPONIBILIDAD_PRODUCTOS,
   buildDisponibilidadContacts,
   buildDisponibilidadProviders,
@@ -269,8 +256,6 @@ export default function DisponibilidadView({ items, loading, mes, setMes, reload
       .filter((item) => (item.estado || 'disponible') === state.value)
       .reduce((sum, item) => sum + Number(item.tons || item.tonsDisponible || 0), 0),
   })), [items]);
-
-  const totalTons = useMemo(() => kpis.reduce((sum, k) => sum + k.tons, 0), [kpis]);
 
   const openCreate = () => {
     setModalItem(null);

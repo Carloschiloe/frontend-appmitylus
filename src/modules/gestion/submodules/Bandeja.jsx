@@ -85,20 +85,6 @@ function formatShortDate(value) {
   }).format(date);
 }
 
-function formatLongDate(value) {
-  const date = toDate(value);
-  if (!date) return 'Sin fecha';
-  return new Intl.DateTimeFormat('es-CL', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  }).format(date);
-}
-
-function formatTons(value) {
-  return `${Number(value || 0).toLocaleString('es-CL', { maximumFractionDigits: 1 })} t`;
-}
-
 function formatDayOfWeek(date) {
   return new Intl.DateTimeFormat('es-CL', { weekday: 'short' }).format(date);
 }
@@ -247,18 +233,6 @@ export default function Bandeja() {
     return { counts, max };
   }, [oportunidades]);
 
-  const upcomingDeals = useMemo(() => {
-    const today = startOfDay();
-    return oportunidades
-      .map((item) => ({
-        ...item,
-        closeDate: toDate(item.vigenciaDesde || item.vigenciaHasta || item.fechaCierre),
-      }))
-      .filter((item) => item.closeDate && item.closeDate >= today)
-      .sort((left, right) => left.closeDate - right.closeDate)
-      .slice(0, 5);
-  }, [oportunidades]);
-
   const activityFeed = useMemo(() => {
     return [
       ...interacciones.map((item) => ({
@@ -334,7 +308,6 @@ export default function Bandeja() {
 
   const priorityItems = taskBoard.spotlight.slice(0, 5);
   const compactActivityFeed = activityFeed.slice(0, 3);
-  const compactDeals = upcomingDeals.slice(0, 3);
 
   if (loading) {
     return (
@@ -446,7 +419,7 @@ export default function Bandeja() {
               <Link className="mx-btn-icon sm" to="/biomasa/tratos"><ChevronRight size={16} /></Link>
             </div>
             <div className="gs-pipeline-steps">
-              {pipeline.counts.map((item, index) => (
+              {pipeline.counts.map((item) => (
                 <div key={item.key} className={`gs-step${item.count > 0 ? ' is-active' : ''} is-${item.key}`}>
                   <div className="gs-step-badge">{item.count}</div>
                   <div className="gs-step-label">{item.label}</div>

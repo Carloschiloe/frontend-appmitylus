@@ -21,7 +21,6 @@ import {
   Droplet,
   TestTube2,
   Scissors,
-  Award,
   Clock,
   Truck,
   CalendarClock,

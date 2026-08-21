@@ -74,14 +74,6 @@ function buildYearMonthDays(year, monthIndex, eventsByDay) {
   return { firstDow, days };
 }
 
-// Order: vencidos, realizados, pendiente, pausados (as specified)
-const STATUS_OPTIONS = [
-  { id: 'todos', label: 'Todos los estados' },
-  { id: 'vencido', label: 'Vencido' },
-  { id: 'realizado', label: 'Gestión' },
-  { id: 'pendiente', label: 'Pendiente' },
-  { id: 'pausado', label: 'Pausado' },
-];
 
 const TYPE_LABELS = {
   muestreo: 'Muestreo',
