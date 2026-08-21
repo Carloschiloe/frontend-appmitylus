@@ -42,6 +42,11 @@ body {
     linear-gradient(180deg, rgba(245, 250, 255, 0.72), rgba(245, 250, 255, 1) 260px),
     var(--color-bg);
   overflow-x: hidden;
+  /* #root define esta misma fuente, pero cualquier createPortal(..., document.body)
+     queda FUERA de #root y hereda el serif por defecto del navegador en vez de la
+     tipografía de la app. Se repite acá para que ningún modal portaled se escape. */
+  font-family: var(--font-sans);
+  color: var(--color-text);
 }
 
 button,
