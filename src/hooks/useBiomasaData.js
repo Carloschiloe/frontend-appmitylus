@@ -18,6 +18,26 @@ function endOfMonthKey(mesKey) {
   return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 }
 
+// La vista Semana del calendario empieza en domingo y "mes" queda sincronizado
+// al mes del domingo que abre la semana (ver el efecto en Biomasa.jsx que
+// deriva weekMonth de weekDays[0]). Eso significa que una semana visible puede
+// desbordarse hasta 6 días hacia el mes SIGUIENTE (caso límite: el domingo que
+// abre la semana es el último día del mes) sin que "mes" cambie ni se dispare
+// un fetch nuevo — la vista sigue usando el mismo calData en caché de "mes".
+// Por eso el rango que se le pide al backend para calendario/notas debe cubrir
+// siempre esos hasta 6 días extra, o esos días quedan sin datos aunque el
+// programa este vigente (bug: "Subsiguiente" no mostraba lo de septiembre).
+function endOfMonthKeyWithWeekOverflow(mesKey) {
+  const [year, month] = String(mesKey || '').split('-').map(Number);
+  if (!year || !month) return endOfMonthKey(mesKey);
+  const withOverflow = new Date(year, month, 0); // ultimo dia del mes
+  withOverflow.setDate(withOverflow.getDate() + 6);
+  const y = withOverflow.getFullYear();
+  const m = String(withOverflow.getMonth() + 1).padStart(2, '0');
+  const d = String(withOverflow.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function useBiomasaData(mes, viewContext = {}) {
   const {
     isStatusView = false,
@@ -99,11 +119,11 @@ export function useBiomasaData(mes, viewContext = {}) {
       if (isProgramView && progSubTab === 'calendario') {
         promises.push(apiClient.get('/programa-cosecha', { signal }).catch(() => ({ items: [] })));
         keys.push('progRes');
-        promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ calendario: {} })));
+        promises.push(apiClient.get(`/programa-cosecha/calendario?from=${mes}-01&to=${endOfMonthKeyWithWeekOverflow(mes)}`, { signal }).catch(() => ({ calendario: {} })));
         keys.push('calRes');
-        promises.push(apiClient.get(`/notas-dia?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
+        promises.push(apiClient.get(`/notas-dia?from=${mes}-01&to=${endOfMonthKeyWithWeekOverflow(mes)}`, { signal }).catch(() => ({ notas: {} })));
         keys.push('notasRes');
-        promises.push(apiClient.get(`/notas-semana?from=${mes}-01&to=${endOfMonthKey(mes)}`, { signal }).catch(() => ({ notas: {} })));
+        promises.push(apiClient.get(`/notas-semana?from=${mes}-01&to=${endOfMonthKeyWithWeekOverflow(mes)}`, { signal }).catch(() => ({ notas: {} })));
         keys.push('notasSemanaRes');
         // Calibre registrado por proveedor (disponibilidad), para mostrar cuando el
         // programa aún no tiene muestreo propio.
