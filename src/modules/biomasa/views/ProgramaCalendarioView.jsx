@@ -557,7 +557,7 @@ export default function ProgramaCalendarioView({
               return (
                 <div key={id} className="harvest-week-v2-row">
                   <div className={`harvest-week-v2-prov ${getProductClass(data.tipoProducto)} ${programa?.estado === 'pausado' ? 'is-pausado' : ''}`}>
-                    <div className="harvest-week-v2-prov-name">
+                    <div className="harvest-week-v2-prov-name" title={data.nombre}>
                       {data.nombre}
                       {overageMap[id] && (
                         <span className="wk-overage-badge" title={`Biomasa acordada superada: ${Math.round(overageMap[id].progressRaw)}% programado`}>
@@ -567,7 +567,9 @@ export default function ProgramaCalendarioView({
                     </div>
                     <span className="wk-prov-tooltip">{data.nombre}</span>
                     <div className="wk-prov-centro-muestreo">
-                      {(data.comuna || data.centro) ? (
+                      {data.tipo === 'comercializadora' ? (
+                        <span className="wk-badge-comercializadora">Comercializadora</span>
+                      ) : (data.comuna || data.centro) ? (
                         <>
                           {data.comuna && <span className="wk-prov-centro-code">{data.comuna}</span>}
                           {data.comuna && data.centro && <span className="wk-prov-sep">·</span>}

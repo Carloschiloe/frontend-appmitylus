@@ -5,6 +5,7 @@ import {
   getSanitarioEstado,
   isSanitarioRelevant,
   buildCalibreByProveedor,
+  buildTipoByProveedor,
 } from '../utils/programaCalculos';
 import { addDaysToKey, dayOfWeekFromKey, todayKey } from '../utils/fechasChile';
 import { esFechaEnVigencia } from '../utils/programaImpacto';
@@ -22,6 +23,8 @@ export function useCalendarioPrograma({
   // ── Calibre registrado por proveedor (disponibilidad), para cuando el
   //    programa aún no tiene un muestreo propio ──────────────────────────────────
   const calibreByProveedor = useMemo(() => buildCalibreByProveedor(disp), [disp]);
+  // ── Tipo de proveedor (titular/comercializadora/otro), tomado de Disponibilidad ──
+  const tipoByProveedor = useMemo(() => buildTipoByProveedor(disp), [disp]);
   // ── Días del mes ──────────────────────────────────────────────────────────────
   const monthData = useMemo(() => {
     if (!mes) return { days: [], padding: 0, paddingEnd: 0 };
@@ -273,6 +276,7 @@ export function useCalendarioPrograma({
         const calibre = calibreByProveedor.get(p.proveedorNombre) || null;
         data[p._id] = {
           nombre: p.proveedorNombre,
+          tipo: tipoByProveedor.get(p.proveedorNombre) || null,
           centro: p.centroNombre,
           comuna: p.comuna || '',
           tipoProducto: p.tipoProducto || p.tipoProductoSugerido || 'sin_definir',
@@ -306,7 +310,7 @@ export function useCalendarioPrograma({
         };
       });
     return data;
-  }, [programasFiltrados, calData, weekDays, enrichCalendarItem, calibreByProveedor]);
+  }, [programasFiltrados, calData, weekDays, enrichCalendarItem, calibreByProveedor, tipoByProveedor]);
 
   // ── Resúmenes diarios de semana ───────────────────────────────────────────────
   const weekSummaries = useMemo(() => {

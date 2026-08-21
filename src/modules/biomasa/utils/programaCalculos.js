@@ -35,6 +35,22 @@ export const buildCalibreByProveedor = (disp) => {
   return map;
 };
 
+// Tipo de proveedor ('titular' | 'comercializadora' | 'otro'), tomado de
+// Disponibilidad (mismo campo denormalizado que ya usa DisponibilidadProviderCell).
+// Igual patrón que buildCalibreByProveedor: usa el registro más reciente por mes.
+export const buildTipoByProveedor = (disp) => {
+  const map = new Map();
+  (disp || []).forEach((d) => {
+    const nombre = d.proveedorNombre;
+    if (!nombre || !d.tipo) return;
+    const prev = map.get(nombre);
+    if (!prev || String(d.mesKey || '') > String(prev.mesKey || '')) {
+      map.set(nombre, { tipo: d.tipo, mesKey: d.mesKey });
+    }
+  });
+  return new Map([...map].map(([nombre, v]) => [nombre, v.tipo]));
+};
+
 export const fmtCalibre = (calibre) => {
   if (!calibre || (calibre.calibreMin == null && calibre.calibreMax == null)) return null;
   return calibre.calibreMin != null && calibre.calibreMax != null
