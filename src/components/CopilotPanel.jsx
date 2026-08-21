@@ -393,12 +393,12 @@ function CopilotResultEntry({
   sourceText,
   onConfirm,
   onChooseOption,
-  confirmingId,
+  confirmingIds,
 }) {
   if (!response) return null;
   const intent = response.command?.intent || '';
   const requiresConfirmation = isCommandConfirmable(response);
-  const isConfirmingThis = confirmingId === response.commandId;
+  const isConfirmingThis = confirmingIds.has(response.commandId);
 
   return (
     <div className={`copilot-result-entry copilot-result-entry--${response.status || 'draft'}`}>
@@ -444,7 +444,7 @@ function CopilotTurn({
   turn,
   onConfirm,
   onChooseOption,
-  confirmingId,
+  confirmingIds,
   onSpeak,
   speaking,
   speechLoading,
@@ -479,7 +479,7 @@ function CopilotTurn({
           sourceText={turn.sourceText}
           onConfirm={onConfirm}
           onChooseOption={onChooseOption}
-          confirmingId={confirmingId}
+          confirmingIds={confirmingIds}
         />
       ))}
 
@@ -503,7 +503,7 @@ export default function CopilotPanel({ queryClient }) {
   const [open, setOpen] = React.useState(false);
   const [text, setText] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const [confirmingId, setConfirmingId] = React.useState(null);
+  const [confirmingIds, setConfirmingIds] = React.useState(() => new Set());
   const [listening, setListening] = React.useState(false);
   const [recordingProfessional, setRecordingProfessional] = React.useState(false);
   const [speechSupported, setSpeechSupported] = React.useState(false);
@@ -904,8 +904,8 @@ export default function CopilotPanel({ queryClient }) {
   }
 
   async function handleConfirm(commandId) {
-    if (!commandId || confirmingId) return;
-    setConfirmingId(commandId);
+    if (!commandId || confirmingIds.has(commandId)) return;
+    setConfirmingIds((prev) => new Set(prev).add(commandId));
 
     const assistantId = crypto.randomUUID?.() || `${Date.now()}-c`;
     const turnId = crypto.randomUUID?.() || `${Date.now()}-confirm`;
@@ -959,7 +959,11 @@ export default function CopilotPanel({ queryClient }) {
       });
     } finally {
       patchTurn(assistantId, (item) => ({ ...item, streaming: false, statusMessage: '' }));
-      setConfirmingId(null);
+      setConfirmingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commandId);
+        return next;
+      });
     }
   }
 
@@ -1042,7 +1046,7 @@ export default function CopilotPanel({ queryClient }) {
                         turn={item}
                         onConfirm={handleConfirm}
                         onChooseOption={handleChooseOption}
-                        confirmingId={confirmingId}
+                        confirmingIds={confirmingIds}
                         onSpeak={speakTurn}
                         speaking={speakingId === item.id}
                         speechLoading={speechLoadingId === item.id}

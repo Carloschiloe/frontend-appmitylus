@@ -36,10 +36,13 @@ export function snapshotToHistory(snapshot) {
       });
     }
   }
-  if (snapshot?.pendingAction) {
+  const pendingActions = snapshot?.pendingActions?.length
+    ? snapshot.pendingActions
+    : (snapshot?.pendingAction ? [snapshot.pendingAction] : []);
+  if (pendingActions.length) {
     items.push({
-      type: 'assistant', id: `pending-${snapshot.pendingAction.commandId}`, sourceText: '', narrative: '',
-      results: [snapshot.pendingAction], streaming: false, error: null,
+      type: 'assistant', id: `pending-${pendingActions.map((p) => p.commandId).join('-')}`, sourceText: '', narrative: '',
+      results: pendingActions, streaming: false, error: null,
     });
   }
   return items;
