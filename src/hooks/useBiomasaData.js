@@ -190,6 +190,11 @@ export function useBiomasaData(mes, viewContext = {}) {
     tratosBiomasa,
     perdidasBiomasa,
     reload: load,
+    // Setters expuestos para que las acciones de guardar/eliminar nota
+    // (useProgramaActions) puedan actualizar el estado local al toque, sin
+    // depender de que el reload en segundo plano llegue a tiempo.
+    setNotasDia,
+    setNotasSemana,
   };
 }
 

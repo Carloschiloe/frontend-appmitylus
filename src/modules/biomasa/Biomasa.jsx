@@ -35,7 +35,7 @@ export default function Biomasa() {
   const statusSubTab = 'disponibilidad';
   const [progSubTab, setProgSubTab] = useState('programa');
   const [mes, setMes] = useState(mesActual);
-  const { loading, disp, programas, calData, notasDia, notasSemana, tratosAcordados, reload: load } = useBiomasaData(mes, {
+  const { loading, disp, programas, calData, notasDia, notasSemana, tratosAcordados, reload: load, setNotasDia, setNotasSemana } = useBiomasaData(mes, {
     isStatusView,
     isTratosView,
     isProgramView,
@@ -295,6 +295,8 @@ export default function Biomasa() {
     setSuspendPopover,
     setNotaPopover,
     setNotaSemanaPopover,
+    setNotasDia,
+    setNotasSemana,
     setFinalizingProgram,
     setFinalizeForm,
     setShowFinalizeModal,

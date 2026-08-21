@@ -21,6 +21,8 @@ export function useProgramaActions({
   setSuspendPopover,
   setNotaPopover,
   setNotaSemanaPopover,
+  setNotasDia,
+  setNotasSemana,
   setFinalizingProgram,
   setFinalizeForm,
   setShowFinalizeModal,
@@ -176,45 +178,65 @@ export function useProgramaActions({
   const handleUpsertNotaDia = useCallback(async (fechaKey, nota) => {
     if (!fechaKey || !String(nota || '').trim()) return;
     try {
-      await apiClient.post('/notas-dia', { fechaKey, nota });
+      const res = await apiClient.post('/notas-dia', { fechaKey, nota });
+      // Actualiza el estado local al toque con lo que el backend realmente
+      // guardó, en vez de depender solo del reload en segundo plano (que
+      // podía fallar en silencio — ver .catch(() => ({ notas: {} })) en
+      // useBiomasaData.js — y dejar la nota invisible aunque sí se guardó).
+      if (res?.nota) setNotasDia((prev) => ({ ...prev, [fechaKey]: res.nota }));
       setNotaPopover(null);
+      addToast({ title: 'Nota guardada', message: 'La observación del día quedó registrada.', type: 'success' });
       load();
     } catch (e) {
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  }, [addToast, load]);
+  }, [addToast, load, setNotasDia, setNotaPopover]);
 
   const handleDeleteNotaDia = useCallback(async (fechaKey) => {
     try {
       await apiClient.delete(`/notas-dia/${fechaKey}`);
+      setNotasDia((prev) => {
+        const next = { ...prev };
+        delete next[fechaKey];
+        return next;
+      });
       setNotaPopover(null);
+      addToast({ title: 'Nota eliminada', message: 'La observación del día fue eliminada.', type: 'success' });
       load();
     } catch (e) {
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  }, [addToast, load]);
+  }, [addToast, load, setNotasDia, setNotaPopover]);
 
   // Observación general de la semana (no ligada a un día ni a un proveedor puntual).
   const handleUpsertNotaSemana = useCallback(async (weekKey, nota) => {
     if (!weekKey || !String(nota || '').trim()) return;
     try {
-      await apiClient.post('/notas-semana', { weekKey, nota });
+      const res = await apiClient.post('/notas-semana', { weekKey, nota });
+      if (res?.nota) setNotasSemana((prev) => ({ ...prev, [weekKey]: res.nota }));
       setNotaSemanaPopover(null);
+      addToast({ title: 'Nota guardada', message: 'La observación de la semana quedó registrada.', type: 'success' });
       load();
     } catch (e) {
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  }, [addToast, load]);
+  }, [addToast, load, setNotasSemana, setNotaSemanaPopover]);
 
   const handleDeleteNotaSemana = useCallback(async (weekKey) => {
     try {
       await apiClient.delete(`/notas-semana/${weekKey}`);
+      setNotasSemana((prev) => {
+        const next = { ...prev };
+        delete next[weekKey];
+        return next;
+      });
       setNotaSemanaPopover(null);
+      addToast({ title: 'Nota eliminada', message: 'La observación de la semana fue eliminada.', type: 'success' });
       load();
     } catch (e) {
       addToast({ title: 'Error', message: e.message, type: 'error' });
     }
-  }, [addToast, load]);
+  }, [addToast, load, setNotasSemana, setNotaSemanaPopover]);
 
   // Condición de materia prima de un proveedor para una semana puntual (distinto
   // de las notas fijas del programa: esta sí puede cambiar semana a semana).
