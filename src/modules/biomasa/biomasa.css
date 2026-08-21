@@ -2100,7 +2100,7 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
 .harvest-week-v2-head,
 .harvest-week-v2-row {
   display: grid;
-  grid-template-columns: minmax(170px, 220px) minmax(56px, 72px) minmax(50px, 64px) repeat(7, minmax(38px, 1fr)) minmax(64px, 80px) minmax(110px, 1.4fr);
+  grid-template-columns: minmax(190px, 260px) minmax(56px, 72px) minmax(50px, 64px) repeat(7, minmax(38px, 1fr)) minmax(64px, 80px) minmax(110px, 1.4fr);
   align-items: stretch;
   min-width: 0;
 }
@@ -2179,10 +2179,13 @@ body.biomasa-calendar-board-open .mx-modal-overlay {
   font-size: 13px;
   font-weight: 600;
   color: #0F172A;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.35;
+  /* El nombre completo debe verse siempre (se exporta como imagen/captura,
+     donde un tooltip por hover no sirve) — se envuelve en vez de cortar
+     con ellipsis. La fila crece de alto sola porque no tiene altura fija. */
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.3;
 }
 .wk-prov-tooltip {
   position: absolute;
