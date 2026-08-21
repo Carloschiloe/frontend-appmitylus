@@ -23,6 +23,7 @@ export default function DisponibilidadProyeccionAnual({
   loading,
   estadoFiltro,
   onEstadoFiltroChange,
+  onEdit,
   onCreateTrato,
   onEditTrato,
 }) {
