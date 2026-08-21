@@ -19,7 +19,7 @@ export default function ConfirmDeleteModal({
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: '450px' }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: '450px' }}>
         <div className="mx-modal-body" style={{ textAlign: 'center', padding: '42px 36px 34px' }}>
           <div
             style={{

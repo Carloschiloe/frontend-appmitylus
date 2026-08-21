@@ -500,6 +500,23 @@ body.modo-lectura::after {
   gap: 12px;
 }
 
+/* index.css define su PROPIO .mx-modal/.mx-modal-body (sistema con
+   .mx-modal-head/.mx-modal-title, usado por otro grupo de modales) con
+   otros valores, y carga después de este archivo — así que para las
+   mismas propiedades (radio, padding, etc.) esos valores le ganan a los
+   de acá por orden de carga, sin importar cuál se edite. Los modales que
+   usan .mx-modal-header/.mx-modal-body/.mx-modal-footer (este sistema)
+   agregan también esta clase modificadora para quedar inmunes a ese
+   choque, vía especificidad (dos clases) en vez de depender del orden. */
+.mx-modal.mx-modal--std {
+  border-radius: var(--radius-modal);
+}
+.mx-modal--std .mx-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
 /* ── Form Controls (Stage 3) ── */
 .mx-form {
   display: flex;

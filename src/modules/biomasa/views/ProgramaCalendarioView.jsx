@@ -332,7 +332,7 @@ export default function ProgramaCalendarioView({
 
           {showProviderPanel && (
             <div className="mx-modal-overlay" onClick={() => setShowProviderPanel(false)}>
-              <div className="mx-modal cal-month-provider-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="mx-modal mx-modal--std cal-month-provider-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="mx-modal-header">
                   <h2 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     Distribución por proveedor

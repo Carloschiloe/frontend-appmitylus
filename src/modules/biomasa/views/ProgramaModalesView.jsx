@@ -142,7 +142,7 @@ export default function ProgramaModalesView({
       {/* ── MODAL PROGRAMA (crear / editar) ── */}
       {showModal && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '560px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '560px' }}>
             <div className="mx-modal-header">
               <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>{editingId ? 'Editar Programa' : 'Nuevo Programa de Cosecha'}</h2>
               <button className="mx-btn-icon" onClick={() => setShowModal(false)}><X size={20} /></button>
@@ -419,7 +419,7 @@ export default function ProgramaModalesView({
           onClick={() => setShowConfirm(false)}
         >
           <div
-            className="mx-modal"
+            className="mx-modal mx-modal--std"
             style={{ maxWidth: 520 }}
             onClick={e => e.stopPropagation()}
           >
@@ -533,7 +533,7 @@ export default function ProgramaModalesView({
       {/* ── MODAL PAUSAR PROGRAMA ── */}
       {pauseModal && (
         <div className="mx-modal-overlay" onClick={() => setPauseModal(null)}>
-          <div className="mx-modal pause-modal" onClick={e => e.stopPropagation()}>
+          <div className="mx-modal mx-modal--std pause-modal" onClick={e => e.stopPropagation()}>
             <div className="mx-modal-header">
               <h2>Pausar programa</h2>
               <button className="mx-modal-close" onClick={() => setPauseModal(null)}>✕</button>
@@ -576,7 +576,7 @@ export default function ProgramaModalesView({
       {/* ── MODAL FINALIZAR PROGRAMA ── */}
       {showFinalizeModal && finalizingProgram && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: 500 }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: 500 }}>
             <div className="mx-modal-header">
               <h2>Finalizar programa</h2>
               <button className="mx-btn-icon" onClick={() => setShowFinalizeModal(false)}><X size={20} /></button>
@@ -627,7 +627,7 @@ export default function ProgramaModalesView({
       {/* ── MODAL CONTINUIDAD ── */}
       {showContinuityModal && continuitySource && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: 440 }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: 440 }}>
             <div className="mx-modal-header">
               <h2>Programa finalizado</h2>
               <button className="mx-btn-icon" onClick={() => setShowContinuityModal(false)}><X size={20} /></button>
