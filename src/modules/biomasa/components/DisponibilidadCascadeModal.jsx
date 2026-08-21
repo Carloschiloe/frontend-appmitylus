@@ -40,7 +40,7 @@ export default function DisponibilidadCascadeModal({ cascade, onClose }) {
 
   return (
     <div className="mx-modal-overlay" onClick={onClose}>
-      <div className="mx-modal disp-cascade-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="mx-modal mx-modal--std disp-cascade-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mx-modal-header">
           <h3 className="mx-modal-title">Cambios propagados</h3>
           <button type="button" className="mx-modal-close" onClick={onClose} aria-label="Cerrar"><X size={18} /></button>

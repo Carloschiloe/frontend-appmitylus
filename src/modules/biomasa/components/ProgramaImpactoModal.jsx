@@ -10,7 +10,7 @@ export default function ProgramaImpactoModal({ impacto, onClose }) {
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: 440 }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: 440 }}>
         <div className="mx-modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <CheckCircle2 size={20} style={{ color: 'var(--color-success)' }} />

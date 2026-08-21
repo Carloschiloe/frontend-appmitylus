@@ -630,7 +630,7 @@ export default function Maestros({ noPage = false }) {
 
       {isModalOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: tipo === 'regla_calidad' ? '650px' : '500px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: tipo === 'regla_calidad' ? '650px' : '500px' }}>
             <div className="mx-modal-header">
               <h2>{editingItem ? 'Editar' : 'Nuevo'} Registro</h2>
               <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
@@ -854,7 +854,7 @@ export default function Maestros({ noPage = false }) {
 
       {transportistasImport.open && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '860px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '860px' }}>
             <div className="mx-modal-header">
               <div>
                 <h2>Subir Transportistas</h2>

@@ -16,7 +16,7 @@ export default function InteraccionFormModal({
 }) {
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal interacciones-modal">
+      <div className="mx-modal mx-modal--std interacciones-modal">
         <div className="mx-modal-header">
           <h2>{form._id ? 'Editar Gestion' : 'Registrar Nueva Gestion'}</h2>
           <button type="button" className="mx-btn-icon" onClick={onClose}>

@@ -48,7 +48,7 @@ export default function TratoFormModal({
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal tratos-form-modal">
+      <div className="mx-modal mx-modal--std tratos-form-modal">
         <div className="mx-modal-header">
           <h2>{editingId ? 'Editar Trato' : 'Nuevo Trato'}</h2>
           <button type="button" className="mx-btn-icon" onClick={onClose}><X size={20} /></button>

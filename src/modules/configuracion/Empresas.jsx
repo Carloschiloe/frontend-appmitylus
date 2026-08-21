@@ -288,7 +288,7 @@ export default function Empresas() {
       {/* Modal Empresa */}
       {isModalOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '500px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '500px' }}>
             <div className="mx-modal-header">
               <h2>{editingEmpresa ? 'Editar' : 'Nueva'} Empresa</h2>
               <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}><X size={20} /></button>

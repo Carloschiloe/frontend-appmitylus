@@ -14,7 +14,7 @@ export default function TratoShareModal({
 
   return (
     <div className="mx-modal-overlay tratos-share-overlay">
-      <div className="mx-modal tratos-share-modal">
+      <div className="mx-modal mx-modal--std tratos-share-modal">
         <div className="tratos-share-header">
           <div className="tratos-share-icon">
             <CheckCircle2 size={32} />

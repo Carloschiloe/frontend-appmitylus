@@ -172,7 +172,7 @@ export default function DisponibilidadProyeccionAnual({
 
       {selectedMonth && (
         <div className="mx-modal-overlay disponibilidad-month-overlay" onClick={() => setSelectedMonth(null)}>
-          <div className="mx-modal disponibilidad-month-modal" onClick={(event) => event.stopPropagation()}>
+          <div className="mx-modal mx-modal--std disponibilidad-month-modal" onClick={(event) => event.stopPropagation()}>
             <div className="mx-modal-header">
               <div>
                 <h3 className="mx-modal-title">Detalle {mesLabel(selectedMonth, true)}</h3>

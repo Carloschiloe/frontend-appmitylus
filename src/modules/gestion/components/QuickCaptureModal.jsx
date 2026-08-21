@@ -492,7 +492,7 @@ export default function QuickCaptureModal() {
     <>
       {open && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '620px', width: 'min(100%, 620px)' }}>
             <div className="mx-modal-header">
               <div>
                 <h3 className="mx-modal-title">{savedInfo ? 'Gestión registrada' : 'Registrar acción rápida'}</h3>

@@ -139,7 +139,7 @@ export default function ProgramaAjustarDiaModal({
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: 500 }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: 500 }}>
         <div className="mx-modal-header">
           <div>
             <h2 style={{ margin: 0 }}>Ajustar día</h2>

@@ -21,7 +21,7 @@ export default function MuestreoModalShell({
 }) {
   return (
     <div className="mx-modal-overlay mu-modal-overlay">
-      <div className="mx-modal mu-main-modal">
+      <div className="mx-modal mx-modal--std mu-main-modal">
         <div className="mx-modal-header mu-modal-header">
           <div className="mu-modal-title-row">
             <h3 className="mx-modal-title mu-modal-title">

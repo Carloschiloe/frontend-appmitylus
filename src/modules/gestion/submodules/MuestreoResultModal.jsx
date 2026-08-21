@@ -5,7 +5,7 @@ export default function MuestreoResultModal({ isOpen, resultData, onClose, onRep
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal shadow-2xl mu-result-modal">
+      <div className="mx-modal mx-modal--std shadow-2xl mu-result-modal">
         <div className="mu-result-success-animation">
           {resultData.clasificaciones?.[0] ? (
             <div className="mu-icon-pulse success"><Award size={64} /></div>

@@ -120,7 +120,7 @@ export default function EditarRealizadoModal({ item, onClose, onSaved }) {
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: '520px', width: 'min(100%, 520px)' }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: '520px', width: 'min(100%, 520px)' }}>
         <div className="mx-modal-header">
           <div>
             <h3 className="mx-modal-title">Editar gestión realizada</h3>

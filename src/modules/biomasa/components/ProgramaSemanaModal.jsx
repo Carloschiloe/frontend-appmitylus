@@ -90,7 +90,7 @@ export default function ProgramaSemanaModal({
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: 460 }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: 460 }}>
         <div className="mx-modal-header">
           <div>
             <h2 style={{ margin: 0 }}>Planificar semana</h2>

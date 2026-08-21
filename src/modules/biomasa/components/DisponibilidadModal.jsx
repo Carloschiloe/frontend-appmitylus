@@ -297,7 +297,7 @@ export default function DisponibilidadModal({
 
   return (
     <div className="mx-modal-overlay disponibilidad-modal-overlay" onClick={onClose}>
-      <div className="mx-modal disponibilidad-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="mx-modal mx-modal--std disponibilidad-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mx-modal-header">
           <div>
             <h3 className="mx-modal-title">{item ? 'Editar disponibilidad' : 'Registrar disponibilidad'}</h3>

@@ -1245,7 +1245,7 @@ export default function Directorio() {
 
       {modalState.open && (
         <div className="mx-modal-overlay">
-            <div className="mx-modal dir-form-modal">
+            <div className="mx-modal mx-modal--std dir-form-modal">
             <div className="mx-modal-header">
               <h2>
                 {tab === 'proveedores'
@@ -1615,7 +1615,7 @@ export default function Directorio() {
 
       {showAddProviderModal && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal dir-form-modal">
+          <div className="mx-modal mx-modal--std dir-form-modal">
             <div className="mx-modal-header">
               {addProviderStep === 2 && (
                 <button type="button" className="mx-btn-icon" onClick={() => setAddProviderStep(1)}>

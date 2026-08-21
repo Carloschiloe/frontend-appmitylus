@@ -432,7 +432,7 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
 
       {isModalOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '500px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '500px' }}>
             <div className="mx-modal-header">
               <h2>{editingUser ? 'Editar' : 'Nuevo'} Usuario</h2>
               <button type="button" className="mx-btn-icon" onClick={() => setIsModalOpen(false)}>
@@ -552,7 +552,7 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
 
       {isConfirmStatusOpen && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '400px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '400px' }}>
             <div className="mx-modal-body" style={{ textAlign: 'center', padding: '40px 32px' }}>
               <div
                 className="usuarios-confirm-icon"
@@ -594,7 +594,7 @@ export default function Usuarios({ noPage = false, forceAllEmpresas = false }) {
 
       {confirmModal.isOpen && confirmModal.type !== 'delete' && (
         <div className="mx-modal-overlay">
-          <div className="mx-modal" style={{ maxWidth: '400px' }}>
+          <div className="mx-modal mx-modal--std" style={{ maxWidth: '400px' }}>
             <div className="mx-modal-header">
               <h2>{confirmModal.title}</h2>
               <button type="button" className="mx-btn-icon" onClick={closeConfirmModal}>

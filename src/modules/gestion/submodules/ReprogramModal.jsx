@@ -21,7 +21,7 @@ export default function ReprogramModal({ item, onConfirm, onClose }) {
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: '420px', width: 'min(100%, 420px)' }}>
+      <div className="mx-modal mx-modal--std" style={{ maxWidth: '420px', width: 'min(100%, 420px)' }}>
         <div className="mx-modal-header">
           <div>
             <h3 className="mx-modal-title" style={{ fontSize: '1rem' }}>Reprogramar actividad</h3>
