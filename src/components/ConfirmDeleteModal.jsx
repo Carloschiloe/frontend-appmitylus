@@ -19,7 +19,7 @@ export default function ConfirmDeleteModal({
 
   return (
     <div className="mx-modal-overlay">
-      <div className="mx-modal" style={{ maxWidth: '450px', borderRadius: 16, overflow: 'hidden' }}>
+      <div className="mx-modal" style={{ maxWidth: '450px' }}>
         <div className="mx-modal-body" style={{ textAlign: 'center', padding: '42px 36px 34px' }}>
           <div
             style={{
@@ -36,20 +36,20 @@ export default function ConfirmDeleteModal({
           >
             <AlertTriangle size={36} />
           </div>
-          <h3 style={{ fontWeight: 900, fontSize: '22px', marginBottom: '18px', color: '#111827' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '22px', marginBottom: '18px', color: '#111827' }}>
             {title}
           </h3>
           <p style={{ color: '#64748b', fontSize: '15px', lineHeight: 1.55, maxWidth: 360, margin: '0 auto' }}>
             {resolvedDescription}
           </p>
         </div>
-        <div className="mx-modal-foot" style={{ gap: '18px', padding: '22px 36px', background: '#f8fafc' }}>
+        <div className="mx-modal-footer" style={{ gap: '18px', padding: '22px 36px' }}>
           <button className="mx-btn mx-btn-outline" style={{ flex: 1, height: 48 }} onClick={onClose} type="button">
             {cancelLabel}
           </button>
           <button
-            className="mx-btn"
-            style={{ flex: 1, height: 48, background: '#ef4444', color: 'white', fontWeight: 800 }}
+            className="mx-btn mx-btn-danger"
+            style={{ flex: 1, height: 48 }}
             onClick={onConfirm}
             type="button"
           >

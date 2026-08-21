@@ -336,10 +336,10 @@
   width: min(1180px, calc(100% - 32px));
   max-height: min(720px, calc(100vh - 48px));
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--radius-modal);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--modal-shadow);
 }
 
 .sanitario-modal-header {

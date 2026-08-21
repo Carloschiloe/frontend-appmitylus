@@ -414,24 +414,25 @@ export default function ProgramaModalesView({
       {/* ── MODAL CONFIRMAR PROGRAMA (portal) ── */}
       {showConfirm && createPortal(
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          className="mx-modal-overlay"
+          style={{ zIndex: 9000 }}
           onClick={() => setShowConfirm(false)}
         >
           <div
-            style={{ background: '#F8FAFC', borderRadius: 24, boxShadow: '0 25px 60px -10px rgba(15,23,42,0.22)', width: '100%', maxWidth: 520, maxHeight: 'calc(100vh - 48px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            className="mx-modal"
+            style={{ maxWidth: 520 }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ background: '#fff', padding: '20px 24px 18px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div className="mx-modal-header" style={{ alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>{editingId ? 'Confirmar cambios' : 'Confirmar programa'}</h2>
+                <h2>{editingId ? 'Confirmar cambios' : 'Confirmar programa'}</h2>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>Revisa el resumen antes de {editingId ? 'guardar.' : 'crear el programa.'}</p>
               </div>
-              <button type="button" onClick={() => setShowConfirm(false)}
-                style={{ border: 'none', background: '#F1F5F9', borderRadius: 10, width: 34, height: 34, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', flexShrink: 0, marginLeft: 16 }}>
+              <button type="button" className="mx-btn-icon" onClick={() => setShowConfirm(false)}>
                 <X size={16} />
               </button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="mx-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={S.iconCircle('#EFF6FF')}><Building2 size={20} color="#2563EB" /></div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -518,7 +519,7 @@ export default function ProgramaModalesView({
                 </div>
               )}
             </div>
-            <div style={{ background: '#fff', padding: '14px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <div className="mx-modal-footer" style={{ justifyContent: 'space-between' }}>
               <button type="button" className="mx-btn mx-btn-outline" onClick={() => setShowConfirm(false)}>← Volver a editar</button>
               <button type="button" className="mx-btn mx-btn-primary" onClick={handleSave}>
                 <CheckCircle2 size={16} /> {editingId ? 'Confirmar y guardar' : 'Confirmar y crear'}

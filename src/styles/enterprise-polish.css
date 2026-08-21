@@ -605,8 +605,7 @@ button {
     padding: 16px !important;
   }
 
-  .mx-modal-footer,
-  .mx-modal-foot {
+  .mx-modal-footer {
     position: sticky;
     bottom: 0;
     z-index: 4;
@@ -619,8 +618,7 @@ button {
     border-top: 1px solid var(--color-border, #e2e8f0);
   }
 
-  .mx-modal-footer .mx-btn,
-  .mx-modal-foot .mx-btn {
+  .mx-modal-footer .mx-btn {
     width: 100%;
     min-height: 46px;
     justify-content: center;
