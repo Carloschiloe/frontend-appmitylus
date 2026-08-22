@@ -4,6 +4,16 @@ export function isCommandConfirmable(response) {
   return response?.status === 'needs_confirmation' && Boolean(response?.commandId) && !response?.commandState;
 }
 
+// Un conversationId guardado en localStorage puede quedar stale (expiró, se
+// reseteó, o corresponde a otro tenant) — el backend lo rechaza con este
+// codigo estructurado, nunca con un 404 generico de ruta. Detectarlo así (no
+// solo por el status 404, que también puede significar otra cosa) evita que
+// CopilotPanel reintente por error en casos donde el 404 es otro tipo de
+// rechazo de negocio.
+export function isStaleConversationError(error) {
+  return error?.status === 404 && error?.data?.code === 'ERR_COPILOT_CONVERSATION_NOT_FOUND';
+}
+
 function terminalStatusFor(response, commandId) {
   if (!commandId) return null;
   if (response?.replacedCommandId === commandId) return 'replaced';

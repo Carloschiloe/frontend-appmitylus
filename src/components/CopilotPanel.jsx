@@ -34,6 +34,7 @@ import {
 import {
   applyCommandTransition,
   isCommandConfirmable,
+  isStaleConversationError,
   snapshotToHistory,
 } from '../utils/copilotActionState';
 import './CopilotPanel.css';
@@ -564,8 +565,17 @@ export default function CopilotPanel({ queryClient }) {
           hydratedConversationRef.current = stored;
           setHistory((current) => current.length ? current : snapshotToHistory(snapshot));
         })
-        .catch(() => {
-          // La sesión puede haber expirado; el próximo envío aplicará el manejo existente.
+        .catch((error) => {
+          // La sesión puede haber expirado. Si el backend confirma que ESTE
+          // conversationId ya no es válido, se descarta aquí — si no se hace,
+          // el próximo mensaje lo reenvía tal cual y falla exactamente igual
+          // (ver runCommand, que además reintenta ese envío una vez con
+          // conversación nueva).
+          if (isStaleConversationError(error)) {
+            clearCopilotConversation(scope);
+            conversationIdRef.current = null;
+            setHasConversation(false);
+          }
         });
     }
   }, [currentConversationScope, open]);
@@ -849,33 +859,52 @@ export default function CopilotPanel({ queryClient }) {
     const controller = new AbortController();
     streamControllerRef.current = controller;
 
-    try {
-      await streamCopilotCommand({
-        text: clean,
-        mode: 'draft',
-        conversationId: conversationIdRef.current,
-        turnId: String(userId),
-        signal: controller.signal,
-        onEvent: (event) => {
-          if (event.type === 'conversation') {
-            rememberConversation(event.data?.conversationId);
-          } else if (event.type === 'status') {
-            patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
-          } else if (event.type === 'narrative') {
-            patchTurn(assistantId, (item) => ({ ...item, narrative: event.data }));
-          } else if (event.type === 'result') {
-            const response = event.data;
-            appendResultWithTransition(assistantId, response);
-            if (response.status === 'executed') {
-              refreshAppData();
-              window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
-              addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
-            }
-          } else if (event.type === 'error') {
-            patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'Copilot no pudo completar la acción.' }));
+    const attemptStream = (useConversationId) => streamCopilotCommand({
+      text: clean,
+      mode: 'draft',
+      conversationId: useConversationId,
+      turnId: String(userId),
+      signal: controller.signal,
+      onEvent: (event) => {
+        if (event.type === 'conversation') {
+          rememberConversation(event.data?.conversationId);
+        } else if (event.type === 'status') {
+          patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
+        } else if (event.type === 'narrative') {
+          patchTurn(assistantId, (item) => ({ ...item, narrative: event.data }));
+        } else if (event.type === 'result') {
+          const response = event.data;
+          appendResultWithTransition(assistantId, response);
+          if (response.status === 'executed') {
+            refreshAppData();
+            window.dispatchEvent(new CustomEvent('mitynex:copilot-executed', { detail: response }));
+            addToast({ type: 'success', title: 'Copilot ejecutó la acción', message: response.message });
           }
-        },
-      });
+        } else if (event.type === 'error') {
+          patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'Copilot no pudo completar la acción.' }));
+        }
+      },
+    });
+
+    try {
+      try {
+        await attemptStream(conversationIdRef.current);
+      } catch (error) {
+        // Un conversationId guardado que el backend ya no reconoce (expiró,
+        // se reseteó, o quedó de otro tenant) nunca se recupera solo — sin
+        // esto, CADA envío repite el mismo 404 "Conversación no encontrada"
+        // hasta que el usuario borre manualmente su localStorage. Se
+        // descarta ese id y se reintenta UNA vez arrancando una conversación
+        // nueva; el mensaje del usuario no se pierde ni hay que reescribirlo.
+        if (isStaleConversationError(error) && conversationIdRef.current) {
+          clearCopilotConversation(scope);
+          conversationIdRef.current = null;
+          setHasConversation(false);
+          await attemptStream(null);
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       const message = error?.data?.message || error?.message || 'No se pudo procesar la solicitud.';
       patchTurn(assistantId, (item) => ({ ...item, error: item.error || message }));

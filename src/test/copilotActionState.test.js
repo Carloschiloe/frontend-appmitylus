@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyCommandTransition,
   isCommandConfirmable,
+  isStaleConversationError,
   snapshotToHistory,
 } from '../utils/copilotActionState';
 
@@ -55,5 +56,48 @@ describe('estado visual de propuestas Copilot', () => {
   it('mantiene estados already_processing y completed sin reactivar tarjetas', () => {
     expect(isCommandConfirmable({ status: 'already_processing', commandId: 'x' })).toBe(false);
     expect(isCommandConfirmable({ status: 'completed', commandId: 'x' })).toBe(false);
+  });
+
+  it('C-8: rehidrata pendingActions (array, multi-intención) como varias tarjetas confirmables', () => {
+    const snapshot = {
+      conversationId: 'conversation-multi',
+      turns: [],
+      pendingActions: [
+        { status: 'needs_confirmation', commandId: 'cmd-disp', command: { intent: 'declarar_disponibilidad' } },
+        { status: 'needs_confirmation', commandId: 'cmd-comp', command: { intent: 'crear_compromiso' } },
+      ],
+      pendingAction: { status: 'needs_confirmation', commandId: 'cmd-disp', command: { intent: 'declarar_disponibilidad' } },
+    };
+    const history = snapshotToHistory(snapshot);
+    const pending = history.flatMap((item) => item.results || []);
+    expect(pending).toHaveLength(2);
+    expect(pending.map((p) => p.commandId).sort()).toEqual(['cmd-comp', 'cmd-disp']);
+    expect(pending.every((p) => isCommandConfirmable(p))).toBe(true);
+  });
+
+  it('sin propuestas pendientes tras un refresh no revienta (array ni legacy)', () => {
+    expect(snapshotToHistory({ conversationId: 'x', turns: [], pendingActions: [], pendingAction: null }).flatMap((i) => i.results || [])).toHaveLength(0);
+  });
+});
+
+describe('isStaleConversationError — recuperación de un conversationId inválido', () => {
+  it('reconoce el 404 estructurado de conversación no encontrada', () => {
+    const error = { status: 404, data: { code: 'ERR_COPILOT_CONVERSATION_NOT_FOUND', message: 'Conversación no encontrada.' } };
+    expect(isStaleConversationError(error)).toBe(true);
+  });
+
+  it('no confunde otros 404 (ruta inexistente, recurso de negocio distinto) con conversación stale', () => {
+    expect(isStaleConversationError({ status: 404, data: { code: 'ERR_COPILOT_PENDING_ACTION_NOT_FOUND' } })).toBe(false);
+    expect(isStaleConversationError({ status: 404 })).toBe(false);
+    expect(isStaleConversationError({ status: 404, data: {} })).toBe(false);
+  });
+
+  it('no confunde otros status con el mismo code (defensivo, no debería ocurrir en la práctica)', () => {
+    expect(isStaleConversationError({ status: 500, data: { code: 'ERR_COPILOT_CONVERSATION_NOT_FOUND' } })).toBe(false);
+  });
+
+  it('tolera error null/undefined sin lanzar', () => {
+    expect(isStaleConversationError(null)).toBe(false);
+    expect(isStaleConversationError(undefined)).toBe(false);
   });
 });
