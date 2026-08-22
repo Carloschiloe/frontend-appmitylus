@@ -300,6 +300,9 @@ function commandEntityLabel(command = {}) {
 
 function ConfirmationPreview({ command }) {
   const payload = command?.payload || {};
+  const calibreLabel = payload.calibreMin != null || payload.calibreMax != null
+    ? `${payload.calibreMin ?? '?'}–${payload.calibreMax ?? '?'}`
+    : null;
   const rows = [
     ['Entidad', commandEntityLabel(command)],
     ['Acción realizada', payload.tipo || payload.tipoContacto || payload.accionRealizada],
@@ -309,6 +312,10 @@ function ConfirmationPreview({ command }) {
     ['Fecha próximo paso', payload.fechaProximo || payload.fechaProgramada],
     ['Teléfono', payload.contactoTelefono || payload.telefono],
     ['Correo', payload.contactoEmail || payload.email],
+    ['Toneladas disponibles', payload.tonsDisponible],
+    ['Calibre', calibreLabel],
+    ['Rendimiento declarado', payload.rendimientoDeclarado != null ? `${payload.rendimientoDeclarado}%` : null],
+    ['Mes', payload.mesKey],
   ].filter(([, value]) => value !== null && value !== undefined && value !== '');
 
   if (!rows.length) return null;
