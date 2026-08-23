@@ -37,6 +37,7 @@ import {
   isStaleConversationError,
   snapshotToHistory,
 } from '../utils/copilotActionState';
+import { mesLabel } from '../modules/biomasa/utils/fechasChile';
 import './CopilotPanel.css';
 
 const EXAMPLES = [
@@ -300,8 +301,13 @@ function commandEntityLabel(command = {}) {
 
 function ConfirmationPreview({ command }) {
   const payload = command?.payload || {};
+  // Punto vs rango: min===max es un valor puntual ("70 uk"), no un rango
+  // degenerado ("70–70 uk") — misma convención que el resto de Disponibilidad
+  // (DisponibilidadModal, DisponibilidadResumen, etc.), sufijo "uk" incluido.
   const calibreLabel = payload.calibreMin != null || payload.calibreMax != null
-    ? `${payload.calibreMin ?? '?'}–${payload.calibreMax ?? '?'}`
+    ? (payload.calibreMin != null && payload.calibreMin === payload.calibreMax
+      ? `${payload.calibreMin} uk`
+      : `${payload.calibreMin ?? '?'}–${payload.calibreMax ?? '?'} uk`)
     : null;
   const rows = [
     ['Entidad', commandEntityLabel(command)],
@@ -315,7 +321,7 @@ function ConfirmationPreview({ command }) {
     ['Toneladas disponibles', payload.tonsDisponible],
     ['Calibre', calibreLabel],
     ['Rendimiento declarado', payload.rendimientoDeclarado != null ? `${payload.rendimientoDeclarado}%` : null],
-    ['Mes', payload.mesKey],
+    ['Mes', payload.mesKey ? mesLabel(payload.mesKey, true) : null],
   ].filter(([, value]) => value !== null && value !== undefined && value !== '');
 
   if (!rows.length) return null;
