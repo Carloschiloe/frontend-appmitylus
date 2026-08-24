@@ -1759,13 +1759,69 @@ button.agenda-year-day:hover:not(.agenda-year-day--pad) {
     min-width: 118px;
   }
 
+  /* Sin esto, el nav de mes/semana + selector de responsable + botón
+     "Mostrar gestiones" se apretaban en una sola fila más ancha que la
+     pantalla, y .cal-shell (overflow:hidden) recortaba el sobrante por la
+     izquierda — por eso se veía "STO 2026" en vez de "AGOSTO 2026". */
+  .cal-toolbar-right {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
   .cal-day-cell {
     min-height: 90px;
     padding: 8px;
   }
 
+  /* La celda del día no tiene espacio legible para proveedor + detalle a la
+     vez — se oculta el nombre del proveedor (icono+strong) y se deja solo
+     la descripción breve, en vez del hack anterior (font-size:0 en el
+     contenedor) que apagaba el proveedor pero dejaba visible un fragmento
+     ilegible de la descripción ("Ll...", "Llan"). */
+  .cal-event-pill-main {
+    display: none;
+  }
+
   .cal-event-pill {
-    font-size: 0;
+    min-height: 0;
+    padding: 3px 5px;
+  }
+
+  .cal-event-pill em {
+    font-size: 0.62rem;
+  }
+
+  /* Vista Semana: las tarjetas de evento estaban pensadas para columnas de
+     escritorio — en mobile (7 columnas angostas) se recorta a los datos
+     esenciales (título + color de estado) para que quepan legibles. */
+  .cal-week-col-header {
+    padding: 6px 4px;
+  }
+
+  .cal-week-col-header .col-date {
+    font-size: 0.92rem;
+  }
+
+  .cal-week-col-events {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .cal-week-event {
+    padding: 5px 6px;
+  }
+
+  .cal-week-event-title {
+    font-size: 0.72rem;
+  }
+
+  .cal-week-event-provider,
+  .cal-week-event-contact,
+  .cal-week-event-summary,
+  .cal-week-event-responsible {
+    display: none;
   }
 
   .agenda-table {
