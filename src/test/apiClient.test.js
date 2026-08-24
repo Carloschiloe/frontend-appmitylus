@@ -167,6 +167,50 @@ describe('apiClient — AbortError y errores de red no generan refresh', () => {
   });
 });
 
+describe('apiClient — /auth/me: excepción dentro de las rutas de auth (sí requiere sesión)', () => {
+  it('un accessToken vencido momentáneamente se renueva solo — /auth/me reintenta y devuelve al usuario real', async () => {
+    let meCallCount = 0;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/auth/refresh')) return Promise.resolve(okRefresh());
+      if (url.includes('/auth/me')) {
+        meCallCount++;
+        if (meCallCount === 1) return Promise.resolve(errJson(401, { error: 'Unauthorized' }));
+        return Promise.resolve(okJson({ ok: true, usuario: { nombre: 'Carlos' } }));
+      }
+      return Promise.resolve(errJson(404, {}));
+    });
+
+    const data = await apiClient.get('/auth/me');
+    expect(data).toEqual({ ok: true, usuario: { nombre: 'Carlos' } });
+    expect(meCallCount).toBe(2); // 401 inicial + reintento tras refresh
+    const refreshCalls = global.fetch.mock.calls.filter(([u]) => u.includes('/auth/refresh'));
+    expect(refreshCalls).toHaveLength(1);
+    expect(window.location.href).not.toBe('/login'); // nunca forzó redirect
+  });
+
+  it('sin sesión real (refresh también falla), /auth/me lanza 401 SIN forzar redirect — evita recargar /login para visitantes anónimos', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/auth/refresh')) return Promise.resolve(errJson(401, {}));
+      return Promise.resolve(errJson(401, { error: 'Unauthorized' }));
+    });
+
+    await expect(apiClient.get('/auth/me')).rejects.toMatchObject({ status: 401 });
+    expect(window.location.href).not.toBe('/login');
+    expect(clearSessionCache).not.toHaveBeenCalled();
+    expect(clearRuntimeLayoutState).not.toHaveBeenCalled();
+  });
+
+  it('sin sesión real y el refresh lanza error de red, /auth/me igual falla sin redirect', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/auth/refresh')) return Promise.reject(new Error('network error'));
+      return Promise.resolve(errJson(401, { error: 'Unauthorized' }));
+    });
+
+    await expect(apiClient.get('/auth/me')).rejects.toMatchObject({ status: 401 });
+    expect(window.location.href).not.toBe('/login');
+  });
+});
+
 describe('apiClient — errores HTTP genéricos', () => {
   it('404 lanza ApiError con status 404', async () => {
     global.fetch = vi.fn().mockResolvedValue(errJson(404, { error: 'No encontrado' }));

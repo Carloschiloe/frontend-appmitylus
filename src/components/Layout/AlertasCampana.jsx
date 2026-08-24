@@ -12,6 +12,20 @@ const ACTIVIDAD_LABEL = {
 };
 const ALERTAS_POLL_MS = 5 * 60 * 1000;
 
+// Dedup: esta campana se monta dos veces a la vez (header de escritorio y
+// header móvil, ver comentario más abajo) — ambas instancias piden lo mismo
+// casi en el mismo instante. Sin esto, cada una dispara su propio
+// GET /alertas-sanitarias (y su propio error si el token está vencido en
+// ese momento), duplicando peticiones y ruido en consola sin ningún
+// beneficio: ambas terminan mostrando el mismo dato igual.
+let alertasInFlight = null;
+function fetchAlertasShared() {
+  if (!alertasInFlight) {
+    alertasInFlight = apiClient.get('/alertas-sanitarias').finally(() => { alertasInFlight = null; });
+  }
+  return alertasInFlight;
+}
+
 // Ícono de campana con alertas sanitarias — usado tanto en el header de
 // escritorio (AppHeader) como en el header móvil (App.jsx MainLayout), así
 // se ve/comporta igual en ambos y solo hay una fuente de la lógica.
@@ -26,16 +40,16 @@ export default function AlertasCampana() {
     const activeTenant = localStorage.getItem('selected_tenant_db');
     if (!activeTenant) return;
 
-    const controller = new AbortController();
+    let cancelled = false;
     const fetchAlertas = () => {
-      apiClient.get('/alertas-sanitarias', { signal: controller.signal })
-        .then((data) => setAlertas(Array.isArray(data?.items) ? data.items : []))
+      fetchAlertasShared()
+        .then((data) => { if (!cancelled) setAlertas(Array.isArray(data?.items) ? data.items : []); })
         .catch(() => {});
     };
     fetchAlertasRef.current = fetchAlertas;
     fetchAlertas();
     const interval = setInterval(fetchAlertas, ALERTAS_POLL_MS);
-    return () => { controller.abort(); clearInterval(interval); };
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   useEffect(() => {

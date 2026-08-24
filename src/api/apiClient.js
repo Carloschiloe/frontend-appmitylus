@@ -96,18 +96,37 @@ async function request(endpoint, options = {}) {
 
     if (response.status === 401) {
       const isPublicPath = endpoint.startsWith('/auth/') || endpoint.startsWith('/public/');
+      // /auth/me es la excepcion dentro de "rutas de auth": a diferencia de
+      // login/refresh/activar-cuenta (que nunca requieren sesion previa), SI
+      // es una ruta protegida — se llama al bootear la app para saber quien
+      // es el usuario. Sin este caso especial quedaba categorizada como
+      // "publica" y nunca se beneficiaba del refresh-y-reintento: un
+      // accessToken vencido en ese instante (algo normal, se renueva solo)
+      // hacia que AuthContext deslogueara al usuario en el cliente (setUser
+      // null) en vez de renovar el token en silencio, como si pasa con
+      // cualquier otra llamada protegida.
+      const isSelfCheck = endpoint === '/auth/me';
 
-      if (!isPublicPath) {
+      if (!isPublicPath || isSelfCheck) {
         if (!options._retry) {
           const refreshed = await attemptRefresh();
           if (refreshed) {
             return request(endpoint, { ...options, _retry: true });
           }
         }
-        clearSessionCache({ clearTenant: true });
-        clearRuntimeLayoutState();
-        window.location.href = '/login';
-        throw new ApiError('Sesion expirada', 401);
+        // /auth/me sin sesion real (visitante anonimo, o refresh token
+        // tambien vencido) NO debe forzar un redirect duro: AuthProvider
+        // envuelve tambien /login y /activar-cuenta, asi que esto se
+        // ejecuta ahi tambien — un redirect aca recargaria /login de forma
+        // innecesaria para cualquier visitante sin sesion. Se deja caer al
+        // manejo normal de abajo (throw ApiError 401), que AuthContext ya
+        // captura para simplemente marcar user:null sin navegar.
+        if (!isSelfCheck) {
+          clearSessionCache({ clearTenant: true });
+          clearRuntimeLayoutState();
+          window.location.href = '/login';
+          throw new ApiError('Sesion expirada', 401);
+        }
       }
     }
 
