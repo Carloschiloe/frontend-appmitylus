@@ -8,6 +8,9 @@ import 'leaflet/dist/leaflet.css';
 import './directorio.css';
 
 const SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+// Capa gratuita de Esri con caminos/límites/nombres de lugares, superpuesta
+// al satelital — mismo criterio que CentrosMap.jsx.
+const REFERENCE = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 
 function FitBounds({ positions }) {
   const map = useMap();
@@ -82,6 +85,7 @@ export default function ProviderMapModal({ provider, onClose }) {
               zoomControl
             >
               <TileLayer url={SATELLITE} attribution="" />
+              <TileLayer url={REFERENCE} attribution="Tiles &copy; Esri" />
               <FitBounds positions={allPositions} />
               {centros.map((centro) => (
                 <Polygon

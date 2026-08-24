@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronDown, Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
+import { ChevronDown, Layers, Maximize, Minimize, Ruler, Search, Trash2, X } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import {
   CircleMarker,
@@ -46,6 +46,11 @@ function getPolygonColor(centro, isHarvestActive) {
   return CONCESSION_COLOR;
 }
 const SATELLITE_LAYER = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+// Capa gratuita de Esri (sin API key) con caminos, límites y nombres de
+// lugares (comunas, localidades) — se superpone al satelital para dar el
+// mismo tipo de referencia geográfica que Google Maps, sin depender de un
+// proveedor pago nuevo.
+const REFERENCE_LAYER = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
 
 const ALLOWED_SPECIES_KEYS = [
   'mitilido',
@@ -291,6 +296,7 @@ export default function CentrosMap() {
   }, [estadoDropdownOpen]);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [labelLevel, setLabelLevel] = useState('media');
+  const [showReferenceLayer, setShowReferenceLayer] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measurePoints, setMeasurePoints] = useState([]);
@@ -632,6 +638,13 @@ export default function CentrosMap() {
 
           <div className="map-action-group">
             <button
+              className={`mx-btn-icon ${showReferenceLayer ? 'map-btn-active' : ''}`}
+              onClick={() => setShowReferenceLayer((v) => !v)}
+              title={showReferenceLayer ? 'Ocultar comunas y localidades' : 'Mostrar comunas y localidades'}
+            >
+              <Layers size={16} />
+            </button>
+            <button
               className={`mx-btn-icon ${isMeasuring ? 'map-btn-active' : ''}`}
               onClick={handleToggleMeasure}
               title="Medir distancia"
@@ -697,6 +710,9 @@ export default function CentrosMap() {
             ref={setMapInstance}
           >
             <TileLayer attribution="Tiles &copy; Esri" url={SATELLITE_LAYER} maxZoom={18} />
+            {showReferenceLayer && (
+              <TileLayer attribution="Tiles &copy; Esri" url={REFERENCE_LAYER} maxZoom={18} />
+            )}
             <InvalidateSize trigger={isFullscreen} />
             <MapViewportHandler onViewportChange={handleViewportChange} setZoom={setZoom} />
             <MeasureLayer enabled={isMeasuring} points={measurePoints} onAddPoint={handleAddMeasurePoint} />
