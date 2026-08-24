@@ -1097,7 +1097,10 @@ button.dir-status-item.is-active .dir-status-label {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.18);
-  z-index: 400;
+  /* Debe quedar por encima de .mx-mobile-header (z-index:1999, ver
+     index.css) — con un z-index bajo, el header fijo del celular se
+     dibujaba ENCIMA del drawer, tapando su parte superior. */
+  z-index: 2998;
 }
 
 .dir-drawer {
@@ -1109,7 +1112,8 @@ button.dir-status-item.is-active .dir-status-label {
   max-width: 92vw;
   background: var(--color-surface);
   box-shadow: -6px 0 32px rgba(3, 27, 78, 0.14);
-  z-index: 401;
+  /* Mismo motivo que .dir-drawer-backdrop. */
+  z-index: 2999;
   display: flex;
   flex-direction: column;
   overflow: hidden;

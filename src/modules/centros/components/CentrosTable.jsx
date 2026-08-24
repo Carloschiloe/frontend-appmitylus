@@ -479,11 +479,20 @@ export default function CentrosTable() {
                               const rect = e.currentTarget.getBoundingClientRect();
                               const spaceBelow = window.innerHeight - rect.bottom;
                               const spaceNeeded = 160; // Approx height for 4 items
+                              // El menu tiene min-width:160px (ver .ct-dropdown en
+                              // centros.css) — sin este clamp, cuando el boton "..."
+                              // queda cerca del borde izquierdo (ej. en mobile, donde
+                              // un estilo global lo alinea a la izquierda), el "right"
+                              // calculado empuja el menu con coordenadas negativas y
+                              // queda cortado fuera de la pantalla.
+                              const dropdownWidth = 168; // min-width (160) + margen
+                              const rawRight = window.innerWidth - rect.right;
+                              const right = Math.min(Math.max(rawRight, 8), Math.max(8, window.innerWidth - dropdownWidth));
 
                               if (spaceBelow < spaceNeeded) {
-                                setMenuPos({ bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
+                                setMenuPos({ bottom: window.innerHeight - rect.top + 4, right });
                               } else {
-                                setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                                setMenuPos({ top: rect.bottom + 4, right });
                               }
                               setOpenMenuId(centro._id);
                             }

@@ -1280,7 +1280,10 @@ button.agenda-year-day:hover:not(.agenda-year-day--pad) {
 .cal-aside-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  /* Debe quedar por encima de .mx-mobile-header (z-index:1999, ver
+     index.css) — con un z-index bajo, el header fijo del celular se
+     dibujaba ENCIMA del panel, tapando el título y el botón de cerrar. */
+  z-index: 2998;
   border: 0;
   background: rgba(15, 23, 42, 0.22);
   cursor: pointer;
@@ -1291,7 +1294,9 @@ button.agenda-year-day:hover:not(.agenda-year-day--pad) {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 90;
+  /* Mismo motivo que .cal-aside-backdrop: por debajo de 1999 el header
+     móvil fijo tapaba la parte superior del panel (título + botón X). */
+  z-index: 2999;
   width: min(460px, calc(100vw - 28px));
   border-left: 1px solid #dbe4ef;
   border-top: 0;

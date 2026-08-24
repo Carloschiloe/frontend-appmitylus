@@ -945,6 +945,13 @@ ul, ol {
   .mx-modal {
     width: calc(100% - 32px) !important;
     margin: 16px !important;
+    /* 100vh no cuenta la barra de direcciones/gestos de Android, que reduce
+       la altura visible real — el modal podía renderizarse más alto que la
+       pantalla visible, dejando su header (con el botón de cerrar) fuera de
+       vista sin ningún scroll disponible para alcanzarlo. dvh sí sigue la
+       altura visible real; se mantiene vh como fallback para navegadores
+       viejos que no soportan dvh. */
     max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - 32px) !important;
   }
 }
