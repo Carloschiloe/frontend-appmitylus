@@ -605,8 +605,21 @@
   letter-spacing: 0.05em;
 }
 
-.copilot-confirm {
+.copilot-confirm-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
   justify-self: stretch;
+}
+
+.copilot-cancel {
+  flex: 0 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.copilot-confirm {
+  flex: 1;
   justify-content: center;
 }
 

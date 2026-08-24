@@ -406,13 +406,16 @@ function CopilotResultEntry({
   response,
   sourceText,
   onConfirm,
+  onCancel,
   onChooseOption,
   confirmingIds,
+  cancellingIds,
 }) {
   if (!response) return null;
   const intent = response.command?.intent || '';
   const requiresConfirmation = isCommandConfirmable(response);
   const isConfirmingThis = confirmingIds.has(response.commandId);
+  const isCancellingThis = cancellingIds.has(response.commandId);
 
   return (
     <div className={`copilot-result-entry copilot-result-entry--${response.status || 'draft'}`}>
@@ -439,15 +442,26 @@ function CopilotResultEntry({
       {requiresConfirmation && (
         <>
           <ConfirmationPreview command={response.command} />
-          <button
-            type="button"
-            className="mx-btn mx-btn-primary copilot-confirm"
-            onClick={() => onConfirm(response.commandId)}
-            disabled={isConfirmingThis}
-          >
-            {isConfirmingThis ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
-            {isConfirmingThis ? 'Confirmando...' : 'Confirmar acción'}
-          </button>
+          <div className="copilot-confirm-actions">
+            <button
+              type="button"
+              className="mx-btn mx-btn-outline copilot-cancel"
+              onClick={() => onCancel(response.commandId)}
+              disabled={isConfirmingThis || isCancellingThis}
+            >
+              {isCancellingThis ? <Loader2 size={15} className="copilot-spin" /> : null}
+              {isCancellingThis ? 'Cancelando...' : 'Cancelar'}
+            </button>
+            <button
+              type="button"
+              className="mx-btn mx-btn-primary copilot-confirm"
+              onClick={() => onConfirm(response.commandId)}
+              disabled={isConfirmingThis || isCancellingThis}
+            >
+              {isConfirmingThis ? <Loader2 size={16} className="copilot-spin" /> : <CheckCircle2 size={16} />}
+              {isConfirmingThis ? 'Confirmando...' : 'Confirmar acción'}
+            </button>
+          </div>
         </>
       )}
     </div>
@@ -457,8 +471,10 @@ function CopilotResultEntry({
 function CopilotTurn({
   turn,
   onConfirm,
+  onCancel,
   onChooseOption,
   confirmingIds,
+  cancellingIds,
   onSpeak,
   speaking,
   speechLoading,
@@ -492,8 +508,10 @@ function CopilotTurn({
           response={response}
           sourceText={turn.sourceText}
           onConfirm={onConfirm}
+          onCancel={onCancel}
           onChooseOption={onChooseOption}
           confirmingIds={confirmingIds}
+          cancellingIds={cancellingIds}
         />
       ))}
 
@@ -518,6 +536,7 @@ export default function CopilotPanel({ queryClient }) {
   const [text, setText] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [confirmingIds, setConfirmingIds] = React.useState(() => new Set());
+  const [cancellingIds, setCancellingIds] = React.useState(() => new Set());
   const [listening, setListening] = React.useState(false);
   const [recordingProfessional, setRecordingProfessional] = React.useState(false);
   const [speechSupported, setSpeechSupported] = React.useState(false);
@@ -945,8 +964,70 @@ export default function CopilotPanel({ queryClient }) {
     await runCommand(clean);
   }
 
+  async function handleCancel(commandId) {
+    if (!commandId || cancellingIds.has(commandId) || confirmingIds.has(commandId)) return;
+    setCancellingIds((prev) => new Set(prev).add(commandId));
+
+    const assistantId = crypto.randomUUID?.() || `${Date.now()}-x`;
+    const turnId = crypto.randomUUID?.() || `${Date.now()}-cancel`;
+    setHistory((prev) => [
+      ...prev,
+      {
+        type: 'assistant',
+        id: assistantId,
+        sourceText: '',
+        narrative: '',
+        statusMessage: 'Cancelando propuesta...',
+        results: [],
+        streaming: true,
+        error: null,
+      },
+    ]);
+
+    try {
+      await streamCopilotCommand({
+        mode: 'cancel',
+        commandId,
+        conversationId: conversationIdRef.current,
+        turnId: String(turnId),
+        onEvent: (event) => {
+          if (event.type === 'conversation') {
+            rememberConversation(event.data?.conversationId);
+          } else if (event.type === 'status') {
+            patchTurn(assistantId, (item) => ({ ...item, statusMessage: event.data }));
+          } else if (event.type === 'result') {
+            const response = event.data;
+            appendResultWithTransition(assistantId, response, { ...response, commandId: response.commandId || commandId });
+            if (response.status === 'cancelled') {
+              addToast({ type: 'info', title: 'Propuesta cancelada', message: response.message });
+            } else {
+              addToast({ type: 'info', title: 'La propuesta cambió', message: response.message });
+            }
+          } else if (event.type === 'error') {
+            patchTurn(assistantId, (item) => ({ ...item, error: event.data?.message || 'No se pudo cancelar la propuesta.' }));
+          }
+        },
+      });
+    } catch (error) {
+      const message = error?.data?.message || error?.message || 'No se pudo cancelar la propuesta.';
+      patchTurn(assistantId, (item) => ({ ...item, error: item.error || message }));
+      addToast({
+        type: 'error',
+        title: 'No se pudo cancelar',
+        message,
+      });
+    } finally {
+      patchTurn(assistantId, (item) => ({ ...item, streaming: false, statusMessage: '' }));
+      setCancellingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(commandId);
+        return next;
+      });
+    }
+  }
+
   async function handleConfirm(commandId) {
-    if (!commandId || confirmingIds.has(commandId)) return;
+    if (!commandId || confirmingIds.has(commandId) || cancellingIds.has(commandId)) return;
     setConfirmingIds((prev) => new Set(prev).add(commandId));
 
     const assistantId = crypto.randomUUID?.() || `${Date.now()}-c`;
@@ -1087,8 +1168,10 @@ export default function CopilotPanel({ queryClient }) {
                         key={item.id}
                         turn={item}
                         onConfirm={handleConfirm}
+                        onCancel={handleCancel}
                         onChooseOption={handleChooseOption}
                         confirmingIds={confirmingIds}
+                        cancellingIds={cancellingIds}
                         onSpeak={speakTurn}
                         speaking={speakingId === item.id}
                         speechLoading={speechLoadingId === item.id}
