@@ -144,6 +144,14 @@ async function request(endpoint, options = {}) {
       const apiError = new ApiError(data?.error || data?.message || 'Error en la peticion', response.status, data);
       apiError.endpoint = endpoint;
       apiError.method = options.method || 'GET';
+      if (response.status === 429) {
+        // Segundos hasta que el rate-limiter libere la ventana (express-rate-limit
+        // ya lo entrega con standardHeaders:true) — permite a un poller esperar
+        // el tiempo real en vez de reintentar a ciegas en su próximo tick fijo.
+        const retryAfterHeader = response.headers.get('Retry-After');
+        const parsed = Number(retryAfterHeader);
+        if (Number.isFinite(parsed) && parsed > 0) apiError.retryAfterSeconds = parsed;
+      }
       throw apiError;
     }
 

@@ -10,6 +10,12 @@ const Empresas = React.lazy(() => import('../configuracion/Empresas.jsx'));
 const Usuarios = React.lazy(() => import('../configuracion/Usuarios.jsx'));
 const ErrorReports = React.lazy(() => import('../gestion/soporte/ErrorReports.jsx'));
 
+// Hotfix 429: mismo poll acotado que Sidebar.jsx (ver comentario ahí) — el
+// backend limita este endpoint a 15 req/15min en producción; atarlo a la
+// referencia completa de `user` lo re-disparaba en cada refresh de sesión y
+// en cada foco de ventana.
+const ERROR_REPORTS_POLL_MS = 5 * 60 * 1000;
+
 export default function SaasAdminShell() {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -17,11 +23,32 @@ export default function SaasAdminShell() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    apiClient.get('/support/error-reports?status=new&limit=1')
-      .then((data) => { if (data?.total > 0) setSoporteBadge(data.total); })
-      .catch(() => {});
-  }, [user]);
+    if (!user) return undefined;
+
+    let cancelled = false;
+    let retryAfterUntil = 0;
+    const controller = new AbortController();
+
+    const fetchErrorReports = () => {
+      if (Date.now() < retryAfterUntil) return;
+      apiClient.get('/support/error-reports?status=new&limit=1', { signal: controller.signal })
+        .then((data) => { if (!cancelled && data?.total > 0) setSoporteBadge(data.total); })
+        .catch((err) => {
+          if (err?.status === 429 && err.retryAfterSeconds) {
+            retryAfterUntil = Date.now() + err.retryAfterSeconds * 1000;
+          }
+        });
+    };
+
+    fetchErrorReports();
+    const intervalId = setInterval(fetchErrorReports, ERROR_REPORTS_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearInterval(intervalId);
+    };
+  }, [user?._id]);
 
   useEffect(() => {
     if (location.pathname === '/saas-admin/soporte') setSoporteBadge(0);

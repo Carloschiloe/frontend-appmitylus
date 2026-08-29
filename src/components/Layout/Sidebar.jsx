@@ -24,6 +24,16 @@ import { apiClient } from '../../api/apiClient.js';
 import TenantSelector from './TenantSelector.jsx';
 import './Sidebar.css';
 
+// Hotfix 429: antes este poll estaba atado a la referencia completa de
+// `user`, que AuthContext.jsx recrea en CADA refresh de sesión (cada 15min)
+// Y en cada evento de foco de ventana (alt-tab) — cualquier cambio de foco
+// normal del usuario re-disparaba esta consulta, agotando en minutos el
+// límite específico de este endpoint (15 req/15min en producción) mucho
+// más rápido de lo que el diseño de "avisar reportes nuevos" necesita.
+// Ahora es un poll acotado propio (mismo patrón que AlertasCampana.jsx),
+// atado solo a valores estables (rol/tenant), nunca a la identidad de `user`.
+const ERROR_REPORTS_POLL_MS = 5 * 60 * 1000;
+
 const MENU_STRUCTURE = [
   {
     id: 'inicio',
@@ -81,10 +91,14 @@ export default function Sidebar() {
   const [alerts, setAlerts] = useState({});
   const selectedTenantDb = localStorage.getItem('selected_tenant_db') || '';
 
+  // Depende solo de valores primitivos y estables (rol/id/tenant), nunca de
+  // la referencia completa de `user` — así un refresh de sesión o un foco de
+  // ventana (que recrean el objeto `user` sin cambiar quién es ni su rol)
+  // no vuelve a disparar esta consulta.
   useEffect(() => {
     if (!user) return undefined;
     if (user.rol === 'superadmin' && !selectedTenantDb) {
-      setAlerts({});
+      setAlerts((prev) => ({ ...prev, sanitario: undefined }));
       return undefined;
     }
 
@@ -103,21 +117,51 @@ export default function Sidebar() {
         if (err.name === 'AbortError' || err.status === 401) return;
       });
 
-    if (user.rol === 'admin' || user.rol === 'superadmin') {
+    return () => controller.abort();
+  }, [selectedTenantDb, user?._id, user?.rol]);
+
+  // Poll acotado de reportes de error nuevos — un solo timer, con cleanup
+  // completo (aborta el fetch en curso y limpia el interval) en unmount o
+  // cuando cambian tenant/rol. Un 429 (u otro error) se ignora en silencio:
+  // se conserva el último badge conocido, sin toast y sin reintento
+  // inmediato — la próxima vuelta del poll (5 min después) ya alcanza.
+  useEffect(() => {
+    if (!user) return undefined;
+    if (user.rol !== 'admin' && user.rol !== 'superadmin') return undefined;
+    if (user.rol === 'superadmin' && !selectedTenantDb) return undefined;
+
+    let cancelled = false;
+    let retryAfterUntil = 0;
+    const controller = new AbortController();
+
+    const fetchErrorReports = () => {
+      // Si un 429 anterior trajo Retry-After, no golpear el endpoint de
+      // nuevo hasta que ese tiempo pase — la ventana del limiter (15min) es
+      // más larga que este poll (5min), así que un tick fijo sin esto podría
+      // volver a pegarle a un límite que todavía no se liberó.
+      if (Date.now() < retryAfterUntil) return;
       apiClient.get('/support/error-reports?status=new&limit=1', { signal: controller.signal })
         .then((data) => {
-          if (!data) return;
-          if ((data.total || 0) > 0) {
-            setAlerts((prev) => ({ ...prev, errorReports: data.total }));
-          }
+          if (cancelled || !data) return;
+          if ((data.total || 0) > 0) setAlerts((prev) => ({ ...prev, errorReports: data.total }));
         })
         .catch((err) => {
           if (err.name === 'AbortError' || err.status === 401) return;
+          if (err.status === 429 && err.retryAfterSeconds) {
+            retryAfterUntil = Date.now() + err.retryAfterSeconds * 1000;
+          }
         });
-    }
+    };
 
-    return () => controller.abort();
-  }, [selectedTenantDb, user]);
+    fetchErrorReports();
+    const intervalId = setInterval(fetchErrorReports, ERROR_REPORTS_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearInterval(intervalId);
+    };
+  }, [selectedTenantDb, user?._id, user?.rol]);
 
   useEffect(() => {
     if (location.pathname.startsWith('/gestion/soporte/errores')) {

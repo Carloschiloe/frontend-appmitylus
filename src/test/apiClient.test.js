@@ -222,3 +222,31 @@ describe('apiClient — errores HTTP genéricos', () => {
     await expect(apiClient.get('/datos')).rejects.toMatchObject({ status: 500 });
   });
 });
+
+describe('apiClient — 429 captura Retry-After (hotfix polling error-reports)', () => {
+  const err429WithRetryAfter = (retryAfterSeconds, body = {}) => ({
+    status: 429,
+    ok: false,
+    headers: { get: (name) => (name === 'Retry-After' ? String(retryAfterSeconds) : 'application/json') },
+    json: async () => body,
+  });
+
+  it('expone retryAfterSeconds en el ApiError cuando el backend lo entrega', async () => {
+    global.fetch = vi.fn().mockResolvedValue(err429WithRetryAfter(120, { error: 'Demasiados reportes. Intenta más tarde.' }));
+    await expect(apiClient.get('/support/error-reports?status=new&limit=1'))
+      .rejects.toMatchObject({ status: 429, retryAfterSeconds: 120 });
+  });
+
+  it('no agrega retryAfterSeconds si el backend no manda el header', async () => {
+    global.fetch = vi.fn().mockResolvedValue(errJson(429, { error: 'Demasiados reportes. Intenta más tarde.' }));
+    const error = await apiClient.get('/support/error-reports?status=new&limit=1').catch((e) => e);
+    expect(error.status).toBe(429);
+    expect(error.retryAfterSeconds).toBeUndefined();
+  });
+
+  it('un 429 de /support/error-reports NO se reenvía al propio sistema de error-reports (sin loop autorreferente)', async () => {
+    global.fetch = vi.fn().mockResolvedValue(err429WithRetryAfter(60));
+    await apiClient.get('/support/error-reports?status=new&limit=1').catch(() => {});
+    expect(captureApiError).not.toHaveBeenCalled();
+  });
+});
