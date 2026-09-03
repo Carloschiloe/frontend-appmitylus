@@ -322,6 +322,11 @@ function ConfirmationPreview({ command }) {
     ['Calibre', calibreLabel],
     ['Rendimiento declarado', payload.rendimientoDeclarado != null ? `${payload.rendimientoDeclarado}%` : null],
     ['Mes', payload.mesKey ? mesLabel(payload.mesKey, true) : null],
+    ['Toneladas acordadas', payload.tonsAcordadas],
+    ['Precio acordado', payload.precioAcordado != null ? `${payload.precioAcordado} ${payload.unidadPrecio || '$/ton'}` : null],
+    ['Producto', payload.producto && payload.producto !== 'sin_definir' ? payload.producto : null],
+    ['Estado del trato', payload.estado],
+    ['Notas del trato', payload.notasTrato],
   ].filter(([, value]) => value !== null && value !== undefined && value !== '');
 
   if (!rows.length) return null;
