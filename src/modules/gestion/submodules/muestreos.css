@@ -1,4 +1,82 @@
+/* =====================================================
+   SELECCION PARA COSECHA
+   ===================================================== */
+
+/* Columna encabezado */
+.mu-col-sel {
+  width: 36px;
+  min-width: 36px;
+  text-align: center;
+  color: #94a3b8;
+  padding: 0 4px !important;
+}
+
+/* Celda del toggle */
+.mu-sel-cell {
+  width: 36px;
+  padding: 0 4px !important;
+}
+
+/* Botón ícono de trigo */
+.mu-sel-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid #e2e8f0;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.mu-sel-toggle:hover {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: #f0fdf4;
+  transform: scale(1.1);
+}
+
+.mu-sel-toggle.active {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.mu-sel-toggle.active:hover {
+  border-color: #dc2626;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Fila marcada para cosecha */
+tr.mu-row-seleccionada td {
+  background: #f0fdf4 !important;
+}
+
+tr.mu-row-seleccionada:hover td {
+  background: #dcfce7 !important;
+}
+
+/* Pill filtro cosecha en el header */
+.mu-viewmode-pill--cosecha.active {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.mu-viewmode-pill--cosecha.active:hover {
+  background: #bbf7d0;
+}
+
+/* ===================================================== */
+
 .mu-modal-overlay {
+
   display: flex !important;
   align-items: center;
   justify-content: center;

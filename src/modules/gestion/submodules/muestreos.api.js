@@ -33,3 +33,5 @@ export const getMuestreoDirectorySources = ({ signal } = {}) => Promise.all([
 ]);
 
 export const createMuestreoDirectoryContact = (payload) => apiClient.post('/contactos', payload);
+
+export const toggleSeleccionCosecha = (id) => apiClient.patch(`/muestreos/${id}/seleccion`);

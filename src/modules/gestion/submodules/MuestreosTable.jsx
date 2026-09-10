@@ -12,6 +12,7 @@ import {
   Share2,
   TestTube2,
   Trash2,
+  Wheat,
 } from 'lucide-react';
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString('es-CL') : '-');
@@ -93,6 +94,8 @@ export default function MuestreosTable({
   onEdit,
   onDelete,
   onOpenRechazo,
+  isSeleccionado,
+  onToggleSeleccion,
 }) {
   return (
     <div className="mx-table-card muestreos-table-card" data-tour="muestreos-tabla">
@@ -100,6 +103,7 @@ export default function MuestreosTable({
         <table className="mx-table">
           <thead>
             <tr>
+              <th className="mu-col-sel" title="Seleccionado para cosecha"><Wheat size={13} /></th>
               <th className={viewMode === 'grouped' ? 'mu-col-toggle' : 'mu-col-date'}>{viewMode === 'grouped' ? '' : 'Fecha'}</th>
               <th>Proveedor / Centro</th>
               {viewMode === 'grouped' && <th className="mu-text-center">Muestras</th>}
@@ -125,7 +129,16 @@ export default function MuestreosTable({
                 </tr>
               ) :
               filtered.map((item) => (
-                <tr key={item._id || item.id}>
+                <tr key={item._id || item.id} className={isSeleccionado(item) ? 'mu-row-seleccionada' : ''}>
+                  <td className="mu-text-center mu-sel-cell">
+                    <button
+                      className={`mu-sel-toggle ${isSeleccionado(item) ? 'active' : ''}`}
+                      onClick={() => onToggleSeleccion(item)}
+                      title={isSeleccionado(item) ? 'Quitar selección para cosecha' : 'Marcar para cosecha'}
+                    >
+                      <Wheat size={14} />
+                    </button>
+                  </td>
                   <td className="mu-date-cell" data-label="Fecha">{formatDate(item.fecha)}</td>
                   <td data-label="Proveedor / Centro">
                     <div className="mu-provider-name">{item.proveedorNombre || item.proveedor}</div>
@@ -183,7 +196,16 @@ export default function MuestreosTable({
                     <td className="mu-text-right"><ChevronRight size={14} className="mu-muted-chevron" /></td>
                   </tr>
                   {expandedGroups.has(group.key) && group.items.map((item) => (
-                    <tr key={item._id || item.id} className="mu-group-child-row">
+                    <tr key={item._id || item.id} className={`mu-group-child-row ${isSeleccionado(item) ? 'mu-row-seleccionada' : ''}`}>
+                      <td className="mu-text-center mu-sel-cell">
+                        <button
+                          className={`mu-sel-toggle ${isSeleccionado(item) ? 'active' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
+                          title={isSeleccionado(item) ? 'Quitar selección' : 'Marcar para cosecha'}
+                        >
+                          <Wheat size={13} />
+                        </button>
+                      </td>
                       <td className="mu-group-child-marker"></td>
                       <td className="mu-group-child-detail">
                         <div className="mu-group-child-meta">

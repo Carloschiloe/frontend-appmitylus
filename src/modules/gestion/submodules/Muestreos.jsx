@@ -40,6 +40,7 @@ import {
 } from './muestreos.helpers';
 import {
   deleteMuestreo,
+  toggleSeleccionCosecha,
 } from './muestreos.api';
 import { downloadXlsx } from '../../../utils/downloadXlsx';
 
@@ -62,6 +63,10 @@ export default function Muestreos() {
     viewMode,
     calView === 'month' ? { mes } : calView === 'week' ? { weekRange: weekDays } : {}
   );
+
+  // Estado local de seleccion (optimistic): mapa id -> boolean
+  const [seleccionLocal, setSeleccionLocal] = useState({});
+  const [soloSeleccionados, setSoloSeleccionados] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteOpen, setDeleteOpen] = useState(false);
@@ -206,6 +211,28 @@ export default function Muestreos() {
 
   const [productFilter, setProductFilter] = useState('all');
 
+  // Resuelve si un muestreo está seleccionado (combina DB + optimistic local)
+  const isSeleccionado = (item) => {
+    const id = item._id || item.id;
+    if (id in seleccionLocal) return seleccionLocal[id];
+    return !!item.seleccionadaCosecha;
+  };
+
+  const handleToggleSeleccion = useCallback(async (item) => {
+    const id = item._id || item.id;
+    const estadoActual = isSeleccionado(item);
+    // Optimistic update
+    setSeleccionLocal(prev => ({ ...prev, [id]: !estadoActual }));
+    try {
+      await toggleSeleccionCosecha(id);
+    } catch {
+      // Revertir si falla
+      setSeleccionLocal(prev => ({ ...prev, [id]: estadoActual }));
+      addToast({ title: 'Error', message: 'No se pudo guardar la seleccion', type: 'error' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccionLocal, addToast]);
+
   const availableProducts = useMemo(() => {
     const names = new Set();
     muestreos.forEach(i => {
@@ -217,9 +244,11 @@ export default function Muestreos() {
 
   const filtered = useMemo(() => {
     const bySearch = filterMuestreos(muestreos, searchTerm);
-    if (productFilter === 'all') return bySearch;
-    return bySearch.filter(i => (i.clasificaciones?.[0]?.nombre || '') === productFilter);
-  }, [muestreos, searchTerm, productFilter]);
+    const byProduct = productFilter === 'all' ? bySearch : bySearch.filter(i => (i.clasificaciones?.[0]?.nombre || '') === productFilter);
+    if (!soloSeleccionados) return byProduct;
+    return byProduct.filter(i => isSeleccionado(i));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [muestreos, searchTerm, productFilter, soloSeleccionados, seleccionLocal]);
 
   const groupedData = useMemo(() => groupMuestreosByProvider(filtered), [filtered]);
 
@@ -379,6 +408,8 @@ export default function Muestreos() {
         productFilter={productFilter}
         onProductFilterChange={(val) => { setProductFilter(val); setPage(1); }}
         availableProducts={availableProducts}
+        soloSeleccionados={soloSeleccionados}
+        onSoloSeleccionadosChange={setSoloSeleccionados}
       />
 
       {loading ? (
@@ -400,6 +431,8 @@ export default function Muestreos() {
           onEdit={handleEdit}
           onDelete={(item) => { setDeleteTarget(item); setDeleteOpen(true); }}
           onOpenRechazo={setRechazoModalItem}
+          isSeleccionado={isSeleccionado}
+          onToggleSeleccion={handleToggleSeleccion}
         />
       )}
 

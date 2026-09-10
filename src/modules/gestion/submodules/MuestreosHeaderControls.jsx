@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, FileDown, LayoutGrid, List, Plus, RotateCcw, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, FileDown, LayoutGrid, List, Plus, RotateCcw, Search, Wheat } from 'lucide-react';
 import { getMonthLabel } from './muestreos.helpers';
 import HelpTourButton from '../../../components/HelpTourButton';
 
@@ -30,6 +30,8 @@ export default function MuestreosHeaderControls({
   productFilter = 'all',
   onProductFilterChange,
   availableProducts = [],
+  soloSeleccionados = false,
+  onSoloSeleccionadosChange,
 }) {
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const viewDropdownRef = useRef(null);
@@ -95,13 +97,20 @@ export default function MuestreosHeaderControls({
 
       <div className="mu-controls-sep" />
 
-      {/* Historial / Agrupado pills */}
+      {/* Viewmode pills + filtro seleccionados */}
       <div className="mu-viewmode-pills">
         <button className={`mu-viewmode-pill${viewMode === 'list' ? ' active' : ''}`} onClick={() => onViewModeChange('list')}>
           <List size={13} /> Historial
         </button>
         <button className={`mu-viewmode-pill${viewMode === 'grouped' ? ' active' : ''}`} onClick={() => onViewModeChange('grouped')}>
           <LayoutGrid size={13} /> Agrupado
+        </button>
+        <button
+          className={`mu-viewmode-pill mu-viewmode-pill--cosecha${soloSeleccionados ? ' active' : ''}`}
+          onClick={() => onSoloSeleccionadosChange(!soloSeleccionados)}
+          title="Ver solo los seleccionados para cosecha"
+        >
+          <Wheat size={13} /> Selecc. cosecha
         </button>
       </div>
 
