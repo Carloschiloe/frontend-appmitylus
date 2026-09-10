@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { MapPin } from 'lucide-react';
 
 // Fecha local del dispositivo en formato YYYY-MM-DD (no UTC), para evitar que en
@@ -26,6 +26,7 @@ import useMuestreoEdit from './useMuestreoEdit';
 import useMuestreoEvidence from './useMuestreoEvidence';
 import useMuestreoReport from './useMuestreoReport';
 import useMuestreoSave from './useMuestreoSave';
+import DistribucionRechazoModal from './DistribucionRechazoModal';
 import './muestreos.css';
 import {
   computeSamplingTotals,
@@ -87,6 +88,7 @@ export default function Muestreos() {
   const [selectedCats, setSelectedCats] = useState(new Set());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState(null); // { url, message, proveedor }
+  const [rechazoModalItem, setRechazoModalItem] = useState(null);
 
   // Formulario
   const [form, setForm] = useState({
@@ -397,6 +399,7 @@ export default function Muestreos() {
           onReport={verReporte}
           onEdit={handleEdit}
           onDelete={(item) => { setDeleteTarget(item); setDeleteOpen(true); }}
+          onOpenRechazo={setRechazoModalItem}
         />
       )}
 
@@ -486,6 +489,12 @@ export default function Muestreos() {
         shareData={shareData}
         onClose={() => setIsShareModalOpen(false)}
         addToast={addToast}
+      />
+      <DistribucionRechazoModal
+        isOpen={!!rechazoModalItem}
+        item={rechazoModalItem}
+        onClose={() => setRechazoModalItem(null)}
+        maestros={maestros}
       />
     </div>
   );

@@ -92,6 +92,7 @@ export default function MuestreosTable({
   onReport,
   onEdit,
   onDelete,
+  onOpenRechazo,
 }) {
   return (
     <div className="mx-table-card muestreos-table-card" data-tour="muestreos-tabla">
@@ -138,7 +139,12 @@ export default function MuestreosTable({
                     {item.total > 0 ? (item.procesable / item.total * 100).toFixed(1) : '0.0'}%
                   </td>
                   <td className="mu-text-center" data-label="% Rechazo">
-                    <span className={(item.total > 0 && item.rechazos / item.total > 0.05) ? 'mu-error-text' : ''}>
+                    <span 
+                      className={(item.total > 0 && item.rechazos / item.total > 0.05) ? 'mu-error-text' : ''}
+                      onClick={(e) => { e.stopPropagation(); onOpenRechazo(item); }}
+                      title="Ver distribución del rechazo"
+                      style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                    >
                       {item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%
                     </span>
                   </td>
@@ -191,7 +197,15 @@ export default function MuestreosTable({
                       <td className="mu-text-center mu-small-cell mu-success-strong">
                         {item.total > 0 ? (item.procesable / item.total * 100).toFixed(1) : '0.0'}%
                       </td>
-                      <td className="mu-text-center mu-small-cell">{item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%</td>
+                      <td className="mu-text-center mu-small-cell">
+                        <span
+                          onClick={(e) => { e.stopPropagation(); onOpenRechazo(item); }}
+                          title="Ver distribución del rechazo"
+                          style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+                        >
+                          {item.total > 0 ? (item.rechazos / item.total * 100).toFixed(1) : 0}%
+                        </span>
+                      </td>
                       <td className="mu-text-center"><QualityBadge item={item} compact /></td>
                       <td className="mu-text-right">
                         <MuestreoActions
