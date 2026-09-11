@@ -1,7 +1,6 @@
-import { readCachedUser } from '../context/authSession.helpers.js';
 import { getLastActions } from './actionTrail.js';
 
-const REPORT_ENDPOINT = '/api/support/error-reports';
+const REPORT_ENDPOINT = '/api/support/error-reports/diagnostics';
 const recentFingerprints = new Map();
 
 const MODULE_BY_PATH = [
@@ -79,19 +78,15 @@ function shouldThrottle(payload) {
 export function getClientContext(extra = {}) {
   const userAgent = navigator.userAgent || '';
   const route = window.location.pathname;
-  const cachedUser = readCachedUser();
   return {
     route,
-    url: window.location.href,
+    url: window.location.pathname,
     module: detectModule(route),
     userAgent,
     browser: detectBrowser(userAgent),
     device: detectDevice(userAgent),
     screenSize: `${window.innerWidth}x${window.innerHeight}`,
     appVersion: import.meta.env?.VITE_APP_VERSION || '',
-    userName: cachedUser?.nombre,
-    userEmail: cachedUser?.email,
-    userId: cachedUser?._id || cachedUser?.id,
     lastActions: getLastActions(),
     ...extra,
   };

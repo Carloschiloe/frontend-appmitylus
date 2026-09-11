@@ -67,7 +67,7 @@ export default function SupportReportModal({ open, onClose, initialData = {} }) 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
           <div>
             <p className="mx-eyebrow">Soporte</p>
-            <h2 style={{ margin: 0 }}>Reportar problema</h2>
+            <h2 style={{ margin: 0 }}>Enviar diagnostico a soporte</h2>
           </div>
           <button type="button" className="mx-btn-icon" onClick={onClose} aria-label="Cerrar">
             <X size={18} />
@@ -104,14 +104,14 @@ export default function SupportReportModal({ open, onClose, initialData = {} }) 
 
         <p style={{ display: 'flex', gap: 8, color: 'var(--color-text-muted)', fontSize: 13, marginTop: 16 }}>
           <AlertTriangle size={16} />
-          Se enviara contexto tecnico seguro, ruta actual y ultimas acciones. No adjuntes claves ni datos sensibles.
+          Se enviara informacion tecnica anonimizada para diagnosticar el error. Los datos operacionales sensibles se eliminan antes de guardarlos.
         </p>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
           <button type="button" className="mx-btn mx-btn-outline" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mx-btn mx-btn-primary" disabled={submitting}>
             <Send size={16} />
-            {submitting ? 'Enviando...' : 'Enviar reporte'}
+            {submitting ? 'Enviando...' : 'Enviar diagnostico'}
           </button>
         </div>
       </form>
