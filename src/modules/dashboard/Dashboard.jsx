@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './Dashboard.css';
 import {
@@ -156,14 +156,32 @@ export default function Dashboard() {
   const [error, setError]     = useState(null);
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualKey);
   const [calidadScope, setCalidadScope] = useState(QUALITY_SCOPE_ALL);
+  const qualityCache = useRef(new Map());
   const esMesActual = mesSeleccionado === mesActualKey();
 
-  async function loadData(signal, mes = mesSeleccionado) {
-    setLoading(true);
+  async function loadData(signal, mes = mesSeleccionado, scope = calidadScope, { force = false } = {}) {
+    const cacheKey = `${mes}:${scope}`;
+    if (!force && qualityCache.current.has(cacheKey)) {
+      setData(qualityCache.current.get(cacheKey));
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(!data);
     setError(null);
     try {
-      const json = await apiClient.get(`/dashboard/summary?mes=${mes}&calidadScope=${calidadScope}`, { signal });
+      const json = await apiClient.get(`/dashboard/summary?mes=${mes}&calidadScope=${scope}`, { signal });
+      qualityCache.current.set(cacheKey, json);
       setData(json);
+
+      const alternateScope = scope === QUALITY_SCOPE_ALL ? QUALITY_SCOPE_HARVEST : QUALITY_SCOPE_ALL;
+      const alternateKey = `${mes}:${alternateScope}`;
+      if (!qualityCache.current.has(alternateKey)) {
+        apiClient.get(`/dashboard/summary?mes=${mes}&calidadScope=${alternateScope}`)
+          .then(alternateJson => qualityCache.current.set(alternateKey, alternateJson))
+          .catch(() => {});
+      }
     } catch (err) {
       if (err.name === 'AbortError') return;
       setError('No se pudieron cargar las métricas. Verifica tu conexión.');
@@ -174,7 +192,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const ctrl = new AbortController();
-    loadData(ctrl.signal, mesSeleccionado);
+    loadData(ctrl.signal, mesSeleccionado, calidadScope);
     return () => ctrl.abort();
   }, [mesSeleccionado, calidadScope]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -294,7 +312,7 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
-            <button className="mx-btn mx-btn-outline dsh-refresh-btn" onClick={() => loadData()}>
+            <button className="mx-btn mx-btn-outline dsh-refresh-btn" onClick={() => loadData(undefined, mesSeleccionado, calidadScope, { force: true })}>
               <RotateCcw size={13} /> Actualizar
             </button>
           </section>
