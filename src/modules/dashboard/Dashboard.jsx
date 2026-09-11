@@ -26,6 +26,7 @@ import {
   CalendarClock,
 } from 'lucide-react';
 import { apiClient } from '../../api/apiClient';
+import { formatQualityValue, qualitySubtitle, QUALITY_SCOPE_ALL, QUALITY_SCOPE_HARVEST } from './dashboardQuality';
 
 const DashboardBiomasaChart = lazy(() => import('./DashboardBiomasaChart.jsx'));
 
@@ -154,13 +155,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActualKey);
+  const [calidadScope, setCalidadScope] = useState(QUALITY_SCOPE_ALL);
   const esMesActual = mesSeleccionado === mesActualKey();
 
   async function loadData(signal, mes = mesSeleccionado) {
     setLoading(true);
     setError(null);
     try {
-      const json = await apiClient.get(`/dashboard/summary?mes=${mes}`, { signal });
+      const json = await apiClient.get(`/dashboard/summary?mes=${mes}&calidadScope=${calidadScope}`, { signal });
       setData(json);
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -174,7 +176,7 @@ export default function Dashboard() {
     const ctrl = new AbortController();
     loadData(ctrl.signal, mesSeleccionado);
     return () => ctrl.abort();
-  }, [mesSeleccionado]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mesSeleccionado, calidadScope]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const speciesData = useMemo(() => ({
     labels:   ['Disponible', 'Semicerrada', 'Cerrada', 'Descartada', 'Perdida'],
@@ -599,14 +601,18 @@ export default function Dashboard() {
                 <div>
                   <h3 className="dsh-card-title">Calidad Promedio</h3>
                   <p className="dsh-card-subtitle">
-                    {calidadData?.count
-                      ? `${calidadData.count} proveedor${calidadData.count === 1 ? '' : 'es'} · cosecha activa`
-                      : 'Sin datos de proveedores activos'}
+                    {qualitySubtitle({ sampleCount: calidadData?.sampleCount, mesLabel: mesLabel(mesSeleccionado), scope: calidadScope })}
                   </p>
                 </div>
-                <Link to="/biomasa/muestreos" className="dsh-link-all">
-                  Ver <ChevronRight size={12} />
-                </Link>
+                <div className="dsh-calidad-actions">
+                  <div className="dsh-calidad-scope" role="group" aria-label="Alcance de calidad">
+                    <button type="button" className={calidadScope === QUALITY_SCOPE_ALL ? 'active' : ''} aria-pressed={calidadScope === QUALITY_SCOPE_ALL} onClick={() => setCalidadScope(QUALITY_SCOPE_ALL)}>Todos</button>
+                    <button type="button" className={calidadScope === QUALITY_SCOPE_HARVEST ? 'active' : ''} aria-pressed={calidadScope === QUALITY_SCOPE_HARVEST} onClick={() => setCalidadScope(QUALITY_SCOPE_HARVEST)}>Cosecha</button>
+                  </div>
+                  <Link to="/biomasa/muestreos" className="dsh-link-all">
+                    Ver <ChevronRight size={12} />
+                  </Link>
+                </div>
               </div>
               {!calidadData || calidadData.count === 0 ? (
                 <div className="dsh-empty">
@@ -617,19 +623,19 @@ export default function Dashboard() {
                 <div className="dsh-calidad-grid">
                   <div className="dsh-calidad-metric">
                     <span className="dsh-calidad-value">
-                      {calidadData.avgRendimiento != null ? `${calidadData.avgRendimiento}%` : '—'}
+                      {formatQualityValue(calidadData.avgRendimiento, '%')}
                     </span>
                     <span className="dsh-calidad-label">Rendimiento</span>
                   </div>
                   <div className="dsh-calidad-metric">
                     <span className="dsh-calidad-value">
-                      {calidadData.avgUxkg != null ? calidadData.avgUxkg : '—'}
+                      {formatQualityValue(calidadData.avgUxkg)}
                     </span>
                     <span className="dsh-calidad-label">u/kg Calibre</span>
                   </div>
                   <div className="dsh-calidad-metric danger">
                     <span className="dsh-calidad-value">
-                      {calidadData.avgRechazos != null ? `${calidadData.avgRechazos}%` : '—'}
+                      {formatQualityValue(calidadData.avgRechazos, '%')}
                     </span>
                     <span className="dsh-calidad-label">Rechazos</span>
                   </div>
