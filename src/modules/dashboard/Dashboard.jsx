@@ -214,7 +214,8 @@ export default function Dashboard() {
   const hasAlerts   = (data?.alertas || 0) > 0;
   const sanTotal    = Object.values(sanDetalle).reduce((s, d) => s + (d?.count || 0), 0);
 
-  if (loading) {
+  // Keep the current dashboard mounted while a month/scope refresh is in flight.
+  if (loading && !data) {
     return (
       <div className="mx-loading-screen">
         <div className="mx-spinner" />
@@ -248,6 +249,11 @@ export default function Dashboard() {
       </header>
 
       <div className="mx-content-frame dsh-content-frame">
+        {loading && (
+          <div className="dsh-refresh-status" role="status" aria-live="polite">
+            <span className="dsh-refresh-status-dot" /> Actualizando métricas...
+          </div>
+        )}
         <div className="mx-page-stack">
 
           {/* ── Barra de navegación rápida ───────────────────────────── */}
