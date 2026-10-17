@@ -21,7 +21,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.100.9",
     "bootstrap-icons": "^1.13.1",
-    "driver.js": "^1.4.0",
+    "driver.js": "^1.6.0",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
