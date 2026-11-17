@@ -421,7 +421,7 @@ export default function DisponibilidadModal({
                   <span className="mx-form-label">Centro opcional</span>
                   <select className="mx-select" value={form.centroId} onChange={(e) => update('centroId', e.target.value)} disabled={!selectedProvider}>
                     <option value="">{selectedProvider ? 'Sin centro' : 'Selecciona proveedor primero'}</option>
-                    {centerOptions.map((c) => <option key={c._id} value={c._id}>{centroLabel(c)}</option>)}
+                    {centerOptions.map((c) => <option key={c._id} value={c._id}>{centroLabel(c, { withComuna: true })}</option>)}
                   </select>
                 </label>
 
